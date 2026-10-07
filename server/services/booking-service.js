@@ -54,7 +54,7 @@ function translateClaimConflict(error) {
 
 function assertAllowedFields(input, fields) {
   if (!input || typeof input !== 'object' || Array.isArray(input) ||
-      Object.keys(input).some((key) => !fields.includes(key))) {
+      Object.entries(input).some(([key, value]) => !fields.includes(key) || value == null)) {
     throw new BookingError(400, 'VALIDATION_ERROR', 'Unexpected booking field.');
   }
 }
@@ -102,5 +102,97 @@ async function createBooking(prisma, input, actorId) {
   }
 }
 
-module.exports = { createBooking };
+async function updateBooking(prisma, bookingId, changes, actorId) {
+  assertId(bookingId, 'bookingId');
+  assertAllowedFields(changes, ['guestId', 'roomId', 'guestCount', 'checkInDate', 'checkOutDate']);
+  if (Object.keys(changes).length === 0) {
+    throw new BookingError(400, 'VALIDATION_ERROR', 'Provide a booking field to update.');
+  }
+  try {
+    return await prisma.$transaction(async (tx) => {
+      await assertActor(tx, actorId);
+      const current = await tx.booking.findUnique({
+        where: { id: bookingId }, include: { payment: true },
+      });
+      if (!current) throw new BookingError(404, 'BOOKING_NOT_FOUND', 'Booking does not exist.');
+      if (current.status !== 'confirmed') {
+        throw new BookingError(409, 'INVALID_TRANSITION', 'Only confirmed bookings may be edited.');
+      }
+      const next = {
+        guestId: changes.guestId ?? current.guestId,
+        roomId: changes.roomId ?? current.roomId,
+        guestCount: changes.guestCount ?? current.guestCount,
+        checkInDate: changes.checkInDate ?? current.checkInDate,
+        checkOutDate: changes.checkOutDate ?? current.checkOutDate,
+      };
+      const stay = validateStay(next.checkInDate, next.checkOutDate);
+      validateGuestCount(next.guestCount);
+      await assertGuest(tx, next.guestId);
+      const room = await bookableRoom(tx, next.roomId, next.guestCount);
+      const price = calculatePrice(room.roomType.basePrice, stay.nightCount);
+      const netPaid = current.payment
+        ? current.payment.paidAmount - current.payment.refundedAmount : 0;
+      if (netPaid > 0 && price.totalPrice !== current.totalPrice) {
+        throw new BookingError(409, 'PAYMENT_ADJUSTMENT_REQUIRED',
+          'Adjust or refund received payment before changing the total.');
+      }
 
+      const booking = await tx.booking.update({
+        where: { id: bookingId },
+        data: { ...next, ...price, updatedById: actorId },
+      });
+      const claimsChanged = next.roomId !== current.roomId ||
+        next.checkInDate !== current.checkInDate || next.checkOutDate !== current.checkOutDate;
+      if (claimsChanged) {
+        await tx.roomNightClaim.deleteMany({ where: { bookingId } });
+        await tx.roomNightClaim.createMany({
+          data: stay.nights.map((night) => ({ bookingId, roomId: next.roomId, night })),
+        });
+      }
+      if (current.payment && price.totalPrice !== current.payment.amount) {
+        await tx.payment.update({
+          where: { bookingId },
+          data: { amount: price.totalPrice, status: price.totalPrice === 0 ? 'paid' : 'pending' },
+        });
+      } else if (!current.payment) {
+        await tx.payment.create({
+          data: {
+            bookingId,
+            amount: price.totalPrice,
+            status: price.totalPrice === 0 ? 'paid' : 'pending',
+            recordedById: actorId,
+          },
+        });
+      }
+      return booking;
+    });
+  } catch (error) {
+    translateClaimConflict(error);
+  }
+}
+
+async function cancelBooking(prisma, bookingId, actorId) {
+  assertId(bookingId, 'bookingId');
+  return prisma.$transaction(async (tx) => {
+    await assertActor(tx, actorId);
+    const current = await tx.booking.findUnique({
+      where: { id: bookingId }, include: { payment: true },
+    });
+    if (!current) throw new BookingError(404, 'BOOKING_NOT_FOUND', 'Booking does not exist.');
+    if (current.status !== 'confirmed') {
+      throw new BookingError(409, 'INVALID_TRANSITION', 'Only confirmed bookings may be cancelled.');
+    }
+    if (current.payment && current.payment.paidAmount - current.payment.refundedAmount > 0) {
+      throw new BookingError(409, 'PAYMENT_REFUND_REQUIRED',
+        'Refund and record received payment before cancellation.');
+    }
+    const booking = await tx.booking.update({
+      where: { id: bookingId },
+      data: { status: 'cancelled', cancelledAt: new Date(), updatedById: actorId },
+    });
+    await tx.roomNightClaim.deleteMany({ where: { bookingId } });
+    return booking;
+  });
+}
+
+module.exports = { createBooking, updateBooking, cancelBooking };
