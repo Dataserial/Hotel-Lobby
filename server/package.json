@@ -6,7 +6,8 @@
     "start": "node ./bin/www",
     "db:local": "powershell -ExecutionPolicy Bypass -File ./scripts/start-local-mongo.ps1",
     "db:push": "prisma db push",
-    "db:generate": "prisma generate"
+    "db:generate": "prisma generate",
+    "test": "jest --runInBand"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
@@ -19,6 +20,7 @@
     "morgan": "~1.9.1"
   },
   "devDependencies": {
+    "jest": "^29.7.0",
     "mongodb": "^6.21.0",
     "prisma": "^6.19.3"
   }
