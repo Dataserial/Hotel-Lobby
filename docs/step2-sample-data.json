@@ -1,0 +1,37 @@
+{
+  "note": "Design sample only. IDs are ObjectId hex strings; convert during seed. Replace passwordHash placeholders with bcrypt hashes. Dates are hotel-local calendar dates; timestamps are UTC.",
+  "users": [
+    { "_id": "100000000000000000000001", "name": "Demo Admin", "email": "admin@example.test", "passwordHash": "<bcrypt-hash-from-seed>", "role": "admin", "active": true, "createdAt": "2026-10-01T08:00:00Z", "updatedAt": "2026-10-01T08:00:00Z" },
+    { "_id": "100000000000000000000002", "name": "Demo Receptionist", "email": "reception@example.test", "passwordHash": "<bcrypt-hash-from-seed>", "role": "receptionist", "active": true, "createdAt": "2026-10-01T08:00:00Z", "updatedAt": "2026-10-01T08:00:00Z" }
+  ],
+  "roomTypes": [
+    { "_id": "200000000000000000000001", "name": "Standard", "nameKey": "standard", "capacity": 2, "basePrice": 1200, "amenities": ["Wi-Fi", "Air conditioning"], "active": true, "createdAt": "2026-10-01T09:00:00Z", "updatedAt": "2026-10-01T09:00:00Z", "createdById": "100000000000000000000001", "updatedById": "100000000000000000000001" },
+    { "_id": "200000000000000000000002", "name": "Deluxe", "nameKey": "deluxe", "capacity": 2, "basePrice": 1800, "amenities": ["Wi-Fi", "Air conditioning", "Breakfast"], "active": true, "createdAt": "2026-10-01T09:00:00Z", "updatedAt": "2026-10-01T09:00:00Z", "createdById": "100000000000000000000001", "updatedById": "100000000000000000000001" },
+    { "_id": "200000000000000000000003", "name": "Family", "nameKey": "family", "capacity": 4, "basePrice": 2600, "amenities": ["Wi-Fi", "Air conditioning", "Breakfast"], "active": true, "createdAt": "2026-10-01T09:00:00Z", "updatedAt": "2026-10-01T09:00:00Z", "createdById": "100000000000000000000001", "updatedById": "100000000000000000000001" }
+  ],
+  "rooms": [
+    { "_id": "300000000000000000000001", "roomNumber": "101", "floor": 1, "roomTypeId": "200000000000000000000001", "status": "available", "active": true, "createdAt": "2026-10-01T09:30:00Z", "updatedAt": "2026-10-01T09:30:00Z", "createdById": "100000000000000000000001", "updatedById": "100000000000000000000001" },
+    { "_id": "300000000000000000000002", "roomNumber": "201", "floor": 2, "roomTypeId": "200000000000000000000001", "status": "occupied", "active": true, "createdAt": "2026-10-01T09:30:00Z", "updatedAt": "2026-10-06T07:00:00Z", "createdById": "100000000000000000000001", "updatedById": "100000000000000000000002" },
+    { "_id": "300000000000000000000003", "roomNumber": "305", "floor": 3, "roomTypeId": "200000000000000000000002", "status": "available", "active": true, "createdAt": "2026-10-01T09:30:00Z", "updatedAt": "2026-10-01T09:30:00Z", "createdById": "100000000000000000000001", "updatedById": "100000000000000000000001" },
+    { "_id": "300000000000000000000004", "roomNumber": "401", "floor": 4, "roomTypeId": "200000000000000000000003", "status": "maintenance", "active": true, "createdAt": "2026-10-01T09:30:00Z", "updatedAt": "2026-10-05T07:00:00Z", "createdById": "100000000000000000000001", "updatedById": "100000000000000000000001" }
+  ],
+  "guests": [
+    { "_id": "400000000000000000000001", "fullName": "Demo Guest One", "phone": "+66812345678", "email": "guest.one@example.test", "documentNo": "DEMO-PASSPORT-001", "documentNoKey": "DEMO-PASSPORT-001", "createdAt": "2026-10-02T08:00:00Z", "updatedAt": "2026-10-02T08:00:00Z", "createdById": "100000000000000000000002", "updatedById": "100000000000000000000002" },
+    { "_id": "400000000000000000000002", "fullName": "Demo Guest Two", "phone": "+66823456789", "email": null, "documentNo": "DEMO-PASSPORT-002", "documentNoKey": "DEMO-PASSPORT-002", "createdAt": "2026-10-02T08:00:00Z", "updatedAt": "2026-10-02T08:00:00Z", "createdById": "100000000000000000000002", "updatedById": "100000000000000000000002" }
+  ],
+  "bookings": [
+    { "_id": "500000000000000000000001", "guestId": "400000000000000000000001", "roomId": "300000000000000000000002", "guestCount": 2, "checkInDate": "2026-10-06", "checkOutDate": "2026-10-08", "status": "checked_in", "pricePerNight": 1200, "totalPrice": 2400, "actualCheckInAt": "2026-10-06T07:00:00Z", "actualCheckOutAt": null, "cancelledAt": null, "createdAt": "2026-10-02T09:00:00Z", "updatedAt": "2026-10-06T07:00:00Z", "createdById": "100000000000000000000002", "updatedById": "100000000000000000000002" },
+    { "_id": "500000000000000000000002", "guestId": "400000000000000000000002", "roomId": "300000000000000000000003", "guestCount": 2, "checkInDate": "2026-10-10", "checkOutDate": "2026-10-12", "status": "confirmed", "pricePerNight": 1800, "totalPrice": 3600, "actualCheckInAt": null, "actualCheckOutAt": null, "cancelledAt": null, "createdAt": "2026-10-03T09:00:00Z", "updatedAt": "2026-10-03T09:00:00Z", "createdById": "100000000000000000000002", "updatedById": "100000000000000000000002" },
+    { "_id": "500000000000000000000003", "guestId": "400000000000000000000001", "roomId": "300000000000000000000001", "guestCount": 1, "checkInDate": "2026-10-10", "checkOutDate": "2026-10-12", "status": "cancelled", "pricePerNight": 1200, "totalPrice": 2400, "actualCheckInAt": null, "actualCheckOutAt": null, "cancelledAt": "2026-10-04T10:00:00Z", "createdAt": "2026-10-03T10:00:00Z", "updatedAt": "2026-10-04T10:00:00Z", "createdById": "100000000000000000000002", "updatedById": "100000000000000000000002" }
+  ],
+  "payments": [
+    { "_id": "600000000000000000000001", "bookingId": "500000000000000000000001", "amount": 2400, "paidAmount": 2400, "refundedAmount": 0, "method": "cash", "status": "paid", "paidAt": "2026-10-06T06:50:00Z", "refundedAt": null, "createdAt": "2026-10-02T09:00:00Z", "updatedAt": "2026-10-06T06:50:00Z", "recordedById": "100000000000000000000002" },
+    { "_id": "600000000000000000000002", "bookingId": "500000000000000000000002", "amount": 3600, "paidAmount": 0, "refundedAmount": 0, "method": null, "status": "pending", "paidAt": null, "refundedAt": null, "createdAt": "2026-10-03T09:00:00Z", "updatedAt": "2026-10-03T09:00:00Z", "recordedById": "100000000000000000000002" }
+  ],
+  "roomNightClaims": [
+    { "_id": "700000000000000000000001", "roomId": "300000000000000000000002", "bookingId": "500000000000000000000001", "night": "2026-10-06", "createdAt": "2026-10-02T09:00:00Z" },
+    { "_id": "700000000000000000000002", "roomId": "300000000000000000000002", "bookingId": "500000000000000000000001", "night": "2026-10-07", "createdAt": "2026-10-02T09:00:00Z" },
+    { "_id": "700000000000000000000003", "roomId": "300000000000000000000003", "bookingId": "500000000000000000000002", "night": "2026-10-10", "createdAt": "2026-10-03T09:00:00Z" },
+    { "_id": "700000000000000000000004", "roomId": "300000000000000000000003", "bookingId": "500000000000000000000002", "night": "2026-10-11", "createdAt": "2026-10-03T09:00:00Z" }
+  ]
+}
