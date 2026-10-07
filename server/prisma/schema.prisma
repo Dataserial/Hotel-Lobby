@@ -7,7 +7,161 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  admin
+  receptionist
+}
+
+enum RoomStatus {
+  available
+  occupied
+  maintenance
+}
+
+enum BookingStatus {
+  confirmed
+  checked_in
+  checked_out
+  cancelled
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  refunded
+}
+
+enum PaymentMethod {
+  cash
+  bank_transfer
+  card
+}
+
+model User {
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  name             String
+  email            String    @unique
+  passwordHash     String
+  role             UserRole
+  active           Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  bookingsCreated  Booking[] @relation("BookingCreatedBy")
+  bookingsUpdated  Booking[] @relation("BookingUpdatedBy")
+  paymentsRecorded Payment[] @relation("PaymentRecordedBy")
+
+  @@map("users")
+}
+
+model RoomType {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  nameKey   String   @unique
+  capacity  Int
+  basePrice Int
+  amenities String[]
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  rooms     Room[]
+
+  @@map("roomTypes")
+}
+
 model Room {
-  id     String @id @default(auto()) @map("_id") @db.ObjectId
-  number String @unique
+  id         String      @id @default(auto()) @map("_id") @db.ObjectId
+  // Preserve the existing MongoDB "number" field and unique index.
+  number     String      @unique
+  floor      Int?
+  roomTypeId String?     @db.ObjectId
+  roomType   RoomType?   @relation(fields: [roomTypeId], references: [id])
+  status     RoomStatus? @default(available)
+  active     Boolean?    @default(true)
+  createdAt  DateTime?   @default(now())
+  updatedAt  DateTime?   @updatedAt
+  bookings   Booking[]
+  claims     RoomNightClaim[]
+
+  @@index([roomTypeId, status])
+  @@map("Room")
+}
+
+model Guest {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  fullName      String
+  phone         String
+  email         String?
+  documentNo    String
+  documentNoKey String   @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  bookings      Booking[]
+
+  @@index([fullName])
+  @@index([phone])
+  @@map("guests")
+}
+
+model Booking {
+  id               String        @id @default(auto()) @map("_id") @db.ObjectId
+  guestId          String        @db.ObjectId
+  guest            Guest         @relation(fields: [guestId], references: [id])
+  roomId           String        @db.ObjectId
+  room             Room          @relation(fields: [roomId], references: [id])
+  guestCount       Int
+  checkInDate      String
+  checkOutDate     String
+  status           BookingStatus @default(confirmed)
+  pricePerNight    Int
+  totalPrice       Int
+  actualCheckInAt  DateTime?
+  actualCheckOutAt DateTime?
+  cancelledAt      DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  createdById      String        @db.ObjectId
+  createdBy        User          @relation("BookingCreatedBy", fields: [createdById], references: [id])
+  updatedById      String        @db.ObjectId
+  updatedBy        User          @relation("BookingUpdatedBy", fields: [updatedById], references: [id])
+  payment          Payment?
+  claims           RoomNightClaim[]
+
+  @@index([roomId, checkInDate, checkOutDate])
+  @@index([guestId, createdAt])
+  @@index([status, checkOutDate])
+  @@map("bookings")
+}
+
+model Payment {
+  id             String         @id @default(auto()) @map("_id") @db.ObjectId
+  bookingId      String         @unique @db.ObjectId
+  booking        Booking        @relation(fields: [bookingId], references: [id])
+  amount         Int
+  paidAmount     Int            @default(0)
+  refundedAmount Int            @default(0)
+  method         PaymentMethod?
+  status         PaymentStatus  @default(pending)
+  paidAt         DateTime?
+  refundedAt     DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  recordedById   String         @db.ObjectId
+  recordedBy     User           @relation("PaymentRecordedBy", fields: [recordedById], references: [id])
+
+  @@index([status])
+  @@map("payments")
+}
+
+model RoomNightClaim {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  roomId    String   @db.ObjectId
+  room      Room     @relation(fields: [roomId], references: [id])
+  bookingId String   @db.ObjectId
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  night     String
+  createdAt DateTime @default(now())
+
+  @@unique([roomId, night])
+  @@index([bookingId])
+  @@map("roomNightClaims")
 }
