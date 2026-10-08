@@ -12,7 +12,8 @@ async function main() {
   const suites = [
     ['tests/booking-validation.test.js'],
     ['tests/availability-service.test.js'],
-    ['tests/booking-service.test.js', '^(?!two concurrent)'],
+    ['tests/booking-service.test.js', '^(?!two concurrent|keeps the original)'],
+    ['tests/booking-service.test.js', 'keeps the original'],
     ['tests/booking-service.test.js', 'two concurrent'],
   ];
   for (const [file, pattern] of suites) {
@@ -31,6 +32,7 @@ async function main() {
     }
   }
   run(jest, ['--runInBand', '--silent', '--runTestsByPath', 'tests/task12-http.test.js'], process.env);
+  run(jest, ['--runInBand', '--silent', '--testTimeout=30000', '--runTestsByPath', 'tests/task3-invariants.test.js'], process.env);
 }
 
 main().catch((error) => { console.error(error.message); process.exitCode = 1; });
