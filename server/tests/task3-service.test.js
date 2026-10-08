@@ -1,6 +1,7 @@
 const { createBooking, updateBooking, cancelBooking } = require('../services/booking-service');
 const { startDatabase, expectConsistent, sample } = require('./task3-db');
 const { instrument } = require('./task3-hooks');
+const { recordTestReceipt, recordTestRefund } = require('./payment-fixture');
 
 let db;
 const actorId = sample.users[1]._id;
@@ -22,7 +23,7 @@ test('guest-only edits preserve paid snapshot; changed dates/room use current pr
   await db.prisma.roomType.update({ where: { nameKey: 'standard' }, data: { basePrice: 1700 } });
   expect(await updateBooking(db.prisma, hexBooking.id, { roomId: hexRoom.id.toUpperCase() }, actorId))
     .toMatchObject({ roomId: hexRoom.id, pricePerNight: 1200, totalPrice: 2400 });
-  await db.prisma.payment.update({ where: { bookingId: b.id }, data: { paidAmount: 100 } });
+  const receipt = await recordTestReceipt(db.prisma, b.id, actorId);
   expect(await updateBooking(db.prisma, b.id, { guestCount: 1, guestId: sample.guests[1]._id }, actorId))
     .toMatchObject({ pricePerNight: 1200, totalPrice: 2400 });
   expect(await updateBooking(db.prisma, b.id, { checkInDate: b.checkInDate }, actorId))
@@ -30,7 +31,7 @@ test('guest-only edits preserve paid snapshot; changed dates/room use current pr
   await expect(updateBooking(db.prisma, b.id, { checkOutDate: '2026-11-13' }, actorId))
     .rejects.toMatchObject({ code: 'PAYMENT_ADJUSTMENT_REQUIRED' });
   await expect(cancelBooking(db.prisma, b.id, actorId)).rejects.toMatchObject({ code: 'PAYMENT_REFUND_REQUIRED' });
-  await db.prisma.payment.update({ where: { bookingId: b.id }, data: { refundedAmount: 100 } });
+  await recordTestRefund(db.prisma, b.id, actorId, receipt.id);
   expect(await updateBooking(db.prisma, b.id, { checkOutDate: '2026-11-13' }, actorId))
     .toMatchObject({ pricePerNight: 1700, totalPrice: 5100 });
   expect(await updateBooking(db.prisma, b.id, { roomId: sample.rooms[2]._id }, actorId))

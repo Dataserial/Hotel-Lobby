@@ -1,6 +1,7 @@
 const { createBooking, updateBooking, cancelBooking } = require('../services/booking-service');
 const { testPrisma, seedStep2Sample, sample } = require('./test-db');
 const { MongoClient, ObjectId } = require('mongodb');
+const { recordTestReceipt, recordTestRefund } = require('./payment-fixture');
 
 const prisma = testPrisma();
 const actorId = sample.users[1]._id;
@@ -86,12 +87,12 @@ test('failed update rolls back booking, payment and original claims', async () =
 
 test('received money blocks price changes and cancellation until refunded', async () => {
   const booking = await createBooking(prisma, request(), actorId);
-  await prisma.payment.update({ where: { bookingId: booking.id }, data: { paidAmount: 100 } });
+  const receipt = await recordTestReceipt(prisma, booking.id, actorId);
   await expect(updateBooking(prisma, booking.id, { checkOutDate: '2026-10-13' }, actorId))
     .rejects.toMatchObject({ code: 'PAYMENT_ADJUSTMENT_REQUIRED' });
   await expect(cancelBooking(prisma, booking.id, actorId))
     .rejects.toMatchObject({ code: 'PAYMENT_REFUND_REQUIRED' });
-  await prisma.payment.update({ where: { bookingId: booking.id }, data: { refundedAmount: 100 } });
+  await recordTestRefund(prisma, booking.id, actorId, receipt.id);
   expect((await cancelBooking(prisma, booking.id, actorId)).status).toBe('cancelled');
 });
 

@@ -4,20 +4,14 @@ const {
   validateGuestCount,
   calculatePrice,
 } = require('./booking-validation');
+const { assertLedger, summarize } = require('./payment-ledger');
+const { assertActor, operationTransaction: bookingTransaction } = require('./operation-transaction');
 
 function assertId(value, field) {
   if (typeof value !== 'string' || !/^[0-9a-fA-F]{24}$/.test(value)) {
     throw new BookingError(400, 'INVALID_REFERENCE', `${field} must be an ObjectId.`);
   }
   return value;
-}
-
-async function assertActor(tx, actorId) {
-  assertId(actorId, 'actorId');
-  const actor = await tx.user.findUnique({ where: { id: actorId }, select: { active: true } });
-  if (!actor || !actor.active) {
-    throw new BookingError(403, 'INVALID_ACTOR', 'Actor must be an active user.');
-  }
 }
 
 async function assertGuest(tx, guestId) {
@@ -40,20 +34,6 @@ async function bookableRoom(tx, roomId, guestCount) {
   }
   validateGuestCount(guestCount, room.roomType.capacity);
   return room;
-}
-
-async function bookingTransaction(prisma, operation) {
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    try {
-      return await prisma.$transaction(operation);
-    } catch (error) {
-      if (error.code !== 'P2034') throw error;
-      if (attempt === 3) {
-        throw new BookingError(409, 'WRITE_CONFLICT', 'Concurrent update conflict; retry the request.');
-      }
-      await new Promise((resolve) => setTimeout(resolve, attempt * 10));
-    }
-  }
 }
 
 async function createClaims(tx, bookingId, roomId, nights) {
@@ -107,6 +87,7 @@ async function createBooking(prisma, input, actorId) {
         amount: price.totalPrice,
         paidAmount: 0,
         refundedAmount: 0,
+        ledgerReady: true,
         status: price.totalPrice === 0 ? 'paid' : 'pending',
         recordedById: actorId,
       },
@@ -130,6 +111,7 @@ async function updateBooking(prisma, bookingId, changes, actorId) {
     if (current.status !== 'confirmed') {
       throw new BookingError(409, 'INVALID_TRANSITION', 'Only confirmed bookings may be edited.');
     }
+    const rows = await assertLedger(tx, current);
     const next = {
       guestId: changes.guestId ?? current.guestId,
       roomId: changes.roomId ?? current.roomId,
@@ -157,7 +139,7 @@ async function updateBooking(prisma, bookingId, changes, actorId) {
 
     const booking = await tx.booking.update({
       where: { id: bookingId },
-      data: { ...next, ...price, updatedById: actorId },
+      data: { ...next, ...price, updatedById: actorId, version: current.version + 1 },
     });
     if (claimsChanged) {
       await tx.roomNightClaim.deleteMany({ where: { bookingId } });
@@ -166,16 +148,7 @@ async function updateBooking(prisma, bookingId, changes, actorId) {
     if (current.payment && price.totalPrice !== current.payment.amount) {
       await tx.payment.update({
         where: { bookingId },
-        data: { amount: price.totalPrice, status: price.totalPrice === 0 ? 'paid' : 'pending' },
-      });
-    } else if (!current.payment) {
-      await tx.payment.create({
-        data: {
-          bookingId,
-          amount: price.totalPrice,
-          status: price.totalPrice === 0 ? 'paid' : 'pending',
-          recordedById: actorId,
-        },
+        data: summarize(booking, rows),
       });
     }
     return booking;
@@ -193,14 +166,16 @@ async function cancelBooking(prisma, bookingId, actorId) {
     if (current.status !== 'confirmed') {
       throw new BookingError(409, 'INVALID_TRANSITION', 'Only confirmed bookings may be cancelled.');
     }
+    const rows = await assertLedger(tx, current);
     if (current.payment && current.payment.paidAmount - current.payment.refundedAmount > 0) {
       throw new BookingError(409, 'PAYMENT_REFUND_REQUIRED',
         'Refund and record received payment before cancellation.');
     }
     const booking = await tx.booking.update({
       where: { id: bookingId },
-      data: { status: 'cancelled', cancelledAt: new Date(), updatedById: actorId },
+      data: { status: 'cancelled', cancelledAt: new Date(), updatedById: actorId, version: current.version + 1 },
     });
+    await tx.payment.update({ where: { id: current.payment.id }, data: summarize(booking, rows) });
     await tx.roomNightClaim.deleteMany({ where: { bookingId } });
     return booking;
   });

@@ -49,7 +49,7 @@ function validateGuestCount(guestCount, capacity) {
 function calculatePrice(basePrice, nightCount) {
   if (!Number.isSafeInteger(basePrice) || basePrice < 0 ||
       !Number.isSafeInteger(nightCount) || nightCount < 1 ||
-      !Number.isSafeInteger(basePrice * nightCount)) {
+      !Number.isSafeInteger(basePrice * nightCount) || basePrice * nightCount > 2147483647) {
     throw new BookingError(400, 'INVALID_PRICE', 'Room price must be a safe nonnegative integer in baht.');
   }
   return { pricePerNight: basePrice, totalPrice: basePrice * nightCount };

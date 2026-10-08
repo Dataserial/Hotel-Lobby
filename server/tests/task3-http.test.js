@@ -4,6 +4,7 @@ const { createApp } = require('../app');
 const { hashToken } = require('../lib/auth');
 const { createBooking } = require('../services/booking-service');
 const { startDatabase, expectConsistent, sample } = require('./task3-db');
+const { recordTestReceipt } = require('./payment-fixture');
 
 let db, app, tokens;
 const actorId = sample.users[1]._id;
@@ -156,7 +157,7 @@ test('HTTP exposes payment guards and preserves rollback on conflicting edits', 
   await createBooking(db.prisma, input({ roomId: sample.rooms[2]._id }), actorId);
   const edit = () => request(app).patch(`/api/bookings/${b.id}`).set(auth(tokens.admin));
   expect((await edit().send({ roomId: sample.rooms[2]._id }).expect(409)).body.error.code).toBe('ROOM_UNAVAILABLE');
-  await db.prisma.payment.update({ where: { bookingId: b.id }, data: { paidAmount: 100 } });
+  await recordTestReceipt(db.prisma, b.id, actorId);
   expect((await edit().send({ checkOutDate: '2026-11-13' }).expect(409)).body.error.code).toBe('PAYMENT_ADJUSTMENT_REQUIRED');
   expect((await request(app).post(`/api/bookings/${b.id}/cancel`).set(auth(tokens.admin)).expect(409)).body.error.code).toBe('PAYMENT_REFUND_REQUIRED');
   expect(await db.prisma.booking.findUnique({ where: { id: b.id } })).toMatchObject({ totalPrice: 2400, roomId: input().roomId });
