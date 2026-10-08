@@ -42,15 +42,33 @@ async function bookableRoom(tx, roomId, guestCount) {
   return room;
 }
 
-function isClaimConflict(error) {
-  return error && (error.code === 'P2002' || error.code === 'P2034');
+async function bookingTransaction(prisma, operation) {
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      return await prisma.$transaction(operation);
+    } catch (error) {
+      if (error.code !== 'P2034') throw error;
+      if (attempt === 3) {
+        throw new BookingError(409, 'WRITE_CONFLICT', 'Concurrent update conflict; retry the request.');
+      }
+      await new Promise((resolve) => setTimeout(resolve, attempt * 10));
+    }
+  }
 }
 
-function translateClaimConflict(error) {
-  if (isClaimConflict(error)) {
-    throw new BookingError(409, 'ROOM_UNAVAILABLE', 'The room was booked for one of these nights.');
+async function createClaims(tx, bookingId, roomId, nights) {
+  try {
+    await tx.roomNightClaim.createMany({
+      data: nights.map((night) => ({ bookingId, roomId, night })),
+    });
+  } catch (error) {
+    // Only a unique failure while inserting claims denotes unavailable nights.
+    // Payment/Booking unique errors must retain their own meaning.
+    if (error.code === 'P2002') {
+      throw new BookingError(409, 'ROOM_UNAVAILABLE', 'The room was booked for one of these nights.');
+    }
+    throw error;
   }
-  throw error;
 }
 
 function assertAllowedFields(input, fields) {
@@ -64,43 +82,37 @@ async function createBooking(prisma, input, actorId) {
   assertAllowedFields(input, ['guestId', 'roomId', 'guestCount', 'checkInDate', 'checkOutDate']);
   const stay = validateStay(input.checkInDate, input.checkOutDate);
   validateGuestCount(input.guestCount);
-  try {
-    return await prisma.$transaction(async (tx) => {
-      await assertActor(tx, actorId);
-      await assertGuest(tx, input.guestId);
-      const room = await bookableRoom(tx, input.roomId, input.guestCount);
-      const price = calculatePrice(room.roomType.basePrice, stay.nightCount);
-      const booking = await tx.booking.create({
-        data: {
-          guestId: input.guestId,
-          roomId: input.roomId,
-          guestCount: input.guestCount,
-          checkInDate: stay.checkInDate,
-          checkOutDate: stay.checkOutDate,
-          status: 'confirmed',
-          ...price,
-          createdById: actorId,
-          updatedById: actorId,
-        },
-      });
-      await tx.roomNightClaim.createMany({
-        data: stay.nights.map((night) => ({ bookingId: booking.id, roomId: input.roomId, night })),
-      });
-      await tx.payment.create({
-        data: {
-          bookingId: booking.id,
-          amount: price.totalPrice,
-          paidAmount: 0,
-          refundedAmount: 0,
-          status: price.totalPrice === 0 ? 'paid' : 'pending',
-          recordedById: actorId,
-        },
-      });
-      return booking;
+  return bookingTransaction(prisma, async (tx) => {
+    await assertActor(tx, actorId);
+    await assertGuest(tx, input.guestId);
+    const room = await bookableRoom(tx, input.roomId, input.guestCount);
+    const price = calculatePrice(room.roomType.basePrice, stay.nightCount);
+    const booking = await tx.booking.create({
+      data: {
+        guestId: input.guestId,
+        roomId: input.roomId,
+        guestCount: input.guestCount,
+        checkInDate: stay.checkInDate,
+        checkOutDate: stay.checkOutDate,
+        status: 'confirmed',
+        ...price,
+        createdById: actorId,
+        updatedById: actorId,
+      },
     });
-  } catch (error) {
-    translateClaimConflict(error);
-  }
+    await createClaims(tx, booking.id, input.roomId, stay.nights);
+    await tx.payment.create({
+      data: {
+        bookingId: booking.id,
+        amount: price.totalPrice,
+        paidAmount: 0,
+        refundedAmount: 0,
+        status: price.totalPrice === 0 ? 'paid' : 'pending',
+        recordedById: actorId,
+      },
+    });
+    return booking;
+  });
 }
 
 async function updateBooking(prisma, bookingId, changes, actorId) {
@@ -109,72 +121,68 @@ async function updateBooking(prisma, bookingId, changes, actorId) {
   if (Object.keys(changes).length === 0) {
     throw new BookingError(400, 'VALIDATION_ERROR', 'Provide a booking field to update.');
   }
-  try {
-    return await prisma.$transaction(async (tx) => {
-      await assertActor(tx, actorId);
-      const current = await tx.booking.findUnique({
-        where: { id: bookingId }, include: { payment: true },
-      });
-      if (!current) throw new BookingError(404, 'BOOKING_NOT_FOUND', 'Booking does not exist.');
-      if (current.status !== 'confirmed') {
-        throw new BookingError(409, 'INVALID_TRANSITION', 'Only confirmed bookings may be edited.');
-      }
-      const next = {
-        guestId: changes.guestId ?? current.guestId,
-        roomId: changes.roomId ?? current.roomId,
-        guestCount: changes.guestCount ?? current.guestCount,
-        checkInDate: changes.checkInDate ?? current.checkInDate,
-        checkOutDate: changes.checkOutDate ?? current.checkOutDate,
-      };
-      const stay = validateStay(next.checkInDate, next.checkOutDate);
-      validateGuestCount(next.guestCount);
-      await assertGuest(tx, next.guestId);
-      const room = await bookableRoom(tx, next.roomId, next.guestCount);
-      const price = calculatePrice(room.roomType.basePrice, stay.nightCount);
-      const netPaid = current.payment
-        ? current.payment.paidAmount - current.payment.refundedAmount : 0;
-      if (netPaid > 0 && price.totalPrice !== current.totalPrice) {
-        throw new BookingError(409, 'PAYMENT_ADJUSTMENT_REQUIRED',
-          'Adjust or refund received payment before changing the total.');
-      }
-
-      const booking = await tx.booking.update({
-        where: { id: bookingId },
-        data: { ...next, ...price, updatedById: actorId },
-      });
-      const claimsChanged = next.roomId !== current.roomId ||
-        next.checkInDate !== current.checkInDate || next.checkOutDate !== current.checkOutDate;
-      if (claimsChanged) {
-        await tx.roomNightClaim.deleteMany({ where: { bookingId } });
-        await tx.roomNightClaim.createMany({
-          data: stay.nights.map((night) => ({ bookingId, roomId: next.roomId, night })),
-        });
-      }
-      if (current.payment && price.totalPrice !== current.payment.amount) {
-        await tx.payment.update({
-          where: { bookingId },
-          data: { amount: price.totalPrice, status: price.totalPrice === 0 ? 'paid' : 'pending' },
-        });
-      } else if (!current.payment) {
-        await tx.payment.create({
-          data: {
-            bookingId,
-            amount: price.totalPrice,
-            status: price.totalPrice === 0 ? 'paid' : 'pending',
-            recordedById: actorId,
-          },
-        });
-      }
-      return booking;
+  return bookingTransaction(prisma, async (tx) => {
+    await assertActor(tx, actorId);
+    const current = await tx.booking.findUnique({
+      where: { id: bookingId }, include: { payment: true },
     });
-  } catch (error) {
-    translateClaimConflict(error);
-  }
+    if (!current) throw new BookingError(404, 'BOOKING_NOT_FOUND', 'Booking does not exist.');
+    if (current.status !== 'confirmed') {
+      throw new BookingError(409, 'INVALID_TRANSITION', 'Only confirmed bookings may be edited.');
+    }
+    const next = {
+      guestId: changes.guestId ?? current.guestId,
+      roomId: changes.roomId ?? current.roomId,
+      guestCount: changes.guestCount ?? current.guestCount,
+      checkInDate: changes.checkInDate ?? current.checkInDate,
+      checkOutDate: changes.checkOutDate ?? current.checkOutDate,
+    };
+    const stay = validateStay(next.checkInDate, next.checkOutDate);
+    validateGuestCount(next.guestCount);
+    await assertGuest(tx, next.guestId);
+    const room = await bookableRoom(tx, next.roomId, next.guestCount);
+    const claimsChanged = next.roomId !== current.roomId ||
+      next.checkInDate !== current.checkInDate || next.checkOutDate !== current.checkOutDate;
+    const price = claimsChanged
+      ? calculatePrice(room.roomType.basePrice, stay.nightCount)
+      : { pricePerNight: current.pricePerNight, totalPrice: current.totalPrice };
+    const netPaid = current.payment
+      ? current.payment.paidAmount - current.payment.refundedAmount : 0;
+    if (netPaid > 0 && price.totalPrice !== current.totalPrice) {
+      throw new BookingError(409, 'PAYMENT_ADJUSTMENT_REQUIRED',
+        'Adjust or refund received payment before changing the total.');
+    }
+
+    const booking = await tx.booking.update({
+      where: { id: bookingId },
+      data: { ...next, ...price, updatedById: actorId },
+    });
+    if (claimsChanged) {
+      await tx.roomNightClaim.deleteMany({ where: { bookingId } });
+      await createClaims(tx, bookingId, next.roomId, stay.nights);
+    }
+    if (current.payment && price.totalPrice !== current.payment.amount) {
+      await tx.payment.update({
+        where: { bookingId },
+        data: { amount: price.totalPrice, status: price.totalPrice === 0 ? 'paid' : 'pending' },
+      });
+    } else if (!current.payment) {
+      await tx.payment.create({
+        data: {
+          bookingId,
+          amount: price.totalPrice,
+          status: price.totalPrice === 0 ? 'paid' : 'pending',
+          recordedById: actorId,
+        },
+      });
+    }
+    return booking;
+  });
 }
 
 async function cancelBooking(prisma, bookingId, actorId) {
   assertId(bookingId, 'bookingId');
-  return prisma.$transaction(async (tx) => {
+  return bookingTransaction(prisma, async (tx) => {
     await assertActor(tx, actorId);
     const current = await tx.booking.findUnique({
       where: { id: bookingId }, include: { payment: true },
