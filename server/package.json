@@ -3,6 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "lint": "node scripts/lint.js",
+    "test:task5": "jest --runInBand --testTimeout=30000 --runTestsByPath tests/task5.test.js",
     "start": "node ./bin/www",
     "db:local": "powershell -ExecutionPolicy Bypass -File ./scripts/start-local-mongo.ps1",
     "db:push": "prisma db push",
@@ -20,8 +22,14 @@
     "dotenv": "^18.0.4",
     "express": "^4.22.3"
   },
+  "overrides": {
+    "deepmerge-ts": "8.0.2",
+    "@istanbuljs/load-nyc-config": {
+      "js-yaml": "4.3.2"
+    }
+  },
   "devDependencies": {
-    "jest": "^29.7.0",
+    "jest": "30.5.2",
     "mongodb": "^6.21.0",
     "mongodb-memory-server-core": "^11.3.0",
     "prisma": "^6.19.3",

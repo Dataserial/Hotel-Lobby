@@ -1,5 +1,13 @@
 # Hotel-Lobby
 
+## Task 5 — Dashboard / Public API / ส่งมอบ backend
+
+เพิ่ม `GET /api/dashboard` (admin/receptionist), `GET /api/dashboard/report` (admin) และ `GET /api/public/rooms/availability` (anonymous, 60 requests/IP/minute) โดยใช้ Booking availability service เดิม. Hotel timezone ใช้ Asia/Bangkok ตาม check-in/out; ราคาเป็นจำนวนเต็มบาท. `/ready` ตรวจ MongoDB แยกจาก `/health`.
+
+อ่าน [contract Task 5](docs/api-task5.md), [OpenAPI](docs/openapi-task5.yaml), [Postman demo Task 1–5](docs/hotel-lobby.postman_collection.json), [setup/test/deploy/UI handoff](docs/task5-runbook.md) และ [ผลตรวจรับปัจจุบัน](docs/task5-acceptance.md). ตั้ง `CORS_ORIGINS` สำหรับพนักงานและ `PUBLIC_CORS_ORIGINS` สำหรับ consumer โดยระบุ origin จริง; localhost กับ 127.0.0.1 ต่างกัน.
+
+ใน `server`: `npm run lint`, `npx prisma validate`, `npm run test:task5`, `npm run test:all:isolated`. หลังเปิด MongoDB/demo database แล้ว `node scripts/smoke-public.js` ทดสอบ Public API จาก HTTP client อีก process. GitHub Actions อยู่ที่ `.github/workflows/backend.yml`; ยังไม่อ้างว่า remote CI/deploy หรือ frontend integration ผ่านจนมีผลจริง.
+
 ## MongoDB และ Prisma
 
 ฝั่ง `server` ใช้ Prisma 6 เชื่อม MongoDB replica set. โค้ดยังคง `Room.number` และ collection `Room` เดิม คำสั่ง `db:push` เปลี่ยนโครงสร้าง/ดัชนีของฐานเป้าหมาย จึงต้องตรวจข้อมูล, สำรอง และทดสอบสำเนาตาม `docs/implementation-audit.md` ก่อนใช้กับฐานที่มีข้อมูล

@@ -1,5 +1,7 @@
 # Step 9 — Booking service และการกันจองซ้อน
 
+อัปเดต Task 5 (9 ต.ค. 2026): Public Availability และ Dashboard ใช้ `findAvailableRooms` เดิมโดยไม่เขียนกฎซ้ำ; claim ยังคงใช้ `[checkInDate, checkOutDate)` และไม่ปล่อยคืนที่มี checked_out claim. ดู `api-task5.md` สำหรับนิยามตัวเลข/สิทธิ์ และ `task5-acceptance.md` สำหรับผลรันล่าสุด.
+
 อัปเดต Task 4 — 9 ต.ค. 2026: Booking update/cancel ใช้ ledger consistency guard และ shared version ร่วมกับ receive/refund/check-in/out แล้ว; cancel หลังคืนครบปรับ Payment เป็น refunded ใน transaction เดียวกัน. ดู [contract Task 4](api-task4.md) และ [ผลตรวจรับ](task4-acceptance.md). บันทึก Step 9 ด้านล่างคงไว้เป็นประวัติ.
 
 อัปเดต 8 ต.ค. 2026: Task 3 เพิ่ม HTTP routes หลัง auth และซ่อม price snapshot/retry แล้ว ดู [API ปัจจุบัน](api-task3.md) และ [ผลตรวจรับ](task3-acceptance.md). ข้อความเกี่ยวกับงานที่ยังไม่มี auth/routes และผลทดสอบ 21 tests ด้านล่างเป็นสถานะในช่วงส่งมอบ Step 9 เดิม.

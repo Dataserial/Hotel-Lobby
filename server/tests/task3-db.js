@@ -9,14 +9,14 @@ const { validateStay } = require('../services/booking-validation');
 function assertTestUrl(value) {
   const url = new URL(value);
   if (url.protocol !== 'mongodb:' || url.hostname !== '127.0.0.1' || !url.port ||
-      !['/hotel_lobby_task3_test', '/hotel_lobby_task4_test'].includes(url.pathname) || !url.searchParams.get('replicaSet')) {
+      !['/hotel_lobby_task3_test', '/hotel_lobby_task4_test', '/hotel_lobby_task5_test'].includes(url.pathname) || !url.searchParams.get('replicaSet')) {
     throw new Error('Tests require a local replica set and an approved hotel_lobby_task3_test or hotel_lobby_task4_test database.');
   }
   return value;
 }
 
 async function startDatabase(database = 'hotel_lobby_task3_test') {
-  if (!['hotel_lobby_task3_test', 'hotel_lobby_task4_test'].includes(database)) throw new Error('Unsafe test database name');
+  if (!['hotel_lobby_task3_test', 'hotel_lobby_task4_test', 'hotel_lobby_task5_test'].includes(database)) throw new Error('Unsafe test database name');
   const mongo = await MongoMemoryReplSet.create({
     binary: process.env.MONGOD_PATH ? { systemBinary: process.env.MONGOD_PATH } : undefined,
     replSet: { count: 1, name: 'task3set', storageEngine: 'wiredTiger' },

@@ -1,5 +1,7 @@
 # Task 1–2 HTTP contract
 
+Current extension (9 October 2026): Task 4 stay operations and Task 5 dashboard use Asia/Bangkok. Public availability is the documented exception to `/api` Bearer authentication; see `api-task5.md`. Historical scope statements below describe the original Task 1–2 delivery.
+
 Base path `/api`; JSON request/response. Validation uses HTTP `400`, auth `401`, wrong role `403`, missing record `404`, conflicts `409`. Error shape: `{ "error": { "code": "VALIDATION_ERROR", "message": "...", "requestId": "UUID" } }`. Every response carries `X-Request-Id`. Prices are safe integer **baht**. Hotel calendar dates (for later booking routes) use `YYYY-MM-DD` in the half-open interval `[checkInDate, checkOutDate)`; event timestamps are UTC. Hotel timezone for check-in/out is pending team decision. Prisma/MongoDB and `Room.number`/collection `Room` remain in use; API exposes `roomNumber`.
 
 ## Authentication

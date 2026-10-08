@@ -71,7 +71,8 @@ const errors = (err, req, res, _next) => {
   if (err.type === 'entity.parse.failed' || err.type === 'entity.too.large') {
     status = 400; code = 'VALIDATION_ERROR'; message = 'Invalid JSON body';
   }
-  if (status >= 500) console.error(`[${req.id}]`, err);
+  // Database errors can contain query values, guest documents and credentials.
+  if (status >= 500) console.error(JSON.stringify({ requestId: req.id, code: 'INTERNAL_ERROR' }));
   res.status(status).json({ error: { code, message, requestId: req.id } });
 };
 
