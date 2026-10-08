@@ -1,0 +1,244 @@
+openapi: 3.0.3
+info:
+  title: Hotel Lobby Task 4
+  version: 1.0.0
+  description: >-
+    Record externally completed money movements; integer baht. Active admin or
+    receptionist session required. Every mutation uses state guards and a database
+    transaction. There is no gateway and no cumulative amount PATCH.
+security:
+  - bearerAuth: []
+paths:
+  /api/bookings/{id}/payment:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      summary: Read payment summary, balance and ledger readiness
+      description: Unknown query fields rejected. Ready but inconsistent ledgers return 409.
+      responses:
+        '200':
+          description: Summary
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Payment' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/bookings/{id}/payment/transactions:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      summary: Read immutable transaction history
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1, maximum: 1000000, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        '200':
+          description: Transactions ordered by createdAt then id descending
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, page, limit, total]
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/Transaction' } }
+                  page: { type: integer }
+                  limit: { type: integer }
+                  total: { type: integer }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+  /api/bookings/{id}/payment/receipts:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+      - $ref: '#/components/parameters/IdempotencyKey'
+    post:
+      summary: Record a real external receipt
+      description: >-
+        Allowed for confirmed or checked_in bookings, within remaining balance.
+        Globally unique key; identical normalized request replays the original
+        transaction even after a later booking transition. Different payload
+        returns IDEMPOTENCY_CONFLICT. Duplicate kind/method/reference with another
+        key returns DUPLICATE_REFERENCE. Unknown body/query fields rejected.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReceiptInput' }
+      responses:
+        '201': { $ref: '#/components/responses/Transaction' }
+        '200': { $ref: '#/components/responses/Transaction' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/bookings/{id}/payment/refunds:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+      - $ref: '#/components/parameters/IdempotencyKey'
+    post:
+      summary: Record a real external refund against one receipt
+      description: >-
+        Confirmed bookings only. Amount cannot exceed net or the source receipt's
+        unrefunded amount. Receipt must belong to this payment. Split refunds
+        across source receipts into separate requests. Same replay/duplicate policy
+        as receipts; reason required. Unknown body/query fields rejected.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RefundInput' }
+      responses:
+        '201': { $ref: '#/components/responses/Transaction' }
+        '200': { $ref: '#/components/responses/Transaction' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/bookings/{id}/check-in:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      summary: Check in confirmed booking and occupy room atomically
+      description: >-
+        Empty or omitted body; unknown queries rejected. Asia/Bangkok hotel date
+        must satisfy checkInDate <= today < checkOutDate. Active available room
+        and active type required, with no other checked-in booking. Full payment
+        is optional. Repeated calls return INVALID_TRANSITION. Server records time/actor.
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: false }
+      responses:
+        '200': { $ref: '#/components/responses/Booking' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/bookings/{id}/check-out:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      summary: Check out and release occupied room atomically
+      description: >-
+        Empty or omitted body; unknown queries rejected. Checked_in and occupied
+        room belonging solely to this stay required. Payment status paid and net
+        equal total required. Server records time/actor. Repeated calls return
+        INVALID_TRANSITION. Original room-night claims are retained on early checkout.
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: false }
+      responses:
+        '200': { $ref: '#/components/responses/Booking' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer }
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/ObjectId' }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, minLength: 1, maxLength: 128, pattern: '^[!-~]+$' }
+  responses:
+    Transaction:
+      description: Immutable transaction; 201 created, 200 replayed
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Transaction' }
+    Booking:
+      description: Booking with Task 3 response allowlist
+      content:
+        application/json:
+          schema: { $ref: './openapi-task3.yaml#/components/schemas/Booking' }
+    Error:
+      description: Common error envelope; see api-task4.md for state and conflict codes
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error]
+            properties:
+              error:
+                type: object
+                required: [code, message, requestId]
+                properties:
+                  code: { type: string }
+                  message: { type: string }
+                  requestId: { type: string }
+  schemas:
+    ObjectId: { type: string, pattern: '^[0-9a-fA-F]{24}$' }
+    Amount: { type: integer, minimum: 0, maximum: 2147483647, description: Integer baht }
+    ReceiptInput:
+      type: object
+      additionalProperties: false
+      required: [amount, method, reference, occurredAt]
+      properties:
+        amount: { type: integer, minimum: 1, maximum: 2147483647 }
+        method: { type: string, enum: [cash, bank_transfer, card] }
+        reference: { type: string, minLength: 1, maxLength: 128, description: Trimmed case-sensitive real voucher/external reference }
+        occurredAt: { type: string, format: date-time, description: Valid ISO UTC timestamp with Z, seconds and optional three-digit milliseconds; not future }
+    RefundInput:
+      type: object
+      additionalProperties: false
+      required: [amount, method, reference, occurredAt, receiptId, reason]
+      properties:
+        amount: { type: integer, minimum: 1, maximum: 2147483647 }
+        method: { type: string, enum: [cash, bank_transfer, card] }
+        reference: { type: string, minLength: 1, maxLength: 128 }
+        occurredAt: { type: string, format: date-time, description: ISO UTC with Z; not future }
+        receiptId: { $ref: '#/components/schemas/ObjectId' }
+        reason: { type: string, minLength: 1, maxLength: 500 }
+    Transaction:
+      type: object
+      additionalProperties: false
+      required: [id, paymentId, kind, amount, method, reference, occurredAt, createdAt, recordedById, idempotencyKey, receiptId, reason]
+      properties:
+        id: { $ref: '#/components/schemas/ObjectId' }
+        paymentId: { $ref: '#/components/schemas/ObjectId' }
+        kind: { type: string, enum: [receive, refund] }
+        amount: { type: integer, minimum: 1, maximum: 2147483647 }
+        method: { type: string, enum: [cash, bank_transfer, card] }
+        reference: { type: string }
+        occurredAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+        recordedById: { $ref: '#/components/schemas/ObjectId' }
+        idempotencyKey: { type: string }
+        receiptId: { type: string, nullable: true }
+        reason: { type: string, nullable: true }
+    Payment:
+      type: object
+      additionalProperties: false
+      required: [id, bookingId, amount, paidAmount, refundedAmount, net, remaining, status, method, paidAt, refundedAt, ledgerReady, createdAt, updatedAt, recordedById]
+      properties:
+        id: { $ref: '#/components/schemas/ObjectId' }
+        bookingId: { $ref: '#/components/schemas/ObjectId' }
+        amount: { $ref: '#/components/schemas/Amount' }
+        paidAmount: { $ref: '#/components/schemas/Amount' }
+        refundedAmount: { $ref: '#/components/schemas/Amount' }
+        net: { $ref: '#/components/schemas/Amount' }
+        remaining: { $ref: '#/components/schemas/Amount' }
+        status: { type: string, enum: [pending, paid, refunded] }
+        method: { type: string, nullable: true, enum: [cash, bank_transfer, card, null] }
+        paidAt: { type: string, format: date-time, nullable: true }
+        refundedAt: { type: string, format: date-time, nullable: true }
+        ledgerReady: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        recordedById: { $ref: '#/components/schemas/ObjectId' }

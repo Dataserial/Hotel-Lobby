@@ -15,7 +15,7 @@ function createApp(db = prisma) {
     if (origin && origins.includes(origin)) {
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Vary', 'Origin');
-      res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+      res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, Idempotency-Key');
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
     }
     if (req.method === 'OPTIONS') return res.status(204).end();
@@ -31,6 +31,7 @@ function createApp(db = prisma) {
   app.use('/api/rooms', require('./routes/api-rooms')(db));
   app.use('/api/guests', require('./routes/api-guests')(db));
   app.use('/api/bookings', require('./routes/api-bookings')(db));
+  app.use('/api/bookings', require('./routes/api-operations')(db));
   app.use((req, res) => res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Route not found', requestId: req.id } }));
   app.use(errors);
   return app;
