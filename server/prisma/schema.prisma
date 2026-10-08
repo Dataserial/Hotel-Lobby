@@ -37,6 +37,11 @@ enum PaymentMethod {
   card
 }
 
+enum PaymentTransactionKind {
+  receive
+  refund
+}
+
 model User {
   id               String    @id @default(auto()) @map("_id") @db.ObjectId
   name             String
@@ -49,6 +54,7 @@ model User {
   bookingsCreated  Booking[] @relation("BookingCreatedBy")
   bookingsUpdated  Booking[] @relation("BookingUpdatedBy")
   paymentsRecorded Payment[] @relation("PaymentRecordedBy")
+  transactionsRecorded PaymentTransaction[]
   sessions         Session[]
   createdById      String?   @db.ObjectId
   updatedById      String?   @db.ObjectId
@@ -113,6 +119,7 @@ model Guest {
 }
 
 model Booking {
+  version          Int           @default(0)
   id               String        @id @default(auto()) @map("_id") @db.ObjectId
   guestId          String        @db.ObjectId
   guest            Guest         @relation(fields: [guestId], references: [id])
@@ -143,6 +150,8 @@ model Booking {
 }
 
 model Payment {
+  ledgerReady    Boolean        @default(false)
+  transactions   PaymentTransaction[]
   id             String         @id @default(auto()) @map("_id") @db.ObjectId
   bookingId      String         @unique @db.ObjectId
   booking        Booking        @relation(fields: [bookingId], references: [id])
@@ -160,6 +169,30 @@ model Payment {
 
   @@index([status])
   @@map("payments")
+}
+
+model PaymentTransaction {
+  id             String @id @default(auto()) @map("_id") @db.ObjectId
+  paymentId      String @db.ObjectId
+  payment        Payment @relation(fields: [paymentId], references: [id])
+  kind           PaymentTransactionKind
+  amount         Int
+  method         PaymentMethod
+  reference      String
+  occurredAt     DateTime
+  createdAt      DateTime @default(now())
+  recordedById   String @db.ObjectId
+  recordedBy     User @relation(fields: [recordedById], references: [id])
+  idempotencyKey String @unique
+  receiptId      String? @db.ObjectId
+  receipt        PaymentTransaction? @relation("ReceiptRefunds", fields: [receiptId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  refunds        PaymentTransaction[] @relation("ReceiptRefunds")
+  reason         String?
+
+  @@unique([kind, method, reference])
+  @@index([paymentId, createdAt, id])
+  @@index([receiptId])
+  @@map("paymentTransactions")
 }
 
 model RoomNightClaim {

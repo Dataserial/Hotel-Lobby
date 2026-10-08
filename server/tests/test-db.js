@@ -11,6 +11,8 @@ function testPrisma() {
 
 async function resetTestDatabase(prisma) {
   await prisma.roomNightClaim.deleteMany();
+  await prisma.paymentTransaction.deleteMany({ where: { kind: 'refund' } });
+  await prisma.paymentTransaction.deleteMany();
   await prisma.payment.deleteMany();
   await prisma.booking.deleteMany();
   await prisma.room.deleteMany();
@@ -54,7 +56,14 @@ async function seedStep2Sample(prisma) {
   await prisma.booking.createMany({ data: sample.bookings.map((row) =>
     dates(row, ['actualCheckInAt', 'actualCheckOutAt', 'cancelledAt', 'createdAt', 'updatedAt'])) });
   await prisma.payment.createMany({ data: sample.payments.map((row) =>
-    dates(row, ['paidAt', 'refundedAt', 'createdAt', 'updatedAt'])) });
+    ({ ...dates(row, ['paidAt', 'refundedAt', 'createdAt', 'updatedAt']), ledgerReady: true })) });
+  for (const row of sample.payments.filter((p) => p.paidAmount > 0)) {
+    await prisma.paymentTransaction.create({ data: {
+      paymentId: row._id, kind: 'receive', amount: row.paidAmount, method: row.method,
+      reference: `SYNTHETIC-FIXTURE-${row._id}`, idempotencyKey: `fixture-${row._id}`,
+      occurredAt: new Date(row.paidAt), recordedById: row.recordedById,
+    } });
+  }
   await prisma.roomNightClaim.createMany({ data: sample.roomNightClaims.map((row) =>
     dates(row, ['createdAt'])) });
 }
