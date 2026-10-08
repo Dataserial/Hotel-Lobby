@@ -14,7 +14,14 @@ afterAll(async () => { if (db) await db.stop(); }, 30000);
 
 test('guest-only edits preserve paid snapshot; changed dates/room use current prices', async () => {
   const b = await createBooking(db.prisma, input(), actorId);
+  const hexRoom = await db.prisma.room.create({ data: {
+    id: '30000000000000000000000a', number: 'HEX', roomTypeId: sample.roomTypes[0]._id,
+    active: true, status: 'available',
+  } });
+  const hexBooking = await createBooking(db.prisma, input({ roomId: hexRoom.id }), actorId);
   await db.prisma.roomType.update({ where: { nameKey: 'standard' }, data: { basePrice: 1700 } });
+  expect(await updateBooking(db.prisma, hexBooking.id, { roomId: hexRoom.id.toUpperCase() }, actorId))
+    .toMatchObject({ roomId: hexRoom.id, pricePerNight: 1200, totalPrice: 2400 });
   await db.prisma.payment.update({ where: { bookingId: b.id }, data: { paidAmount: 100 } });
   expect(await updateBooking(db.prisma, b.id, { guestCount: 1, guestId: sample.guests[1]._id }, actorId))
     .toMatchObject({ pricePerNight: 1200, totalPrice: 2400 });

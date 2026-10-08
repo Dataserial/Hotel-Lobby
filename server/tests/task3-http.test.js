@@ -115,6 +115,15 @@ test('list/detail errors, unknown fields and invalid query values keep the HTTP 
   }
   await request(app).get('/api/bookings/bad').set(auth(tokens.admin)).expect(400);
   expect((await request(app).get('/api/bookings/500000000000000000000099').set(auth(tokens.admin)).expect(404)).body.error.code).toBe('BOOKING_NOT_FOUND');
+  for (const method of ['patch', 'post']) {
+    const suffix = method === 'post' ? '/cancel' : '';
+    const payload = method === 'post' ? {} : { guestCount: 1 };
+    expect((await request(app)[method](`/api/bookings/500000000000000000000099${suffix}`)
+      .set(auth(tokens.admin)).send(payload).expect(404)).body.error.code).toBe('BOOKING_NOT_FOUND');
+    await request(app)[method](`/api/bookings/bad${suffix}`).set(auth(tokens.admin)).send(payload).expect(400);
+    expect((await request(app)[method](`/api/bookings/${sample.bookings[0]._id}${suffix}`)
+      .set(auth(tokens.admin)).send(payload).expect(409)).body.error.code).toBe('INVALID_TRANSITION');
+  }
   await request(app).get(`/api/bookings/${sample.bookings[1]._id}`).set(auth(tokens.admin)).query({ actorId }).expect(400);
   await request(app).patch(`/api/bookings/${sample.bookings[1]._id}`).set(auth(tokens.admin)).send({}).expect(400);
   await request(app).patch(`/api/bookings/${sample.bookings[1]._id}`).set(auth(tokens.admin)).send({ roomId: null }).expect(400);

@@ -141,6 +141,8 @@ async function updateBooking(prisma, bookingId, changes, actorId) {
     validateGuestCount(next.guestCount);
     await assertGuest(tx, next.guestId);
     const room = await bookableRoom(tx, next.roomId, next.guestCount);
+    // ObjectId hex casing does not change the selected room.
+    next.roomId = room.id;
     const claimsChanged = next.roomId !== current.roomId ||
       next.checkInDate !== current.checkInDate || next.checkOutDate !== current.checkOutDate;
     const price = claimsChanged
