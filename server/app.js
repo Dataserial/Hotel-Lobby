@@ -27,8 +27,10 @@ function createApp(db = prisma) {
   app.use('/api', requireAuth(db));
   app.use('/api/users', require('./routes/api-users')(db));
   app.use('/api/room-types', require('./routes/api-room-types')(db));
+  app.use('/api/rooms/availability', require('./routes/api-availability')(db));
   app.use('/api/rooms', require('./routes/api-rooms')(db));
   app.use('/api/guests', require('./routes/api-guests')(db));
+  app.use('/api/bookings', require('./routes/api-bookings')(db));
   app.use((req, res) => res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Route not found', requestId: req.id } }));
   app.use(errors);
   return app;
