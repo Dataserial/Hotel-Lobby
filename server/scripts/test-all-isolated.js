@@ -33,7 +33,8 @@ async function main() {
   }
   run(jest, ['--runInBand', '--silent', '--runTestsByPath', 'tests/task12-http.test.js'], process.env);
   run(jest, ['--runInBand', '--silent', '--testTimeout=30000', '--runTestsByPath',
-    'tests/task3-invariants.test.js', 'tests/task3-service.test.js', 'tests/task3-http.test.js'], process.env);
+    'tests/task3-invariants.test.js', 'tests/task3-service.test.js', 'tests/task3-http.test.js',
+    'tests/task3-race.test.js'], process.env);
 }
 
 main().catch((error) => { console.error(error.message); process.exitCode = 1; });
