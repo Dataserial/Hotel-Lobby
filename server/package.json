@@ -8,6 +8,7 @@
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
     "db:seed:demo": "node ./scripts/seed-demo.js",
+    "db:claims": "node ./scripts/booking-claims.js",
     "test": "jest --runInBand",
     "test:all:isolated": "node ./scripts/test-all-isolated.js"
   },
