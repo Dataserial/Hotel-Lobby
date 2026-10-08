@@ -29,6 +29,23 @@ server.listen(port);
 server.on('error', onError);
 server.on('listening', onListening);
 
+let shuttingDown = false;
+async function shutdown() {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  app.locals.draining = true;
+  const deadline = setTimeout(() => process.exit(1), 10000);
+  deadline.unref();
+  server.close(async () => {
+    try { await require('../lib/prisma').$disconnect(); process.exitCode = 0; }
+    catch { process.exitCode = 1; }
+    finally { clearTimeout(deadline); }
+  });
+  server.closeIdleConnections?.();
+}
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
+
 /**
  * Normalize a port into a number, string, or false.
  */
@@ -87,4 +104,5 @@ function onListening() {
     ? 'pipe ' + addr
     : 'port ' + addr.port;
   debug('Listening on ' + bind);
+  console.log('Backend listening on ' + bind + '; readiness: http://localhost:' + port + '/ready');
 }

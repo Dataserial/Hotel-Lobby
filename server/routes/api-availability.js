@@ -3,9 +3,9 @@ const { role } = require('../lib/auth');
 const { asyncRoute, page, fail } = require('../lib/http');
 const { findAvailableRooms } = require('../services/availability-service');
 
-module.exports = (prisma) => {
+module.exports = (prisma, { publicAccess = false } = {}) => {
   const router = express.Router();
-  router.use(role('admin', 'receptionist'));
+  if (!publicAccess) router.use(role('admin', 'receptionist'));
   router.get('/', asyncRoute(async (req, res) => {
     const pagination = page(req.query, ['checkInDate', 'checkOutDate', 'guestCount']);
     const count = req.query.guestCount;

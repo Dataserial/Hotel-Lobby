@@ -1,0 +1,71 @@
+{
+  "checkedDate": "2026-10-09",
+  "timezone": "Asia/Bangkok",
+  "remediation": "Jest 30.5.2, deepmerge-ts 8.0.2 override, Istanbul js-yaml 4.3.2 override; Prisma remains 6.19.3; client source-map-js 1.2.2",
+  "server": {
+    "auditReportVersion": 2,
+    "vulnerabilities": {},
+    "metadata": {
+      "vulnerabilities": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 0,
+        "total": 0
+      },
+      "dependencies": {
+        "prod": 107,
+        "dev": 387,
+        "optional": 40,
+        "peer": 0,
+        "peerOptional": 0,
+        "total": 493
+      }
+    }
+  },
+  "serverOmitDev": {
+    "auditReportVersion": 2,
+    "vulnerabilities": {},
+    "metadata": {
+      "vulnerabilities": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 0,
+        "total": 0
+      },
+      "dependencies": {
+        "prod": 107,
+        "dev": 387,
+        "optional": 40,
+        "peer": 0,
+        "peerOptional": 0,
+        "total": 493
+      }
+    }
+  },
+  "client": {
+    "auditReportVersion": 2,
+    "vulnerabilities": {},
+    "metadata": {
+      "vulnerabilities": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 0,
+        "total": 0
+      },
+      "dependencies": {
+        "prod": 4,
+        "dev": 182,
+        "optional": 27,
+        "peer": 0,
+        "peerOptional": 0,
+        "total": 185
+      }
+    }
+  }
+}

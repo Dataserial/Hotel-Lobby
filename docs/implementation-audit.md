@@ -1,5 +1,7 @@
 # Implementation audit — 8 October 2026
 
+Current Task 5 evidence is appended below (9 October 2026). Baseline and earlier task sections are historical records, not current claims that routes/auth are missing.
+
 Scope: Task 1–2 only. The register below was made before feature edits by reading the tracked project files, checking the schema and services against the plan and PDF, and running the listed baseline commands. `ผ่าน` means the stated narrow check passed; it does not mean the complete MVP passed. `ยังรันไม่ได้` means runtime evidence is unavailable.
 
 ## Baseline and gaps
@@ -210,3 +212,53 @@ Each row records path, purpose, current state, evidence, requirement gap/risk, n
 | docs/implementation-audit.md | Per-file update and current acceptance evidence | อัปเดตนี้ |
 
 ผลสุดท้าย: Prisma validate/generate ผ่าน, OpenAPI Swagger validation ผ่าน, runner ผ่าน 166/166 cases (เดิม 83 + Task 4 83), git diff --check ผ่าน. ระหว่างรันพบ synchronous schema setup ทำให้ mongod pipe ค้างบน Windows; ซ่อม helpers เป็น async และ rerun ผ่านโดยไม่ลบ/skip assertions. ไม่มี schema push/reconcile ไป hotel_lobby หรือฐานจริง. Production backup/restore, deployment, frontend และ reviewer/merge ยังอยู่นอกผลตรวจรับ backend นี้.
+
+## Task 5 update — 9 October 2026
+
+Scope: additive backend Task 5 only, no schema/data-model migration or UI rewrite. Read current app/auth/error/availability/booking/operation services and schema/test harness before edits. Current requirement evidence and explicit pending work are in `task5-acceptance.md`; the original baseline above is retained as history.
+
+| File | Purpose/change | Current evidence and remaining risk |
+|---|---|---|
+| server/app.js | Public route before staff auth, dashboard, bounded parser, readiness/security/login limiter | HTTP/security/role tests passed |
+| server/lib/security.js | Bounded per-process rate limiter and headers/URL guard | 429, expiry, header checks; shared proxy limiter pending deployment |
+| server/lib/http.js | Log only request ID and generic server error code | Inspected; avoids database/query error payload exposure |
+| server/bin/www | SIGINT/SIGTERM drain/disconnect/deadline | Inspected; real deployment signal handling pending |
+| server/services/dashboard-service.js | Shared availability, Bangkok day, ledger aggregate report | Fixture/boundary/role/full-flow tests |
+| server/routes/api-dashboard.js | Staff counts/admin-only report, reject query | 401/403/400/200 tests |
+| server/routes/api-availability.js | Reuse existing handler for anonymous public read | Public/staff parity and five-field allowlist |
+| server/scripts/lint.js | Portable backend syntax validation | All backend JS checked; not a style linter |
+| server/scripts/smoke-public.js | Independent process real HTTP public consumer | ready, 200, one demo room; exact fields verified |
+| server/scripts/test-all-isolated.js | Include Task 5 after regression groups | Runner exit 0, original 166 cases retained |
+| server/tests/task3-db.js | Add explicitly guarded Task 5 temporary DB name | Production URL rejected; fresh replica sets |
+| server/tests/task5.test.js | Counts/roles/public/security/full flow/Postman artifacts | Final seven cases pass |
+| server/package.json | lint and test:task5 commands | Commands executed; dependency versions unchanged |
+| server/.env.example | Public browser origin allowlist and port | No secrets; local .env remains ignored |
+| .github/workflows/backend.yml | Install/generate/validate/lint/all tests on CI | Configuration supplied; remote CI pending |
+| docs/api-task5.md | New API/security/role/count definitions and limits | Compared with handlers and HTTP assertions |
+| docs/openapi-task5.yaml | Additive Task 5 OpenAPI, JSON-compatible YAML | Swagger CLI validation passed |
+| docs/hotel-lobby.postman_collection.json | Runnable 17-request Task 1–5 demo with saved variables | Executed against real HTTP by test harness |
+| docs/task5-runbook.md | Fresh setup, tests, deploy/rollback, UI/demo handoff | Guide supplied; actual deploy/recovery rehearsal pending |
+| docs/dependency-audit-task5.json | Current server/client audit snapshots including omit-dev exposure | Three high omit-dev advisories remain; release follow-up documented |
+| docs/task5-acceptance.md | Current requirement/evidence/limitations matrix | Separates verified backend from CI/deploy/UI/reviewer |
+| docs/api-task12.md | Clarify Bangkok/public auth exception versus historical text | Updated to current routing policy |
+| docs/step2-data-model.md | Mark historical design; current schema/Room map authoritative | No schema changes in Task 5 |
+| docs/step9-booking-service.md | Record shared availability reuse and retained claims | Regression and public parity tests |
+| README.md | Task 5 commands/contracts/tests/runbook | References verified against delivered files |
+| docs/implementation-audit.md | Per-file audit and evidence update | This register; Task 5 owner is requesting user, reviewer pending |
+
+Security inventory: tracked node_modules count is zero; only .env.example is tracked among env files. npm audit currently reports server 36 advisories overall and three high advisories with --omit=dev (Prisma/config/deepmerge-ts); client has one high source-map-js advisory. Server suggested remediation changes Jest major and Prisma version; do not treat a forced incompatible downgrade as completed hardening. Preserve this as a separately assessed dependency follow-up. No production migration/deployment/reviewer approval claimed. Current backend tests cover 173 distinct cases (166 regression + seven Task 5); no UI completion implied.
+
+### Task 5 remediation (supersedes dependency follow-up above)
+
+| File | Final change | Evidence |
+|---|---|---|
+| server/package.json and server/package-lock.json | Jest 30.5.2; deepmerge-ts 8.0.2 and Istanbul js-yaml 4.3.2 overrides; Prisma stays 6.19.3 | npm ci in clean source snapshot; Prisma generation/validation; all 173 regression/integration cases passed |
+| client/package-lock.json | source-map-js 1.2.2 | npm audit zero; lint/build passed |
+| docs/dependency-audit-task5.json | Replaced old snapshot with current zero-advisory server/server-omit-dev/client reports | npm audit and omit-dev zero |
+| .github/workflows/backend.yml | Audit gates and client lint/build added to backend CI | Local equivalent checks pass; authenticated remote run pending |
+| server/bin/www | Explicit listening/readiness message | Source syntax check passed; live readiness returned ready |
+| .gitignore | Ignore three machine-specific setup launchers | Local files retained; not included in PR |
+| docs/task5-runbook.md | Background local-run and dependency remediation guide | Existing-ready launcher detection passed |
+| docs/task5-acceptance.md | Updated current evidence, fresh setup and pending GitHub authentication | No remote CI/reviewer success fabricated |
+
+Existing backend on port 3000 responded ready from PowerShell. Background launcher detected it without stopping it. No production deployment is required for the selected local-run handoff. A real team reviewer must still review the eventual PR.

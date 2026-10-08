@@ -1,5 +1,7 @@
 # Step 2 — ออกแบบ Collections และข้อมูลตัวอย่าง
 
+อัปเดต Task 5 (9 ต.ค. 2026): เอกสารด้านล่างมีส่วนของแบบออกแบบเดิม; schema ปัจจุบัน `server/prisma/schema.prisma` เป็นหลักฐาน runtime โดย Room ใช้ collection `Room` และ field `number`, Payment มี ledger ตาม Task 4. Task 5 ไม่เปลี่ยน schema เพิ่ม Dashboard/รายงาน aggregate และ Public Availability แบบไม่เผย PII ดู `api-task5.md` และ `task5-acceptance.md`.
+
 สถานะ: แบบออกแบบเพื่อ review ก่อนลงมือสร้าง Prisma models และ seed ใน Step 4  
 แหล่งอ้างอิง: PDF “แผนพัฒนา Web App ระบบจัดการห้องโรงแรม — ทีม 5 คน” หน้า 1–4, 6–9 และโค้ดปัจจุบันใน `server/prisma/schema.prisma`  
 ข้อมูลประกอบ: [`step2-sample-data.json`](./step2-sample-data.json)

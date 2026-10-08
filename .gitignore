@@ -7,3 +7,7 @@ client/dist/
 **/coverage/
 **/.cache/
 server/.local-mongo/
+# Local setup launchers contain machine-specific portable runtime paths.
+/finish-setup.ps1
+/start-local.ps1
+/start-client.ps1
