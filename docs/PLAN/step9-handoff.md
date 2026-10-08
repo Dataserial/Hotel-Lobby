@@ -1,5 +1,7 @@
 # ส่งต่องานหลัง Step 9: Booking service
 
+สถานะปัจจุบัน 8 ต.ค. 2026: Task 1–2 มี auth แล้ว และ Task 3 ผูก Booking/availability routes หลัง auth พร้อม tests เพิ่ม ดู [API Task 3](../api-task3.md) และ [ผลตรวจรับ](../task3-acceptance.md). เนื้อหาถัดไปเก็บเป็นบันทึก handoff เดิมวันที่ 7 ต.ค.; ข้อความว่ายังไม่มี auth/HTTP routes ไม่ใช่สถานะล่าสุด.
+
 อัปเดต 7 ตุลาคม 2026 — งาน Step 9 อยู่บน branch `develop` ใน 7 commits ล่าสุด รายละเอียดกฎ service และ error codes อยู่ที่ [`../step9-booking-service.md`](../step9-booking-service.md) ส่วนแบบข้อมูลและตัวอย่างอยู่ที่ [`../step2-data-model.md`](../step2-data-model.md) และ [`../step2-sample-data.json`](../step2-sample-data.json)
 
 ## สิ่งที่ทำแล้ว

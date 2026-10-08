@@ -1,0 +1,275 @@
+openapi: 3.0.3
+info:
+  title: Hotel Lobby Task 3 Staff Booking API
+  version: 1.0.0
+  description: |
+    Extends Task 1–2. All operations require an active admin/receptionist Bearer session.
+    Hotel stays use real calendar dates and [checkInDate,checkOutDate), 1–365 nights.
+    Prices are integer baht. actorId, status, price and audit writes are forbidden.
+    Unknown query/body fields are rejected. See api-task3.md for maintenance and concurrency policies.
+servers:
+  - url: /api
+security:
+  - bearerAuth: []
+paths:
+  /rooms/availability:
+    get:
+      operationId: findStaffAvailability
+      summary: Find available rooms using the existing availability service
+      description: Excludes occupied/maintenance rooms even for future stays. Filters before pagination; no guest/user/payment data.
+      parameters:
+        - name: checkInDate
+          in: query
+          required: true
+          schema: { $ref: '#/components/schemas/HotelDate' }
+        - name: checkOutDate
+          in: query
+          required: true
+          schema: { $ref: '#/components/schemas/HotelDate' }
+        - name: guestCount
+          in: query
+          required: true
+          schema: { type: integer, minimum: 1, maximum: 20 }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Available rooms ordered by room number
+          headers:
+            X-Request-Id: { $ref: '#/components/headers/RequestId' }
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Pagination'
+                  - type: object
+                    required: [items]
+                    properties:
+                      items:
+                        type: array
+                        maxItems: 100
+                        items: { $ref: '#/components/schemas/AvailableRoom' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '500': { $ref: '#/components/responses/Error' }
+  /bookings:
+    get:
+      operationId: listStaffBookings
+      summary: List bookings ordered by createdAt desc, id desc
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/BookingStatus' }
+        - name: guestId
+          in: query
+          schema: { $ref: '#/components/schemas/ObjectId' }
+        - name: roomId
+          in: query
+          schema: { $ref: '#/components/schemas/ObjectId' }
+        - name: checkInFrom
+          in: query
+          description: Inclusive lower bound of check-in date
+          schema: { $ref: '#/components/schemas/HotelDate' }
+        - name: checkInTo
+          in: query
+          description: Inclusive upper bound of check-in date; must be at least checkInFrom
+          schema: { $ref: '#/components/schemas/HotelDate' }
+      responses:
+        '200':
+          description: Paginated bookings without nested sensitive relations
+          headers:
+            X-Request-Id: { $ref: '#/components/headers/RequestId' }
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Pagination'
+                  - type: object
+                    required: [items]
+                    properties:
+                      items:
+                        type: array
+                        maxItems: 100
+                        items: { $ref: '#/components/schemas/Booking' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '500': { $ref: '#/components/responses/Error' }
+    post:
+      operationId: createStaffBooking
+      summary: Create Booking, Payment summary and room-night claims atomically
+      description: Does not accept query fields. Prices and actor come from the server. A claim conflict rolls back the complete transaction.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/BookingInput'
+                - required: [guestId, roomId, guestCount, checkInDate, checkOutDate]
+      responses:
+        '201': { $ref: '#/components/responses/Booking' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '500': { $ref: '#/components/responses/Error' }
+  /bookings/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      operationId: getStaffBooking
+      summary: Read one booking without nested relations; no query fields
+      responses:
+        '200': { $ref: '#/components/responses/Booking' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '500': { $ref: '#/components/responses/Error' }
+    patch:
+      operationId: updateStaffBooking
+      summary: Update a confirmed booking atomically; no query fields
+      description: |
+        Guest/count edits preserve the price snapshot. Changed room/dates use current basePrice.
+        Net received payment blocks a changed total. Claims and payment amount update atomically.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BookingInput' }
+      responses:
+        '200': { $ref: '#/components/responses/Booking' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '500': { $ref: '#/components/responses/Error' }
+  /bookings/{id}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      operationId: cancelStaffBooking
+      summary: Cancel a confirmed booking and release its claims atomically
+      description: No query fields. Net received payment must be zero. Repeated cancellation returns INVALID_TRANSITION.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: false, maxProperties: 0 }
+      responses:
+        '200': { $ref: '#/components/responses/Booking' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '500': { $ref: '#/components/responses/Error' }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, description: Random session token returned by /api/auth/login }
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/ObjectId' }
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 1000000, default: 1 }
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+  headers:
+    RequestId:
+      description: Server-generated request identifier
+      schema: { type: string, format: uuid }
+  responses:
+    Booking:
+      description: Booking with server-owned price snapshot and audit fields
+      headers:
+        X-Request-Id: { $ref: '#/components/headers/RequestId' }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Booking' }
+    Error:
+      description: |
+        Structured error. 400 validation/date/guest/capacity/reference/price; 401 UNAUTHENTICATED;
+        403 FORBIDDEN/INVALID_ACTOR; 404 BOOKING_NOT_FOUND/GUEST_NOT_FOUND/ROOM_NOT_FOUND;
+        409 ROOM_UNAVAILABLE/INVALID_TRANSITION/PAYMENT_ADJUSTMENT_REQUIRED/PAYMENT_REFUND_REQUIRED/WRITE_CONFLICT.
+        P2034 retries the entire transaction up to 3 attempts, then returns WRITE_CONFLICT.
+        Claim P2002 does not retry. Other unique errors use the existing DUPLICATE mapping.
+      headers:
+        X-Request-Id: { $ref: '#/components/headers/RequestId' }
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error]
+            properties:
+              error:
+                type: object
+                required: [code, message, requestId]
+                properties:
+                  code: { type: string }
+                  message: { type: string }
+                  requestId: { type: string, format: uuid }
+  schemas:
+    ObjectId: { type: string, pattern: '^[0-9a-fA-F]{24}$' }
+    HotelDate: { type: string, format: date, pattern: '^\d{4}-\d{2}-\d{2}$' }
+    BookingStatus: { type: string, enum: [confirmed, checked_in, checked_out, cancelled] }
+    BookingInput:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        guestId: { $ref: '#/components/schemas/ObjectId' }
+        roomId: { $ref: '#/components/schemas/ObjectId' }
+        guestCount: { type: integer, minimum: 1, maximum: 20 }
+        checkInDate: { $ref: '#/components/schemas/HotelDate' }
+        checkOutDate: { $ref: '#/components/schemas/HotelDate' }
+    Booking:
+      type: object
+      additionalProperties: false
+      required: [id, guestId, roomId, guestCount, checkInDate, checkOutDate, status, pricePerNight, totalPrice, actualCheckInAt, actualCheckOutAt, cancelledAt, createdAt, updatedAt, createdById, updatedById]
+      properties:
+        id: { $ref: '#/components/schemas/ObjectId' }
+        guestId: { $ref: '#/components/schemas/ObjectId' }
+        roomId: { $ref: '#/components/schemas/ObjectId' }
+        guestCount: { type: integer, minimum: 1, maximum: 20 }
+        checkInDate: { $ref: '#/components/schemas/HotelDate' }
+        checkOutDate: { $ref: '#/components/schemas/HotelDate' }
+        status: { $ref: '#/components/schemas/BookingStatus' }
+        pricePerNight: { type: integer, minimum: 0, description: Snapshot in baht }
+        totalPrice: { type: integer, minimum: 0, description: Snapshot in baht }
+        actualCheckInAt: { type: string, format: date-time, nullable: true }
+        actualCheckOutAt: { type: string, format: date-time, nullable: true }
+        cancelledAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        createdById: { $ref: '#/components/schemas/ObjectId' }
+        updatedById: { $ref: '#/components/schemas/ObjectId' }
+    AvailableRoom:
+      type: object
+      additionalProperties: false
+      required: [roomId, roomNumber, roomType, capacity, pricePerNight]
+      properties:
+        roomId: { $ref: '#/components/schemas/ObjectId' }
+        roomNumber: { type: string }
+        roomType: { type: string }
+        capacity: { type: integer, minimum: 1, maximum: 20 }
+        pricePerNight: { type: integer, minimum: 0, description: Current price in baht }
+    Pagination:
+      type: object
+      required: [page, limit, total]
+      properties:
+        page: { type: integer, minimum: 1 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        total: { type: integer, minimum: 0 }

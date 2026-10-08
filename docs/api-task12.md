@@ -41,4 +41,4 @@ Example: a receptionist calls `POST /api/guests` with `{"fullName":"Jane Doe","p
 
 `GET /health` returns `{ "status": "ok" }` without DB readiness. `POST /api/auth/logout` returns 204. Create routes return 201. Delete without history returns 204. Sensitive `passwordHash`, `documentNoKey`, and token hash are never in API responses; guest lists mask document numbers for both roles, receptionist detail stays masked, while admin detail/create/update receives full `documentNo`. Do not print request bodies or Authorization headers in logs.
 
-Task 3–5 routes, Postman collection, production migration, and frontend integration are outside this contract.
+Task 3 routes now have a separate [Booking API contract](api-task3.md) and [OpenAPI](openapi-task3.yaml). Task 4–5 routes, Postman collection, production migration, and frontend integration are outside this Task 1–2 contract.

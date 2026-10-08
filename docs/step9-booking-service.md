@@ -1,8 +1,10 @@
 # Step 9 — Booking service และการกันจองซ้อน
 
+อัปเดต 8 ต.ค. 2026: Task 3 เพิ่ม HTTP routes หลัง auth และซ่อม price snapshot/retry แล้ว ดู [API ปัจจุบัน](api-task3.md) และ [ผลตรวจรับ](task3-acceptance.md). ข้อความเกี่ยวกับงานที่ยังไม่มี auth/routes และผลทดสอบ 21 tests ด้านล่างเป็นสถานะในช่วงส่งมอบ Step 9 เดิม.
+
 ## ขอบเขตและการเรียกใช้
 
-โมดูล CommonJS ใน `server/services` ยังไม่มี HTTP route หรือ Booking UI:
+โมดูล CommonJS ใน `server/services` ตอนส่งมอบ Step 9 ยังไม่มี HTTP route หรือ Booking UI ตัวอย่าง service interface ยังคงใช้ได้:
 
 ```js
 const { findAvailableRooms } = require('./services/availability-service');

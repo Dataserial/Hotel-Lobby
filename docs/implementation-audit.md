@@ -127,3 +127,39 @@ Each row records path, purpose, current state, evidence, requirement gap/risk, n
 - ไม่ผ่าน: Repo has 36 npm audit findings including development dependencies. Runtime dependency audit has 3 high findings in the Prisma CLI dependency tree; upgrading Prisma needs a separate compatibility change. UI has no hotel workflow.
 - ยังรันไม่ได้: No production DB URL, counts, samples, backup or index inventory was provided, so existing hotel_lobby data and a production db push cannot be accepted. Reviewer assignment and live deployment remain pending.
 - Git hygiene: commit e0b4217 removed 6,799 tracked dependency files and two .DS_Store files from the index; local files were preserved. .gitignore now excludes generated dependencies, env files, build/cache output and metadata.
+
+## Task 3 update — 8 October 2026
+
+ส่วนด้านบนเป็น baseline/ผลตรวจรับ Task 1–2 ณ เวลานั้น. Task 3 ต่อจาก service เดิม เพิ่ม staff Booking API และ availability ภายในหลัง auth ของทั้ง admin/receptionist; actor มาจาก session เท่านั้น. [Contract](api-task3.md), [OpenAPI](openapi-task3.yaml), [หลักฐานการรันและ commits](task3-acceptance.md) เป็นข้อมูลปัจจุบันของ Task 3.
+
+อ่าน service ทั้งสามและ tests เดิมก่อนแก้. รักษา date/availability rules และ schema เดิม; ซ่อม snapshot เมื่อแก้ guest/count, repricing เมื่อเปลี่ยนห้อง/วัน, ObjectId casing และ retry ของ P2034. ไม่แก้ไฟล์ `booking-validation.js` หรือ `availability-service.js` และไม่เพิ่มกฎซ้ำใน HTTP routes.
+
+| Path | จุดประสงค์/หลักฐาน | สถานะ/ข้อจำกัด |
+|---|---|---|
+| server/services/booking-service.js | Snapshot/repricing, retry ทั้ง transaction 3 attempts, scoped claim conflict mapping; service/HTTP/race tests | ผ่าน; price integer baht และ payment guards เดิม |
+| server/services/booking-claims-maintenance.js | Read-only audit และเติม missing claims ต่อ booking แบบ idempotent | ผ่านบนฐานแยก; ข้อมูลชน/refs หาย/extra claims ต้องแก้ก่อน apply |
+| server/routes/api-availability.js | Service เดิมและ pagination หลังกรอง; tests PII/roles/query | ผ่าน; candidates ยังอ่านทั้งชุด |
+| server/routes/api-bookings.js | List/detail/create/update/cancel, allowlist, req.actor.id | ผ่าน; ไม่มี UI/operations/payment endpoints |
+| server/app.js | Mount routes หลัง requireAuth; availability ก่อน rooms/:id | ผ่าน HTTP tests |
+| server/scripts/booking-claims.js | CLI ต้องระบุชื่อฐานตรง URL; default audit; apply ต้องยืนยัน maintenance prerequisites | ผ่าน CLI tests; flags ไม่หยุด traffic/สร้าง backup ให้ |
+| server/scripts/test-all-isolated.js | Async child runner และ temporary replica sets; tests เดิมและ Task 3 ครบ | ผ่าน; รักษาการแยก legacy/race คนละ instance |
+| server/tests/booking-service.test.js | Legacy driver connect ใน try/finally พร้อม timeout ชัดเจน | ผ่าน; ไม่ตัด assertions/test เดิม |
+| server/tests/task3-db.js | Guard local replica set/ชื่อฐาน, fixtures และ claims/payment consistency checker | ผ่าน; ฐาน hotel_lobby_task3_test เท่านั้น |
+| server/tests/task3-hooks.js | Test-only barrier/failure instrumentation ที่ยังเขียน MongoDB จริง | ผ่าน race/rollback tests; ไม่ถูก import ใน production |
+| server/tests/task3-invariants.test.js | 3 cases: DB guard, three holding statuses, live indexes/unique enforcement | ผ่าน |
+| server/tests/task3-service.test.js | 8 cases: snapshot, repricing, guards และ retry/rollback | ผ่าน |
+| server/tests/task3-http.test.js | 22 cases: both roles, spoofed actor, validation, overlap/errors/pagination | ผ่าน |
+| server/tests/task3-race.test.js | 16 cases: four race pairs ×3, same-booking edits, late rollback ×3 | ผ่าน |
+| server/tests/task3-claims.test.js | 8 cases: audit/backfill/CLI/rollback/index/reference guards | ผ่าน |
+| server/package.json | เพิ่ม db:claims script | ผ่าน CLI tests; dependencies/lockfile เดิม |
+| docs/api-task3.md | Contract และ maintenance/runbook | ตรวจเทียบ routes/service/tests แล้ว |
+| docs/openapi-task3.yaml | 4 paths / 6 operations | OpenAPI validator ผ่าน |
+| docs/task3-acceptance.md | คำสั่งจริง, versions, tests, commits, ข้อจำกัด | ผล backend acceptance; ไม่ใช่ production deployment |
+| README.md | Setup/test/Booking links และ claims maintenance | อัปเดตตาม Task 3 |
+| docs/api-task12.md | ส่งต่อ contract ไป Task 3 | Task 1–2 contract เดิม |
+| docs/step9-booking-service.md | ชี้สถานะใหม่และกำกับบันทึกเดิมเป็นประวัติ | API ปัจจุบันอ้าง Task 3 |
+| docs/PLAN/step9-handoff.md | ชี้สถานะใหม่และกำกับ handoff 7 ต.ค. เป็นประวัติ | เก็บหลักฐานเก่าไว้ |
+
+ระหว่างตรวจ Task 3 พบ legacy test timeout ที่ MongoClient handshake แม้ใช้ replica set ใหม่; runner ใช้ spawnSync ทำให้ parent ไม่รับ output ของ mongod ระหว่าง Jest. ซ่อมเป็น async spawn แล้ว tests เดิมและใหม่ผ่านครบ โดยไม่ skip กรณีดังกล่าว. โค้ดสุดท้ายผ่าน 83/83 cases สองรอบจากฐานสะอาดใหม่ รวม race/rollback/index/claims; Prisma schema และ OpenAPI validate ผ่าน. ไม่ได้ใช้เพียงผลทดสอบเก่าเป็นหลักฐาน.
+
+ฐานจริงยังไม่ได้ตรวจ/backup/push/backfill. ก่อนเปิด Booking API กับฐานเก่า ต้องหยุด writes, ตรวจ target, สำรอง/ทดลองสำเนา และผ่าน claims/index audit. ผลชุดทดสอบใช้ temporary single-node replica sets ไม่ครอบคลุม production failover. UI/Public API/Task 4–5 และ reviewer/merge/deployment ยังแยกจาก backend Task 3.
