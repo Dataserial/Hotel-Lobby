@@ -163,3 +163,50 @@ Each row records path, purpose, current state, evidence, requirement gap/risk, n
 ระหว่างตรวจ Task 3 พบ legacy test timeout ที่ MongoClient handshake แม้ใช้ replica set ใหม่; runner ใช้ spawnSync ทำให้ parent ไม่รับ output ของ mongod ระหว่าง Jest. ซ่อมเป็น async spawn แล้ว tests เดิมและใหม่ผ่านครบ โดยไม่ skip กรณีดังกล่าว. โค้ดสุดท้ายผ่าน 83/83 cases สองรอบจากฐานสะอาดใหม่ รวม race/rollback/index/claims; Prisma schema และ OpenAPI validate ผ่าน. ไม่ได้ใช้เพียงผลทดสอบเก่าเป็นหลักฐาน.
 
 ฐานจริงยังไม่ได้ตรวจ/backup/push/backfill. ก่อนเปิด Booking API กับฐานเก่า ต้องหยุด writes, ตรวจ target, สำรอง/ทดลองสำเนา และผ่าน claims/index audit. ผลชุดทดสอบใช้ temporary single-node replica sets ไม่ครอบคลุม production failover. UI/Public API/Task 4–5 และ reviewer/merge/deployment ยังแยกจาก backend Task 3.
+
+## Task 4 update — 9 October 2026 (Asia/Bangkok)
+
+ส่วนก่อนหน้าเป็นประวัติ Task 1–3. Task 4 เพิ่ม payment ledger และ operations ตามข้อตกลง summary+ledger, integer baht, refund เฉพาะ confirmed, Bangkok calendar และ checkout สุทธิครบ. ผลล่าสุด: [acceptance](task4-acceptance.md), [contract](api-task4.md), [OpenAPI](openapi-task4.yaml), [reconciliation](payment-reconciliation.md).
+
+| Path | จุดประสงค์/หลักฐานปัจจุบัน | สถานะ |
+|---|---|---|
+| server/prisma/schema.prisma | PaymentTransaction/unique evidence+key, ledgerReady, Booking version; validate/generate/live test indexes | ผ่านบนฐานทดสอบ |
+| server/services/operation-transaction.js | Active staff guard, 3-attempt whole-transaction retry, shared version write | ผ่าน fresh-read/retry/race tests |
+| server/services/payment-ledger.js | Normalize evidence, derive summary, verify source totals and summary consistency | ผ่าน unit/integration |
+| server/services/payment-reconciliation.js | Read-only audit and atomic verified-evidence import; no inferred opening balances | ผ่าน legacy/rollback/rerun |
+| server/services/payment-service.js | Receipt/refund, global replay, evidence collision, source/state/cumulative guards | ผ่าน service/HTTP/atomic |
+| server/services/booking-service.js | Ready summary creation, ledger-aware edit/cancel, version write and refunded status | ผ่าน Task 3 regression + Task 4 |
+| server/services/booking-validation.js | Enforce Prisma Int price range before writes | ผ่าน regression/maximum-price tests |
+| server/services/stay-service.js | Bangkok calendar, guarded check-in/out, atomic room state, original claims retained | ผ่าน stay/atomic/HTTP |
+| server/routes/api-operations.js | Six authenticated operations, allowlists/pagination/session actor | ผ่าน HTTP cases |
+| server/routes/api-bookings.js | Export existing Booking presenter for consistent operation responses | ผ่าน Task 3/4 HTTP |
+| server/app.js | Mount operations behind auth; allow Idempotency-Key CORS header | ผ่าน HTTP/CORS |
+| server/scripts/payment-ledger.js | Default audit, explicit database reconcile and live unique-index checks | ผ่าน CLI tests |
+| server/scripts/test-all-isolated.js | Include seven Task 4 suites alongside original suite groups | ผ่าน runner exit 0 |
+| server/package.json | db:payments command; dependency versions unchanged | ผ่าน CLI |
+| server/tests/test-db.js | Ledger fixture and refund-first cleanup; synthetic vouchers only | ผ่าน all dependent suites |
+| server/tests/payment-fixture.js | Service-based synthetic receipt/refund helpers | ผ่าน Task 3/4 guards |
+| server/tests/task3-db.js | Async schema push, local Task 3/4 allowlist, replica-set lifecycle | ผ่าน regression/legacy fields |
+| server/tests/task12-http.test.js | Async schema setup with skip-generate; original assertions retained | ผ่าน 5 cases |
+| server/tests/booking-service.test.js | Replace direct paid/refunded writes with actual test ledger/service calls | ผ่าน 10 cases across split runs |
+| server/tests/task3-service.test.js | Service ledger fixture preserves original repricing/refund/retry assertions | ผ่าน 8 cases |
+| server/tests/task3-http.test.js | Service receipt fixture preserves original route/payment guard assertions | ผ่าน 22 cases |
+| server/tests/payment-ledger.test.js | Unit amount/date/status/cumulative checks | ผ่าน 10 cases |
+| server/tests/task4-reconciliation.test.js | Evidence, target, legacy fields, duplicate index and read-only CLI | ผ่าน 6 cases |
+| server/tests/task4-payment.test.js | Money lifecycle, duplicate/replay and corrupt/legacy guards | ผ่าน 4 cases |
+| server/tests/task4-booking.test.js | Cancel/reprice history and maximum cumulative amount | ผ่าน 4 cases |
+| server/tests/task4-stay.test.js | Calendar, room/occupant state, payment and zero-price behavior | ผ่าน 8 cases |
+| server/tests/task4-http.test.js | Auth, both roles, payload/response allowlists, replay and CORS | ผ่าน 7 cases |
+| server/tests/task4-atomic.test.js | Real-transaction failure injection, bounded retry and synchronized races | ผ่าน 44 cases |
+| docs/api-task4.md | Decision/transition/error and API contract | ตรวจเทียบ implementation/tests |
+| docs/openapi-task4.yaml | Six endpoints and response/request schemas | Swagger CLI validation ผ่าน |
+| docs/payment-reconciliation.md | Maintenance, verified evidence shape, recovery and write reopening | ตรวจเทียบ CLI/service; live procedure ยังไม่รัน |
+| docs/task4-acceptance.md | Runtime, commands, case counts and commit sequence | ผลรันจริง 166/166 |
+| docs/step2-data-model.md | Correct cumulative limits, ledger model and readiness/version semantics | ปรับให้ตรง schema |
+| docs/api-task3.md | New readiness/consistency errors and monetary API handoff | ปรับตาม guards ใหม่ |
+| docs/step9-booking-service.md | Mark Task 4 integration; preserve Step 9 historical record | อัปเดต |
+| docs/PLAN/step9-handoff.md | Bangkok/payment/operations handoff | อัปเดต |
+| README.md | Task 4 links, guarded data rollout and isolated runner | อัปเดต |
+| docs/implementation-audit.md | Per-file update and current acceptance evidence | อัปเดตนี้ |
+
+ผลสุดท้าย: Prisma validate/generate ผ่าน, OpenAPI Swagger validation ผ่าน, runner ผ่าน 166/166 cases (เดิม 83 + Task 4 83), git diff --check ผ่าน. ระหว่างรันพบ synchronous schema setup ทำให้ mongod pipe ค้างบน Windows; ซ่อม helpers เป็น async และ rerun ผ่านโดยไม่ลบ/skip assertions. ไม่มี schema push/reconcile ไป hotel_lobby หรือฐานจริง. Production backup/restore, deployment, frontend และ reviewer/merge ยังอยู่นอกผลตรวจรับ backend นี้.

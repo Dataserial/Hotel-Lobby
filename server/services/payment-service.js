@@ -1,5 +1,5 @@
 const { fail, objectId } = require('../lib/http');
-const { moneyInput, assertLedger, summarize } = require('./payment-ledger');
+const { MAX_AMOUNT, moneyInput, assertLedger, summarize } = require('./payment-ledger');
 const { assertActor, operationTransaction, touchBooking } = require('./operation-transaction');
 
 async function replay(tx, paymentId, data) {
@@ -27,6 +27,8 @@ async function recordMoney(prisma, bookingId, kind, input, key, actorId, clock =
     if (!allowed.includes(booking.status)) fail(409, 'INVALID_TRANSITION', 'Payment operation is not allowed in this booking state');
     const rows = await assertLedger(tx, booking);
     const net = booking.payment.paidAmount - booking.payment.refundedAmount;
+    const cumulative = kind === 'receive' ? booking.payment.paidAmount : booking.payment.refundedAmount;
+    if (cumulative + data.amount > MAX_AMOUNT) fail(409, 'PAYMENT_LIMIT_EXCEEDED', 'Cumulative amount exceeds the supported integer baht limit');
     if (kind === 'receive' && data.amount > booking.totalPrice - net) fail(409, 'PAYMENT_EXCEEDS_REMAINING', 'Receipt exceeds remaining balance');
     if (kind === 'refund') {
       const source = rows.find((row) => row.id === data.receiptId && row.kind === 'receive');

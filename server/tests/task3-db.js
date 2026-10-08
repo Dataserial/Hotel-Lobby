@@ -10,7 +10,7 @@ function assertTestUrl(value) {
   const url = new URL(value);
   if (url.protocol !== 'mongodb:' || url.hostname !== '127.0.0.1' || !url.port ||
       !['/hotel_lobby_task3_test', '/hotel_lobby_task4_test'].includes(url.pathname) || !url.searchParams.get('replicaSet')) {
-    throw new Error('Task 3 tests require a local replica set and hotel_lobby_task3_test.');
+    throw new Error('Tests require a local replica set and an approved hotel_lobby_task3_test or hotel_lobby_task4_test database.');
   }
   return value;
 }

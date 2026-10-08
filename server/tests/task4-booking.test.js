@@ -40,3 +40,13 @@ test('legacy or inconsistent summary blocks edits and cancellation; zero never b
   await cancelBooking(db.prisma, b.id, actorId);
   expect((await db.prisma.payment.findUnique({ where: { bookingId: b.id } })).status).toBe('pending');
 });
+test('maximum Prisma Int receipt and refund work; cumulative overflow is rejected without writes', async () => {
+  await db.prisma.roomType.update({ where: { nameKey: 'standard' }, data: { basePrice: 2147483647 } });
+  const b = await createBooking(db.prisma, { ...input, checkOutDate: '2026-11-02' }, actorId);
+  const r = await recordTestReceipt(db.prisma, b.id, actorId, 2147483647);
+  await recordTestRefund(db.prisma, b.id, actorId, r.id, 2147483647);
+  await expect(receivePayment(db.prisma, b.id, { amount: 1, method: 'cash', reference: 'overflow', occurredAt: '2026-01-01T00:00:00Z' }, 'overflow', actorId))
+    .rejects.toMatchObject({ code: 'PAYMENT_LIMIT_EXCEEDED' });
+  expect(await db.prisma.paymentTransaction.count({ where: { reference: 'overflow' } })).toBe(0);
+  expect((await auditPayments(db.prisma)).issues).toEqual([]);
+});

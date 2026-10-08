@@ -1,4 +1,4 @@
-const { spawnSync } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const { MongoMemoryReplSet } = require('mongodb-memory-server-core');
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
@@ -16,10 +16,19 @@ beforeAll(async () => {
   const url = mongo.getUri('hotel_lobby_task12_test');
   testUrl = url;
   if (!/\/hotel_lobby_task12_test\?/.test(url)) throw new Error('Unsafe test database URL');
-  const push = spawnSync(process.execPath, [require.resolve('prisma/build/index.js'), 'db', 'push'], {
-    cwd: require('path').join(__dirname, '..'), env: { ...process.env, DATABASE_URL: url }, encoding: 'utf8', timeout: 120000,
+  // Keep draining mongod output during schema setup; avoid regenerating the
+  // already loaded client while its Windows engine DLL may be in use.
+  await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [require.resolve('prisma/build/index.js'), 'db', 'push', '--skip-generate'], {
+      cwd: require('path').join(__dirname, '..'), env: { ...process.env, DATABASE_URL: url },
+    });
+    let output = '';
+    child.stdout.on('data', (chunk) => { output += chunk; });
+    child.stderr.on('data', (chunk) => { output += chunk; });
+    const timer = setTimeout(() => { child.kill(); reject(new Error('Test schema push timed out')); }, 120000);
+    child.once('error', (error) => { clearTimeout(timer); reject(error); });
+    child.once('close', (code) => { clearTimeout(timer); code === 0 ? resolve() : reject(new Error(`Test schema push failed: ${output}`)); });
   });
-  if (push.status !== 0) throw new Error(`Test schema push failed: ${push.stdout}\n${push.stderr}`);
   prisma = new PrismaClient({ datasources: { db: { url } } });
   app = createApp(prisma);
   const admin = await prisma.user.create({ data: { name: 'Admin', email: 'admin@test.example', passwordHash: await bcrypt.hash('admin-password-123', 12), role: 'admin' } });

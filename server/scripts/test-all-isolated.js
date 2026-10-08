@@ -43,6 +43,10 @@ async function main() {
   await run(jest, ['--runInBand', '--silent', '--testTimeout=30000', '--runTestsByPath',
     'tests/task3-invariants.test.js', 'tests/task3-service.test.js', 'tests/task3-http.test.js',
     'tests/task3-race.test.js', 'tests/task3-claims.test.js'], process.env);
+  await run(jest, ['--runInBand', '--silent', '--testTimeout=30000', '--runTestsByPath',
+    'tests/payment-ledger.test.js', 'tests/task4-reconciliation.test.js', 'tests/task4-payment.test.js',
+    'tests/task4-booking.test.js', 'tests/task4-stay.test.js', 'tests/task4-http.test.js',
+    'tests/task4-atomic.test.js'], process.env);
 }
 
 main().catch((error) => { console.error(error.message); process.exitCode = 1; });

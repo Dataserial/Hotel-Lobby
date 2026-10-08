@@ -22,6 +22,8 @@
 erDiagram
     users ||--o{ bookings : "createdBy / updatedBy"
     users ||--o{ payments : "recordedBy"
+    users ||--o{ paymentTransactions : "recordedBy"
+    payments ||--o{ paymentTransactions : "evidence"
     roomTypes ||--o{ rooms : "roomTypeId"
     guests ||--o{ bookings : "guestId"
     rooms ||--o{ bookings : "roomId"
@@ -125,14 +127,20 @@ ObjectId ที่อ้างอิงต้องตรวจว่ามี�
 | `_id` | ObjectId |
 | `bookingId` | ObjectId อ้าง booking, required, unique (1:0..1) |
 | `amount` | integer >= 0, ยอดที่ต้องชำระ = `bookings.totalPrice` |
-| `paidAmount` | integer 0..`amount`, ยอดรับเงินภายนอกสะสม |
+| `paidAmount` | integer 0..2147483647, ยอดรับเงินภายนอกสะสม; อาจเกิน amount หลังคืนแล้วรับใหม่ |
 | `refundedAmount` | integer 0..`paidAmount`, ยอดคืนเงินภายนอกสะสม |
 | `method` | enum `cash`, `bank_transfer`, `card`, หรือ `null` ก่อนรับเงิน |
 | `status` | enum `pending`, `paid`, `refunded` |
 | `paidAt`, `refundedAt` | UTC timestamp หรือ `null` |
 | `createdAt`, `updatedAt`, `recordedById` | audit |
 
-คำนวณสถานะตามลำดับ: `refunded` เมื่อ booking ถูกยกเลิกและคืนยอดที่เคยรับมาครบ, มิฉะนั้น `paid` เมื่อยอดสุทธิ `paidAmount - refundedAmount >= amount`, มิฉะนั้น `pending` (รวมจ่ายบางส่วน) ถ้า `amount = 0` ให้สร้าง payment สถานะ `paid` โดยอัตโนมัติ การคืนเงินบางส่วนต้องแสดง `refundedAmount` และยอดสุทธิ; checkout ต้อง `status = paid` และยอดสุทธิครบ ค่า `method` นี้เป็นช่องทางล่าสุดที่รับเงิน สำหรับ MVP หากต้องเก็บหลายงวด/หลายช่องทางและประวัติการรับเงินรายครั้ง ให้เพิ่ม payment transactions ในระยะถัดไป ห้ามทำให้ยอดสะสมกับรายการจริงไม่ตรงกัน
+Task 4 เพิ่ม `ledgerReady` default false; ต้องตรวจรายการจริงและยอดตรงกันก่อนเปิด operations ส่วน booking ใหม่กำหนด true. คำนวณ paid/refunded จากผลรวม ledger เท่านั้น และบังคับ `0 <= paidAmount - refundedAmount <= amount`. สถานะ `refunded` เมื่อ booking cancelled และเคยรับเงินจริงพร้อมคืนครบ, มิฉะนั้น `paid` เมื่อสุทธิเท่ากับ amount รวมกรณีราคา 0, มิฉะนั้น `pending`. Checkout ต้อง paid และสุทธิครบ. `method`/`paidAt` เป็นช่องทาง/occurredAt ของรายการรับที่บันทึกล่าสุด; `refundedAt` เป็น occurredAt ของรายการคืนที่บันทึกล่าสุด. Summary และ ledger เปลี่ยนพร้อมกันใน transaction; ห้ามแก้ยอดสะสมจาก API โดยตรง.
+
+### `paymentTransactions` — เพิ่มใน Task 4
+
+เก็บรายการ immutable ที่อ้าง Payment: `kind` receive/refund, `amount` จำนวนเต็มบวกบาท, `method`, `reference`, `occurredAt`, `createdAt`, `recordedById`, `idempotencyKey`, `receiptId` และ `reason`. Refund ต้องอ้าง receipt ใน payment เดียวกันและมีเหตุผล. Unique `idempotencyKey` ระดับระบบและ unique `(kind,method,reference)` ป้องกันบันทึกหลักฐานซ้ำ. รายละเอียด replay, guards, API และการยืนยันข้อมูลเก่าอยู่ใน [Task 4 contract](api-task4.md) และ [runbook](payment-reconciliation.md).
+
+Booking เพิ่ม `version` default 0; mutation ทุกตัวเขียน version เพื่อให้ concurrent payment/booking/stay operations ชนกันบน booking document และ retry อ่าน state ใหม่. ไฟล์ sample Step 2 เป็นข้อมูลอ้างอิง summary เดิม; test helper เพิ่ม ledger สมมติที่ติดป้าย SYNTHETIC-FIXTURE เฉพาะฐานทดสอบ ไม่ใช้เป็นหลักฐาน reconcile ฐานจริง.
 
 ### `roomNightClaims` (คอลเลกชันเทคนิค)
 

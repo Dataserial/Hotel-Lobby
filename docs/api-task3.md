@@ -1,5 +1,7 @@
 # Task 3 — Staff Booking API
 
+Task 4 ต่อจาก contract นี้: update/cancel จะคืน `409 PAYMENT_RECONCILIATION_REQUIRED` เมื่อ ledger ยังไม่ยืนยัน หรือ `PAYMENT_INCONSISTENT` เมื่อรายการกับ summary ไม่ตรงกัน. รับ/คืนเงินผ่าน [Task 4 API](api-task4.md) เท่านั้น; cancellation หลังคืนครบปรับ payment status พร้อมกัน. Booking create ยังไม่มี idempotency key; key ของ Task 4 ใช้เฉพาะ monetary operations.
+
 ต่อจาก [Task 1–2 contract](api-task12.md); OpenAPI: [openapi-task3.yaml](openapi-task3.yaml). ทุก endpoint ด้านล่างต้องใช้ Bearer session ของ **admin หรือ receptionist** และอยู่หลัง `requireAuth` ในแอปเดียวกัน ไม่มี public availability ใน Task 3.
 
 ## Routes
