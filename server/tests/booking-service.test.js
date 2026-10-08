@@ -130,10 +130,10 @@ test('two concurrent requests for the same night yield exactly one booking', asy
 });
 
 test('keeps the original Room collection and number field readable', async () => {
-  const client = new MongoClient(process.env.DATABASE_URL);
-  await client.connect();
+  const client = new MongoClient(process.env.DATABASE_URL, { serverSelectionTimeoutMS: 5000 });
   const id = new ObjectId();
   try {
+    await client.connect();
     await client.db('hotel_lobby_step9_test').collection('Room').insertOne({ _id: id, number: '999' });
     const room = await prisma.room.findUnique({ where: { id: id.toHexString() } });
     expect(room.number).toBe('999');
