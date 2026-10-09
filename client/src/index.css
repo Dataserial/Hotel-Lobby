@@ -1,8 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap');
-:root { font-family: 'IBM Plex Sans Thai', 'Segoe UI', sans-serif; color: #22332d; background: #f7f8f4; font-synthesis: none; }
+:root { --navy: #043d55; --blue: #045575; --yellow: #ffd45c; --canvas: #f5f8fa; --ink: #123b4d; --muted: #6d8390; --line: #dfe8ed; font-family: 'IBM Plex Sans Thai', 'Segoe UI', sans-serif; color: var(--ink); background: var(--canvas); font-synthesis: none; }
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 320px; }
 button, input, select { font: inherit; }
 button { cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: .55; }
-button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #85a993; outline-offset: 2px; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #ffd45c; outline-offset: 2px; }

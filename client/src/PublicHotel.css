@@ -1,0 +1,81 @@
+.public-hotel { background: var(--canvas); }
+.moon-journey { height: 200vh; background: var(--navy); }
+.moon-night { height: 100vh; position: sticky; top: 0; overflow: hidden; background: linear-gradient(140deg,#0e2f3d,#034561); opacity: calc(1 - var(--journey) * .15); }
+.intro-moon { position: absolute; width: calc(79px - var(--journey) * 51px); height: auto; left: calc(50% - 39.5px + var(--journey) * (119px - 50% + 39.5px)); top: calc(39% + var(--journey) * (33px - 39vh)); }
+.moon-quote { position: absolute; top: 55.7%; width: 100%; text-align: center; color: white; font-size: 16px; opacity: calc(1 - var(--journey)); }
+.scroll-start { position: absolute; bottom: 12%; left: 50%; transform: translateX(-50%); width: 260px; background: white; opacity: calc(1 - var(--journey)); }
+.scroll-start:active:not(:disabled) { transform: translateX(-50%); }
+.hotel-header { height: 88px; background: var(--navy); padding: 17px 24px; display: flex; align-items: center; justify-content: space-between; }
+.hotel-header a { color: white; text-decoration: none; }
+.hotel-header .lub-brand { font-size: 32px; gap: 13px; }
+.lub-brand { display: inline-flex; align-items: center; font-size: 34px; font-weight: 600; gap: 12px; line-height: 1.45; white-space: nowrap; }
+.lub-brand img { width: 24px; height: 24px; }
+.staff-profile { padding: 0; border: 0; background: transparent; min-height: 54px; }
+.staff-profile img { width: 54px; height: 54px; display: block; }
+.staff-profile span { display: none; }
+.staff-profile:hover:not(:disabled) { background: transparent; }
+.discover-section { min-height: 1000px; scroll-margin-top: 0; }
+.discover-heading { margin: 64px 5% 54px; }
+.discover-heading h1 { font-size: 38px; font-weight: 600; line-height: 1.45; margin-bottom: 33px; }
+.discover-heading p { font-size: 18px; color: var(--muted); margin: 0; }
+.hotel-gallery { display: flex; gap: 16px; padding: 0 25px; overflow-x: auto; scrollbar-width: thin; }
+.hotel-gallery > picture, .hotel-gallery > img, .hotel-gallery > .lobby-photo { flex: 0 0 533px; width: 533px; height: 356px; border-radius: 40px; overflow: hidden; }
+.hotel-gallery picture > img { width: 100%; height: 100%; object-fit: cover; }
+.hotel-gallery > img { object-fit: cover; }
+.lobby-photo img { width: 120.08%; height: 100%; max-width: none; }
+.discover-search { margin: 64px 5% 50px; }
+.availability-search { display: grid; grid-template-columns: minmax(0,280fr) minmax(0,280fr) minmax(0,220fr) minmax(180px,400fr); align-items: center; gap: 20px; background: white; padding: 20px; border-radius: 24px; min-height: 134px; }
+.availability-search .field { align-self: start; font-size: 13px; font-weight: 400; }
+.availability-search input, .availability-search select { height: 56px; }
+.availability-search > button { width: 236px; max-width: 100%; justify-self: center; margin-top: 15px; }
+.hotel-amenities { font-size: 14px; color: var(--muted); margin: 16px 0 0; }
+.mobile-copy, .mobile-break { display: none; }
+.public-results { padding: 40px 5% 70px; min-height: 800px; }
+.public-results[hidden] { display: none; }
+.public-results h2 { font-size: 38px; margin: 0 0 24px; font-weight: 600; }
+.stay-summary { font-size: 18px; color: var(--muted); margin-bottom: 24px; }
+.public-room-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 24px; }
+.public-room-card { border-radius: 24px; background: white; padding: 32px; min-height: 560px; display: flex; flex-direction: column; align-items: start; gap: 24px; }
+.room-crescent { color: var(--yellow); font-size: 42px; line-height: 1.45; }
+.public-room-card h3 { font-size: 30px; font-weight: 600; margin: 0; }
+.public-room-card p { color: var(--muted); font-size: 16px; margin: 0; }
+.public-room-card strong { font-size: 30px; font-weight: 600; }
+.public-room-card .pill { min-width: 124px; text-align: center; font-size: 12px; padding: 8px; }
+.public-room-card .room-total { font-size: 14px; }
+.public-room-card button { width: 100%; }
+.public-help { color: var(--muted); margin-top: 24px; }
+.public-empty { background: white; padding: 40px; border-radius: 24px; }
+.public-results .notice button { margin-left: 16px; }
+.contact-dialog { border: 0; border-radius: 32px; padding: 32px; width: min(560px,calc(100% - 32px)); color: var(--ink); }
+.contact-dialog::backdrop { background: #043d5588; }
+.dialog-close { float: right; border: 0; font-size: 24px; padding: 0 12px; }
+.contact-dialog h2 { font-size: 28px; margin-top: 24px; }
+.contact-dialog p { color: var(--muted); }
+.contact-dialog dl { background: var(--canvas); border-radius: 16px; padding: 20px; }
+.contact-dialog dt { font-size: 12px; color: var(--muted); }
+.contact-dialog dd { margin: 0 0 12px; overflow-wrap: anywhere; }
+@media (min-width: 1600px) { .hotel-gallery > picture, .hotel-gallery > img, .hotel-gallery > .lobby-photo { flex: 1; } }
+@media (max-width: 980px) { .availability-search { grid-template-columns: repeat(2,minmax(0,1fr)); } .public-room-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 680px) {
+  .hotel-header { height: 84px; padding: 16px 20px; }
+  .hotel-header .lub-brand { font-size: 30px; }
+  .staff-profile { background: white; padding: 0 24px; min-width: 130px; min-height: 52px; }
+  .staff-profile span { display: block; } .staff-profile img { display: none; }
+  .staff-profile:hover:not(:disabled) { background: var(--canvas); }
+  .discover-heading { margin: 30px 20px 18px; }
+  .discover-heading h1 { font-size: 34px; margin: 0 0 18px; }
+  .discover-heading p { font-size: 16px; }
+  .mobile-break { display: initial; } .mobile-copy { display: initial; } .desktop-copy { display: none; }
+  .hotel-gallery { padding: 0 20px; }
+  .hotel-gallery > picture { flex-basis: 100%; width: 100%; height: 248px; border-radius: 24px; }
+  .hotel-gallery > img, .hotel-gallery > .lobby-photo { display: none; }
+  .discover-search { margin: 18px 20px 40px; }
+  .availability-search { display: flex; flex-direction: column; align-items: stretch; gap: 18px; background: transparent; padding: 0; }
+  .availability-search .field { width: 100%; min-height: 94px; }
+  .availability-search > button { width: 100%; margin-top: 0; }
+  .hotel-amenities { display: none; }
+  .public-results { padding: 30px 20px; } .public-results h2 { font-size: 28px; }
+  .stay-summary { font-size: 15px; } .public-room-grid { grid-template-columns: 1fr; }
+  .public-room-card { min-height: auto; } .public-room-card h3 { font-size: 26px; }
+}
+@media (prefers-reduced-motion: reduce) { .moon-journey { height: 100vh; } .moon-night { position: relative; opacity: 1; } .intro-moon { width: 79px; left: calc(50% - 39.5px); top: 39%; } .moon-quote, .scroll-start { opacity: 1; } }
