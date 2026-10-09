@@ -1,122 +1,129 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { request, query, errorText, type ApiError, type User, type Paged, type Guest, type RoomType, type Room, type AvailableRoom, type Booking, type Payment, type Transaction, type Dashboard, type Report } from './api'
 import './App.css'
 
+type Tab = 'dashboard' | 'bookings' | 'guests' | 'rooms' | 'types' | 'users' | 'report'
+type Call = <T,>(path: string, options?: { method?: string; body?: unknown; idempotencyKey?: string }) => Promise<T>
+type Action = (path: string, method: string, body?: unknown, key?: string) => Promise<boolean>
+type Shared = { call: Call; action: Action; busy: boolean; setError: (value: string) => void }
+const money = (v: number) => new Intl.NumberFormat('th-TH').format(v || 0)
+const hotelToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+const nextDay = (s: string) => { const d = new Date(s + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10) }
+const names: Record<string, string> = { confirmed: 'ยืนยันแล้ว', checked_in: 'เข้าพัก', checked_out: 'ออกแล้ว', cancelled: 'ยกเลิก', available: 'พร้อมใช้งาน', occupied: 'มีผู้เข้าพัก', maintenance: 'ซ่อมบำรุง', cash: 'เงินสด', bank_transfer: 'โอนเงิน', card: 'บัตร' }
+function Notice({ children, error = false }: { children: ReactNode; error?: boolean }) { return <div className={'notice ' + (error ? 'error' : '')} role={error ? 'alert' : 'status'}>{children}</div> }
+function Field({ title, children }: { title: string; children: ReactNode }) { return <label className="field"><span>{title}</span>{children}</label> }
+function Modal({ title, children, close }: { title: string; children: ReactNode; close: () => void }) {
+  const dialog = useRef<HTMLElement>(null)
+  const closeRef = useRef(close)
+  useEffect(() => { closeRef.current = close }, [close])
+  useEffect(() => {
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const focusable = () => Array.from(dialog.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), select:not(:disabled), [tabindex="0"]') || [])
+    ;(dialog.current?.querySelector('input, select') as HTMLElement | null || focusable()[0])?.focus()
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { event.preventDefault(); closeRef.current(); return }
+      if (event.key !== 'Tab') return
+      const items = focusable()
+      if (!items.length) return
+      if (event.shiftKey && document.activeElement === items[0]) { event.preventDefault(); items[items.length - 1].focus() }
+      else if (!event.shiftKey && document.activeElement === items[items.length - 1]) { event.preventDefault(); items[0].focus() }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => { document.removeEventListener('keydown', onKey); previous?.focus() }
+  }, [])
+  return <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) close() }}><section ref={dialog} className="modal" role="dialog" aria-modal="true" aria-label={title}><header><h2>{title}</h2><button onClick={close} aria-label="ปิด">×</button></header><div className="modal-body">{children}</div></section></div>
+}
+function Header({ eyebrow, title, description, children }: { eyebrow: string; title: string; description: string; children?: ReactNode }) { return <header className="page-head"><div><span className="eyebrow">{eyebrow}</span><h1>{title}</h1><p>{description}</p></div>{children}</header> }
+function Pager({ page, data, change }: { page: number; data: Paged<unknown>; change: (n: number) => void }) { return <div className="pagination"><span>ทั้งหมด {data.total} รายการ · หน้า {page}</span><div><button disabled={page <= 1} onClick={() => change(page - 1)}>ก่อนหน้า</button><button disabled={page * data.limit >= data.total} onClick={() => change(page + 1)}>ถัดไป</button></div></div> }
+function useList<T>(call: Call, path: string, setError: (s: string) => void) { const [data, setData] = useState<Paged<T> | null>(null); const [loading, setLoading] = useState(true); const reload = useCallback(async () => { setLoading(true); try { setData(await call<Paged<T>>(path)) } catch (e) { setError(errorText(e)) } finally { setLoading(false) } }, [call, path, setError]); useEffect(() => { const id = window.setTimeout(() => void reload(), 0); return () => window.clearTimeout(id) }, [reload]); return { data, loading, reload } }
+
 function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+  const [session, setSession] = useState<{ token: string; user: User; expires: number } | null>(null)
+  const [tab, setTab] = useState<Tab>('dashboard')
+  const [email, setEmail] = useState(''); const [password, setPassword] = useState('')
+  const [busy, setBusy] = useState(false); const [error, setError] = useState(''); const [notice, setNotice] = useState('')
+  const expire = useCallback(() => { setSession(null); setTab('dashboard'); setError('เซสชันหมดอายุ กรุณาเข้าสู่ระบบอีกครั้ง') }, [])
+  useEffect(() => { if (!session) return; const id = window.setTimeout(expire, Math.max(0, session.expires - Date.now())); return () => window.clearTimeout(id) }, [session, expire])
+  const call = useCallback(async <T,>(path: string, options?: { method?: string; body?: unknown; idempotencyKey?: string }): Promise<T> => {
+    if (!session || session.expires <= Date.now()) { expire(); throw new Error('เซสชันหมดอายุ') }
+    try { return await request<T>(path, session.token, options) } catch (e) { if ((e as ApiError).status === 401) expire(); throw e }
+  }, [session, expire])
+  const action: Action = async (path, method, body, key) => { setError(''); setNotice(''); setBusy(true); try { await call(path, { method, body, idempotencyKey: key }); setNotice('บันทึกรายการสำเร็จ'); return true } catch (e) { setError(errorText(e)); return false } finally { setBusy(false) } }
+  async function login(e: FormEvent) { e.preventDefault(); setBusy(true); setError(''); try { const r = await request<{ token: string; user: User; expiresIn: number }>('/auth/login', null, { method: 'POST', body: { email, password } }); setSession({ token: r.token, user: r.user, expires: Date.now() + r.expiresIn * 1000 }); setPassword('') } catch (err) { setError(errorText(err)) } finally { setBusy(false) } }
+  async function logout() { if (session) await request('/auth/logout', session.token, { method: 'POST' }).catch(() => undefined); setSession(null); setTab('dashboard'); setError(''); setNotice('') }
+  if (!session) return <main className="login-page"><div className="login-art"><div className="brand-mark">HL</div><span>HOTEL LOBBY</span><h1>จัดการงานต้อนรับ<br />อย่างมั่นใจในทุกวัน</h1><p>ห้องพัก การจอง ผู้เข้าพัก และการชำระเงินอยู่ในที่เดียว</p></div><form className="login-card" onSubmit={login}><span className="eyebrow">STAFF PORTAL</span><h2>เข้าสู่ระบบ</h2><p>สำหรับพนักงานต้อนรับและผู้ดูแลระบบ</p>{error && <Notice error>{error}</Notice>}<Field title="อีเมล"><input type="email" required autoComplete="username" value={email} onChange={e => setEmail(e.target.value)} /></Field><Field title="รหัสผ่าน"><input type="password" required autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} /></Field><button className="primary wide" disabled={busy}>{busy ? 'กำลังเข้าสู่ระบบ…' : 'เข้าสู่ระบบ'}</button><small>เวลาโรงแรม: Asia/Bangkok</small></form></main>
+  const nav: { id: Tab; label: string; icon: string; admin?: boolean }[] = [{ id: 'dashboard', label: 'ภาพรวม', icon: '◫' }, { id: 'bookings', label: 'การจอง', icon: '▤' }, { id: 'guests', label: 'ผู้เข้าพัก', icon: '♙' }, { id: 'rooms', label: 'ห้องพัก', icon: '▦' }, { id: 'types', label: 'ประเภทห้อง', icon: '◇', admin: true }, { id: 'users', label: 'ผู้ใช้งาน', icon: '♧', admin: true }, { id: 'report', label: 'รายงาน', icon: '▥', admin: true }]
+  return <div className="shell"><aside className="sidebar"><div className="brand"><div className="brand-mark">HL</div><div><strong>Hotel Lobby</strong><small>ระบบจัดการโรงแรม</small></div></div><div className="nav-title">เมนูหลัก</div><nav aria-label="เมนูหลัก">{nav.filter(x => !x.admin || session.user.role === 'admin').map(x => <button key={x.id} className={'nav-item ' + (tab === x.id ? 'active' : '')} onClick={() => { setTab(x.id); setError(''); setNotice('') }}><span aria-hidden="true">{x.icon}</span>{x.label}</button>)}</nav><div className="sidebar-foot"><div className="user-avatar">{session.user.name.slice(0, 1).toUpperCase()}</div><div><strong>{session.user.name}</strong><small>{session.user.role === 'admin' ? 'ผู้ดูแลระบบ' : 'พนักงานต้อนรับ'}</small></div><button onClick={logout} aria-label="ออกจากระบบ" title="ออกจากระบบ">↪</button></div></aside><main className="content"><div className="topbar"><span>วันโรงแรม {hotelToday()}</span><span><i className="online-dot" />{session.user.role === 'admin' ? 'ผู้ดูแลระบบ' : 'พนักงานต้อนรับ'}</span><button className="top-logout" onClick={logout}>ออกจากระบบ</button></div>{error && <Notice error>{error}</Notice>}{notice && <Notice>{notice}</Notice>}{tab === 'dashboard' && <DashboardView call={call} user={session.user} go={setTab} />}{tab === 'bookings' && <BookingsView call={call} action={action} busy={busy} setError={setError} />}{tab === 'guests' && <GuestsView call={call} action={action} busy={busy} setError={setError} />}{tab === 'rooms' && <RoomsView call={call} action={action} busy={busy} setError={setError} admin={session.user.role === 'admin'} />}{session.user.role === 'admin' && tab === 'types' && <TypesView call={call} action={action} busy={busy} setError={setError} />}{session.user.role === 'admin' && tab === 'users' && <UsersView call={call} action={action} busy={busy} setError={setError} self={session.user.id} />}{session.user.role === 'admin' && tab === 'report' && <ReportView call={call} />}</main></div>
 }
 
+function DashboardView({ call, user, go }: { call: Call; user: User; go: (t: Tab) => void }) {
+  const [data, setData] = useState<Dashboard | null>(null); const [error, setError] = useState('')
+  const refresh = useCallback(async () => { try { setData(await call<Dashboard>('/dashboard')); setError('') } catch (e) { setError(errorText(e)) } }, [call])
+  useEffect(() => { const id = window.setTimeout(() => void refresh(), 0); return () => window.clearTimeout(id) }, [refresh])
+  return <><Header eyebrow="ภาพรวมวันนี้" title={'สวัสดี, ' + user.name} description="ติดตามงานต้อนรับและสถานะห้องพักของวันนี้"><button onClick={refresh}>↻ รีเฟรช</button></Header>{error && <Notice error>{error}</Notice>}{!data ? <p className="loading">กำลังโหลดข้อมูล…</p> : <><div className="metric-grid">{[['ห้องว่างคืนนี้', data.availableRooms, 'พร้อมรับการจอง'], ['ห้องที่มีผู้เข้าพัก', data.occupiedRooms, 'สถานะปัจจุบัน'], ['เช็กอินวันนี้', data.arrivalsToday, 'ตามกำหนด'], ['เช็กเอาต์วันนี้', data.departuresToday, 'ตามกำหนด']].map(([label, value, sub]) => <div className="metric" key={label}><span>{label}</span><strong>{value}</strong><small>{sub}</small></div>)}</div><section className="panel quick"><div><span className="eyebrow">QUICK ACTIONS</span><h2>เริ่มงานได้ทันที</h2><p>เลือกงานที่ต้องทำจากรายการด้านล่าง</p></div><div className="quick-actions"><button onClick={() => go('bookings')}>＋ สร้างการจอง</button><button onClick={() => go('guests')}>♙ จัดการผู้เข้าพัก</button><button onClick={() => go('rooms')}>▦ ดูห้องพัก</button></div></section></>}</>
+}
+
+function GuestsView({ call, action, busy, setError }: Shared) {
+  const [page, setPage] = useState(1); const [q, setQ] = useState(''); const [search, setSearch] = useState('')
+  const { data, loading, reload } = useList<Guest>(call, '/guests?' + query({ page, q: search }), setError)
+  const [editing, setEditing] = useState<Guest | null>(null); const [open, setOpen] = useState(false)
+  const [form, setForm] = useState({ fullName: '', phone: '', email: '', documentNo: '' })
+  function edit(g?: Guest) { setEditing(g || null); setForm({ fullName: g?.fullName || '', phone: g?.phone || '', email: g?.email || '', documentNo: '' }); setOpen(true) }
+  async function save(e: FormEvent) { e.preventDefault(); const body = editing ? { fullName: form.fullName, phone: form.phone, email: form.email || null, ...(form.documentNo ? { documentNo: form.documentNo } : {}) } : { ...form, email: form.email || null }; if (await action(editing ? '/guests/' + editing.id : '/guests', editing ? 'PATCH' : 'POST', body)) { setOpen(false); void reload() } }
+  return <><Header eyebrow="GUEST MANAGEMENT" title="ผู้เข้าพัก" description="ค้นหา เพิ่ม และแก้ไขข้อมูลผู้เข้าพัก"><button className="primary" onClick={() => edit()}>＋ เพิ่มผู้เข้าพัก</button></Header><section className="panel"><form className="toolbar" onSubmit={e => { e.preventDefault(); setPage(1); setSearch(q) }}><input aria-label="ค้นหาชื่อหรือเบอร์โทร" placeholder="ค้นหาชื่อหรือเบอร์โทร" value={q} onChange={e => setQ(e.target.value)} /><button>ค้นหา</button></form>{loading ? <p className="loading">กำลังโหลด…</p> : data?.items.length ? <><div className="table-wrap"><table><thead><tr><th>ชื่อผู้เข้าพัก</th><th>โทรศัพท์</th><th>เอกสาร</th><th>สถานะ</th><th /></tr></thead><tbody>{data.items.map(g => <tr key={g.id}><td><strong>{g.fullName}</strong><small>{g.email}</small></td><td>{g.phone}</td><td>{g.documentNoMasked || '—'}</td><td><span className={'pill ' + (g.active ? 'good' : '')}>{g.active ? 'ใช้งาน' : 'เก็บถาวร'}</span></td><td><button className="text-button" onClick={() => edit(g)}>แก้ไข</button></td></tr>)}</tbody></table></div><Pager page={page} data={data} change={setPage} /></> : <div className="empty">ยังไม่มีผู้เข้าพักที่ตรงกับการค้นหา</div>}</section>{open && <Modal title={editing ? 'แก้ไขผู้เข้าพัก' : 'เพิ่มผู้เข้าพัก'} close={() => setOpen(false)}><form className="form-grid" onSubmit={save}><Field title="ชื่อ–นามสกุล"><input required value={form.fullName} onChange={e => setForm({ ...form, fullName: e.target.value })} /></Field><Field title="โทรศัพท์"><input required value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></Field><Field title="อีเมล (ถ้ามี)"><input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></Field><Field title={editing ? 'เลขเอกสารใหม่ (เว้นว่างเพื่อคงเดิม)' : 'เลขเอกสาร'}><input required={!editing} value={form.documentNo} onChange={e => setForm({ ...form, documentNo: e.target.value })} /></Field><div className="form-actions"><button type="button" onClick={() => setOpen(false)}>ยกเลิก</button><button className="primary" disabled={busy}>บันทึก</button></div></form></Modal>}</>
+}
+
+function BookingsView({ call, action, busy, setError }: Shared) {
+  const [page, setPage] = useState(1); const [status, setStatus] = useState('')
+  const { data, loading, reload } = useList<Booking>(call, '/bookings?' + query({ page, status }), setError)
+  const [guests, setGuests] = useState<Guest[]>([]); const [selected, setSelected] = useState<Booking | null>(null)
+  const [payment, setPayment] = useState<Payment | null>(null); const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [open, setOpen] = useState(false); const [editing, setEditing] = useState(false)
+  const [form, setForm] = useState({ guestId: '', roomId: '', guestCount: 1, checkInDate: hotelToday(), checkOutDate: nextDay(hotelToday()) })
+  const [available, setAvailable] = useState<AvailableRoom[] | null>(null); const [searching, setSearching] = useState(false)
+  const [moneyMode, setMoneyMode] = useState<'receive' | 'refund' | null>(null)
+  const [moneyForm, setMoneyForm] = useState({ amount: '', method: 'cash', reference: '', receiptId: '', reason: '' })
+  const [moneyKey, setMoneyKey] = useState<string | null>(null); const [occurredAt, setOccurredAt] = useState('')
+  useEffect(() => { void call<Paged<Guest>>('/guests?active=true&limit=100').then(d => setGuests(d.items)).catch(e => setError(errorText(e))) }, [call, setError])
+  const detail = useCallback(async (id: string) => { try { const [b, p, t] = await Promise.all([call<Booking>('/bookings/' + id), call<Payment>('/bookings/' + id + '/payment'), call<Paged<Transaction>>('/bookings/' + id + '/payment/transactions?limit=100')]); setSelected(b); setPayment(p); setTransactions(t.items) } catch (e) { setError(errorText(e)) } }, [call, setError])
+  async function findRooms() { setSearching(true); try { const d = await call<Paged<AvailableRoom>>('/rooms/availability?' + query({ checkInDate: form.checkInDate, checkOutDate: form.checkOutDate, guestCount: form.guestCount, limit: 100 })); setAvailable(d.items); if (!d.items.some(r => r.roomId === form.roomId)) setForm(f => ({ ...f, roomId: '' })) } catch (e) { setError(errorText(e)) } finally { setSearching(false) } }
+  function create() { setEditing(false); setForm({ guestId: '', roomId: '', guestCount: 1, checkInDate: hotelToday(), checkOutDate: nextDay(hotelToday()) }); setAvailable(null); setOpen(true) }
+  function edit() { if (!selected) return; setEditing(true); setForm({ guestId: selected.guestId, roomId: selected.roomId, guestCount: selected.guestCount, checkInDate: selected.checkInDate, checkOutDate: selected.checkOutDate }); setAvailable(null); setOpen(true) }
+  async function save(e: FormEvent) { e.preventDefault(); if (!form.roomId) { setError('กรุณาค้นหาและเลือกห้องว่าง'); return } const ok = await action(editing ? '/bookings/' + selected?.id : '/bookings', editing ? 'PATCH' : 'POST', form); if (ok) { setOpen(false); void reload(); if (selected) void detail(selected.id) } else await findRooms() }
+  async function operate(path: string) { if (!selected) return; if (await action('/bookings/' + selected.id + '/' + path, 'POST', {})) { await detail(selected.id); void reload() } }
+  function startMoney(mode: 'receive' | 'refund') { setMoneyMode(mode); setMoneyForm({ amount: '', method: 'cash', reference: '', receiptId: '', reason: '' }); setMoneyKey(null); setOccurredAt('') }
+  async function submitMoney(e: FormEvent) { e.preventDefault(); if (!selected || !moneyMode) return; const key = moneyKey || crypto.randomUUID(); const time = occurredAt || new Date().toISOString(); setMoneyKey(key); setOccurredAt(time); const body = { amount: Number(moneyForm.amount), method: moneyForm.method, reference: moneyForm.reference, occurredAt: time, ...(moneyMode === 'refund' ? { receiptId: moneyForm.receiptId, reason: moneyForm.reason } : {}) }; if (await action('/bookings/' + selected.id + '/payment/' + (moneyMode === 'receive' ? 'receipts' : 'refunds'), 'POST', body, key)) { setMoneyMode(null); setMoneyKey(null); await detail(selected.id); void reload() } }
+  return <><Header eyebrow="RESERVATIONS" title="การจอง" description="ค้นหาห้องว่างและดูแลการเข้าพักตั้งแต่ต้นจนจบ"><button className="primary" onClick={create}>＋ สร้างการจอง</button></Header><section className="panel"><div className="toolbar"><Field title="สถานะ"><select value={status} onChange={e => { setPage(1); setStatus(e.target.value) }}><option value="">ทั้งหมด</option>{['confirmed', 'checked_in', 'checked_out', 'cancelled'].map(s => <option key={s} value={s}>{names[s]}</option>)}</select></Field><button onClick={reload}>↻ รีเฟรช</button></div>{loading ? <p className="loading">กำลังโหลด…</p> : data?.items.length ? <><div className="table-wrap"><table><thead><tr><th>รหัสจอง</th><th>ผู้เข้าพัก</th><th>วันเข้าพัก</th><th>ยอดรวม</th><th>สถานะ</th><th /></tr></thead><tbody>{data.items.map(b => <tr key={b.id}><td><strong>#{b.id.slice(-6).toUpperCase()}</strong></td><td>{guests.find(g => g.id === b.guestId)?.fullName || b.guestId.slice(-6)}</td><td>{b.checkInDate} → {b.checkOutDate}</td><td>฿{money(b.totalPrice)}</td><td><span className={'pill ' + (b.status === 'checked_in' ? 'good' : 'blue')}>{names[b.status]}</span></td><td><button className="text-button" onClick={() => void detail(b.id)}>รายละเอียด</button></td></tr>)}</tbody></table></div><Pager page={page} data={data} change={setPage} /></> : <div className="empty">ยังไม่มีรายการจองในสถานะนี้</div>}</section>{open && <Modal title={editing ? 'แก้ไขการจอง' : 'สร้างการจอง'} close={() => setOpen(false)}><form className="form-grid" onSubmit={save}><Field title="ผู้เข้าพัก"><select required value={form.guestId} onChange={e => setForm({ ...form, guestId: e.target.value })}><option value="">เลือกผู้เข้าพัก</option>{guests.filter(g => g.active).map(g => <option key={g.id} value={g.id}>{g.fullName} · {g.phone}</option>)}</select></Field><Field title="จำนวนคน"><input type="number" min="1" max="20" required value={form.guestCount} onChange={e => { setForm({ ...form, guestCount: Number(e.target.value), roomId: '' }); setAvailable(null) }} /></Field><Field title="เช็กอิน"><input type="date" required value={form.checkInDate} onChange={e => { setForm({ ...form, checkInDate: e.target.value, roomId: '' }); setAvailable(null) }} /></Field><Field title="เช็กเอาต์"><input type="date" required value={form.checkOutDate} onChange={e => { setForm({ ...form, checkOutDate: e.target.value, roomId: '' }); setAvailable(null) }} /></Field><button type="button" className="full" disabled={searching} onClick={findRooms}>{searching ? 'กำลังค้นหา…' : 'ค้นหาห้องว่าง'}</button>{available && <Field title="ห้องว่าง"><select required value={form.roomId} onChange={e => setForm({ ...form, roomId: e.target.value })}><option value="">{available.length ? 'เลือกห้อง' : 'ไม่พบห้องว่าง'}</option>{available.map(r => <option key={r.roomId} value={r.roomId}>ห้อง {r.roomNumber} · {r.roomType} · ฿{money(r.pricePerNight)}/คืน · {r.capacity} คน</option>)}</select></Field>}<div className="form-actions"><button type="button" onClick={() => setOpen(false)}>ยกเลิก</button><button className="primary" disabled={busy || !form.roomId}>บันทึกการจอง</button></div></form></Modal>}{selected && !open && <Modal title={'การจอง #' + selected.id.slice(-6).toUpperCase()} close={() => { setSelected(null); setMoneyMode(null) }}><div className="detail-grid"><div><small>ผู้เข้าพัก</small><strong>{guests.find(g => g.id === selected.guestId)?.fullName || selected.guestId}</strong></div><div><small>สถานะ</small><strong>{names[selected.status]}</strong></div><div><small>วันเข้าพัก</small><strong>{selected.checkInDate} → {selected.checkOutDate}</strong></div><div><small>ยอดรวม</small><strong>฿{money(selected.totalPrice)}</strong></div></div>{payment && <section className="payment-box"><h3>การชำระเงิน</h3><div className="payment-numbers"><span>รับสุทธิ <strong>฿{money(payment.net)}</strong></span><span>คงเหลือ <strong>฿{money(payment.remaining)}</strong></span></div>{!payment.ledgerReady && <Notice error>ต้องตรวจสอบหลักฐานยอดเงินเดิมก่อนทำรายการ</Notice>}{transactions.map(t => <div className="transaction" key={t.id}><span>{t.kind === 'receive' ? 'รับเงิน' : 'คืนเงิน'} · {names[t.method]} · {t.reference}</span><strong>{t.kind === 'receive' ? '+' : '−'}฿{money(t.amount)}</strong></div>)}</section>}{!moneyMode && <div className="detail-actions">{selected.status === 'confirmed' && <><button onClick={edit}>แก้ไข</button><button onClick={() => startMoney('receive')}>รับเงิน</button><button onClick={() => startMoney('refund')}>คืนเงิน</button><button disabled={busy} onClick={() => void operate('check-in')}>เช็กอิน</button><button className="danger" disabled={busy} onClick={() => { if (window.confirm('ยืนยันยกเลิกการจองนี้? ต้องคืนเงินให้ครบก่อน')) void operate('cancel') }}>ยกเลิกจอง</button></>}{selected.status === 'checked_in' && <><button onClick={() => startMoney('receive')}>รับเงิน</button><button className="primary" disabled={busy} onClick={() => void operate('check-out')}>เช็กเอาต์</button></>}</div>}{moneyMode && <form className="form-grid money-form" onSubmit={submitMoney}><h3 className="full">{moneyMode === 'receive' ? 'บันทึกรับเงิน' : 'บันทึกคืนเงิน'}</h3><Notice>บันทึกเมื่อมีหลักฐานเงินจริงแล้ว หากเครือข่ายขาดให้กดส่งซ้ำด้วยข้อมูลเดิม</Notice>{moneyMode === 'refund' && <Field title="รายการรับเงินต้นทาง"><select required value={moneyForm.receiptId} onChange={e => { setMoneyForm({ ...moneyForm, receiptId: e.target.value }); setMoneyKey(null) }}><option value="">เลือกหลักฐานรับเงิน</option>{transactions.filter(t => t.kind === 'receive').map(t => <option key={t.id} value={t.id}>{t.reference} · ฿{money(t.amount)}</option>)}</select></Field>}<Field title="จำนวนเงิน (บาท)"><input type="number" min="1" step="1" required value={moneyForm.amount} onChange={e => { setMoneyForm({ ...moneyForm, amount: e.target.value }); setMoneyKey(null) }} /></Field><Field title="วิธีชำระ"><select value={moneyForm.method} onChange={e => { setMoneyForm({ ...moneyForm, method: e.target.value }); setMoneyKey(null) }}>{['cash', 'bank_transfer', 'card'].map(m => <option key={m} value={m}>{names[m]}</option>)}</select></Field><Field title="เลขอ้างอิงหลักฐาน"><input required maxLength={128} value={moneyForm.reference} onChange={e => { setMoneyForm({ ...moneyForm, reference: e.target.value }); setMoneyKey(null) }} /></Field>{moneyMode === 'refund' && <Field title="เหตุผลการคืนเงิน"><input required maxLength={500} value={moneyForm.reason} onChange={e => { setMoneyForm({ ...moneyForm, reason: e.target.value }); setMoneyKey(null) }} /></Field>}<div className="form-actions"><button type="button" onClick={() => { setMoneyMode(null); setMoneyKey(null) }}>กลับ</button><button className="primary" disabled={busy}>บันทึก{moneyMode === 'receive' ? 'รับเงิน' : 'คืนเงิน'}</button></div></form>}</Modal>}</>
+}
+
+function RoomsView({ call, action, busy, admin, setError }: Shared & { admin: boolean }) {
+  const [page, setPage] = useState(1); const [q, setQ] = useState(''); const [search, setSearch] = useState('')
+  const { data, loading, reload } = useList<Room>(call, '/rooms?' + query({ page, q: search }), setError)
+  const [types, setTypes] = useState<RoomType[]>([]); const [editing, setEditing] = useState<Room | null>(null); const [open, setOpen] = useState(false)
+  const [form, setForm] = useState({ roomNumber: '', floor: 1, roomTypeId: '', status: 'available', active: true })
+  useEffect(() => { void call<Paged<RoomType>>('/room-types?limit=100').then(d => setTypes(d.items)).catch(e => setError(errorText(e))) }, [call, setError])
+  function edit(r?: Room) { setEditing(r || null); setForm({ roomNumber: r?.roomNumber || '', floor: r?.floor || 1, roomTypeId: r?.roomTypeId || '', status: r?.status === 'occupied' ? 'available' : r?.status || 'available', active: r?.active ?? true }); setOpen(true) }
+  async function save(e: FormEvent) { e.preventDefault(); const body = editing ? { roomNumber: form.roomNumber, floor: form.floor, roomTypeId: form.roomTypeId, ...(editing.status === 'occupied' ? {} : { status: form.status, active: form.active }) } : { roomNumber: form.roomNumber, floor: form.floor, roomTypeId: form.roomTypeId, status: form.status }; if (await action(editing ? '/rooms/' + editing.id : '/rooms', editing ? 'PATCH' : 'POST', body)) { setOpen(false); void reload() } }
+  return <><Header eyebrow="ROOM INVENTORY" title="ห้องพัก" description="ตรวจสถานะและข้อมูลห้องพักทั้งหมด">{admin && <button className="primary" onClick={() => edit()}>＋ เพิ่มห้องพัก</button>}</Header><section className="panel"><form className="toolbar" onSubmit={e => { e.preventDefault(); setPage(1); setSearch(q) }}><input aria-label="ค้นหาเลขห้อง" placeholder="ค้นหาเลขห้อง" value={q} onChange={e => setQ(e.target.value)} /><button>ค้นหา</button></form>{loading ? <p className="loading">กำลังโหลด…</p> : data?.items.length ? <><div className="table-wrap"><table><thead><tr><th>ห้อง</th><th>ประเภท</th><th>ชั้น</th><th>สถานะ</th><th /></tr></thead><tbody>{data.items.map(r => <tr key={r.id}><td><strong>{r.roomNumber}</strong></td><td>{types.find(t => t.id === r.roomTypeId)?.name || '—'}</td><td>{r.floor ?? '—'}</td><td><span className={'pill ' + (r.status === 'available' ? 'good' : 'blue')}>{names[r.status] || r.status}</span></td><td>{admin && <button className="text-button" onClick={() => edit(r)}>แก้ไข</button>}</td></tr>)}</tbody></table></div><Pager page={page} data={data} change={setPage} /></> : <div className="empty">ยังไม่มีห้องพักที่ตรงกับการค้นหา</div>}</section>{open && <Modal title={editing ? 'แก้ไขห้องพัก' : 'เพิ่มห้องพัก'} close={() => setOpen(false)}><form className="form-grid" onSubmit={save}><Field title="เลขห้อง"><input required value={form.roomNumber} onChange={e => setForm({ ...form, roomNumber: e.target.value })} /></Field><Field title="ชั้น"><input type="number" min="-20" max="300" required value={form.floor} onChange={e => setForm({ ...form, floor: Number(e.target.value) })} /></Field><Field title="ประเภทห้อง"><select required value={form.roomTypeId} onChange={e => setForm({ ...form, roomTypeId: e.target.value })}><option value="">เลือกประเภท</option>{types.filter(t => t.active).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></Field>{editing?.status !== 'occupied' && <Field title="สถานะ"><select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}><option value="available">พร้อมใช้งาน</option><option value="maintenance">ซ่อมบำรุง</option></select></Field>}{editing && editing.status !== 'occupied' && <Field title="การใช้งาน"><select value={String(form.active)} onChange={e => setForm({ ...form, active: e.target.value === 'true' })}><option value="true">ใช้งาน</option><option value="false">ปิดใช้งาน</option></select></Field>}<div className="form-actions"><button type="button" onClick={() => setOpen(false)}>ยกเลิก</button><button className="primary" disabled={busy}>บันทึก</button></div></form></Modal>}</>
+}
+
+function TypesView({ call, action, busy, setError }: Shared) {
+  const { data, loading, reload } = useList<RoomType>(call, '/room-types?limit=100', setError)
+  const [editing, setEditing] = useState<RoomType | null>(null); const [open, setOpen] = useState(false)
+  const [form, setForm] = useState({ name: '', capacity: 2, basePrice: 0, amenities: '', active: true })
+  function edit(t?: RoomType) { setEditing(t || null); setForm({ name: t?.name || '', capacity: t?.capacity || 2, basePrice: t?.basePrice || 0, amenities: t?.amenities.join(', ') || '', active: t?.active ?? true }); setOpen(true) }
+  async function save(e: FormEvent) { e.preventDefault(); const body = { name: form.name, capacity: form.capacity, basePrice: form.basePrice, amenities: form.amenities.split(',').map(x => x.trim()).filter(Boolean), ...(editing ? { active: form.active } : {}) }; if (await action(editing ? '/room-types/' + editing.id : '/room-types', editing ? 'PATCH' : 'POST', body)) { setOpen(false); void reload() } }
+  return <><Header eyebrow="ADMIN / ROOM TYPES" title="ประเภทห้อง" description="กำหนดความจุและราคาต่อคืน"><button className="primary" onClick={() => edit()}>＋ เพิ่มประเภท</button></Header><section className="panel">{loading ? <p className="loading">กำลังโหลด…</p> : data?.items.length ? <div className="table-wrap"><table><thead><tr><th>ประเภท</th><th>ความจุ</th><th>ราคา/คืน</th><th>สถานะ</th><th /></tr></thead><tbody>{data.items.map(t => <tr key={t.id}><td><strong>{t.name}</strong><small>{t.amenities.join(' · ')}</small></td><td>{t.capacity} คน</td><td>฿{money(t.basePrice)}</td><td><span className={'pill ' + (t.active ? 'good' : '')}>{t.active ? 'ใช้งาน' : 'ปิดใช้งาน'}</span></td><td><button className="text-button" onClick={() => edit(t)}>แก้ไข</button></td></tr>)}</tbody></table></div> : <div className="empty">ยังไม่มีประเภทห้อง</div>}</section>{open && <Modal title={editing ? 'แก้ไขประเภทห้อง' : 'เพิ่มประเภทห้อง'} close={() => setOpen(false)}><form className="form-grid" onSubmit={save}><Field title="ชื่อประเภท"><input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></Field><Field title="ความจุ (คน)"><input type="number" min="1" max="20" required value={form.capacity} onChange={e => setForm({ ...form, capacity: Number(e.target.value) })} /></Field><Field title="ราคา/คืน (บาท)"><input type="number" min="0" max="2147483647" step="1" required value={form.basePrice} onChange={e => setForm({ ...form, basePrice: Number(e.target.value) })} /></Field><Field title="สิ่งอำนวยความสะดวก (คั่นด้วย ,)"><input value={form.amenities} onChange={e => setForm({ ...form, amenities: e.target.value })} /></Field>{editing && <Field title="การใช้งาน"><select value={String(form.active)} onChange={e => setForm({ ...form, active: e.target.value === 'true' })}><option value="true">ใช้งาน</option><option value="false">ปิดใช้งาน</option></select></Field>}<div className="form-actions"><button type="button" onClick={() => setOpen(false)}>ยกเลิก</button><button className="primary" disabled={busy}>บันทึก</button></div></form></Modal>}</>
+}
+
+function UsersView({ call, action, busy, setError, self }: Shared & { self: string }) {
+  const { data, loading, reload } = useList<User>(call, '/users?limit=100', setError)
+  const [editing, setEditing] = useState<User | null>(null); const [open, setOpen] = useState(false)
+  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'receptionist', active: true })
+  function edit(u?: User) { setEditing(u || null); setForm({ name: u?.name || '', email: u?.email || '', password: '', role: u?.role || 'receptionist', active: u?.active ?? true }); setOpen(true) }
+  async function save(e: FormEvent) { e.preventDefault(); const body = editing ? { name: form.name, email: form.email, role: form.role, active: form.active, ...(form.password ? { password: form.password } : {}) } : { name: form.name, email: form.email, role: form.role, password: form.password }; if (await action(editing ? '/users/' + editing.id : '/users', editing ? 'PATCH' : 'POST', body)) { setOpen(false); void reload() } }
+  return <><Header eyebrow="ADMIN / ACCESS" title="ผู้ใช้งาน" description="จัดการบัญชีและสิทธิ์ของทีม"><button className="primary" onClick={() => edit()}>＋ เพิ่มผู้ใช้</button></Header><section className="panel">{loading ? <p className="loading">กำลังโหลด…</p> : data?.items.length ? <div className="table-wrap"><table><thead><tr><th>ชื่อ</th><th>อีเมล</th><th>สิทธิ์</th><th>สถานะ</th><th /></tr></thead><tbody>{data.items.map(u => <tr key={u.id}><td><strong>{u.name}</strong>{u.id === self && <small>บัญชีของคุณ</small>}</td><td>{u.email}</td><td>{u.role === 'admin' ? 'ผู้ดูแลระบบ' : 'พนักงานต้อนรับ'}</td><td><span className={'pill ' + (u.active ? 'good' : '')}>{u.active ? 'ใช้งาน' : 'ปิดใช้งาน'}</span></td><td><button className="text-button" onClick={() => edit(u)}>แก้ไข</button></td></tr>)}</tbody></table></div> : <div className="empty">ยังไม่มีผู้ใช้งาน</div>}</section>{open && <Modal title={editing ? 'แก้ไขผู้ใช้' : 'เพิ่มผู้ใช้'} close={() => setOpen(false)}><form className="form-grid" onSubmit={save}><Field title="ชื่อ"><input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></Field><Field title="อีเมล"><input type="email" required value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></Field><Field title={editing ? 'รหัสผ่านใหม่ (เว้นว่างเพื่อคงเดิม)' : 'รหัสผ่าน (อย่างน้อย 12 ตัวอักษร)'}><input type="password" minLength={12} required={!editing} value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} /></Field><Field title="สิทธิ์"><select disabled={editing?.id === self} value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}><option value="receptionist">พนักงานต้อนรับ</option><option value="admin">ผู้ดูแลระบบ</option></select></Field>{editing && <Field title="สถานะ"><select disabled={editing.id === self} value={String(form.active)} onChange={e => setForm({ ...form, active: e.target.value === 'true' })}><option value="true">ใช้งาน</option><option value="false">ปิดใช้งาน</option></select></Field>}<div className="form-actions"><button type="button" onClick={() => setOpen(false)}>ยกเลิก</button><button className="primary" disabled={busy}>บันทึก</button></div></form></Modal>}</>
+}
+
+function ReportView({ call }: { call: Call }) { const [data, setData] = useState<Report | null>(null); const [error, setError] = useState(''); const refresh = useCallback(async () => { try { setData(await call<Report>('/dashboard/report')); setError('') } catch (e) { setError(errorText(e)) } }, [call]); useEffect(() => { const id = window.setTimeout(() => void refresh(), 0); return () => window.clearTimeout(id) }, [refresh]); return <><Header eyebrow="ADMIN / REPORTS" title="รายงานการชำระเงิน" description="ยอดจากหลักฐานรับและคืนเงินทั้งหมดในระบบ"><button onClick={refresh}>↻ รีเฟรช</button></Header>{error && <Notice error>{error}</Notice>}{!data ? <p className="loading">กำลังโหลด…</p> : <><div className="metric-grid">{[['รับเงิน', data.receivedBaht], ['คืนเงิน', data.refundedBaht], ['ยอดสุทธิ', data.netBaht], ['รายการรอตรวจสอบ', data.unreconciledPayments]].map(([label, value], i) => <div className="metric" key={label}><span>{label}</span><strong>{i === 3 ? value : '฿' + money(Number(value))}</strong></div>)}</div><Notice>รายงานนี้แสดงยอดตาม ledger ตลอดเวลา ไม่ใช่รายงานรับรู้รายได้</Notice></>}</> }
 export default App

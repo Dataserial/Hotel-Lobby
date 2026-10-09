@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "postinstall": "prisma generate",
     "lint": "node scripts/lint.js",
     "test:task5": "jest --runInBand --testTimeout=30000 --runTestsByPath tests/task5.test.js",
     "start": "node ./bin/www",

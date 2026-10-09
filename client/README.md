@@ -1,75 +1,23 @@
-# React + TypeScript + Vite
+# Hotel Lobby — เว็บสำหรับพนักงาน
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+เว็บภาษาไทยสำหรับผู้ดูแลระบบและพนักงานต้อนรับ ใช้ API ใน `server` ตาม contract ใน `docs/api-task12.md` ถึง `docs/api-task5.md`
 
-Currently, two official plugins are available:
+## เริ่มใช้งานในเครื่อง
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. เตรียม MongoDB replica set และ API ตาม `README.md` ที่โฟลเดอร์หลัก โดยใช้ฐานทดลองแยกจากข้อมูลจริง
+2. ตั้ง `server/.env` ให้ `CORS_ORIGINS` ตรงกับ origin ของเว็บ (ค่าเริ่มต้น `http://localhost:5173`)
+3. ใน `server` รัน `npm ci` แล้ว `npm start`
+4. ใน `client` รัน `npm ci` และ `npm run dev` แล้วเปิด `http://localhost:5173`
 
-## React Compiler
+Vite proxy ส่ง `/api` ไป `http://localhost:3000` ระหว่างพัฒนา หาก deploy เว็บคนละ origin ให้ตั้ง `VITE_API_BASE_URL` เป็น URL ที่ลงท้ายด้วย `/api` ตอน build และเพิ่ม origin จริงใน `CORS_ORIGINS` ของ server. ไม่ต้องตั้งตัวแปรนี้เมื่อ deploy หลัง reverse proxy เดียวกัน
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Token อยู่ในหน่วยความจำของแท็บเท่านั้น; รีเฟรชหน้าแล้วต้องเข้าสู่ระบบใหม่ตามนโยบาย session ของ API. งานรับ/คืนเงินต้องมีหลักฐานจริงและเลขอ้างอิง โดยฟอร์มส่ง `Idempotency-Key` เพื่อให้ส่งซ้ำด้วยข้อมูลเดิมได้เมื่อเครือข่ายขาด
 
-## Expanding the ESLint configuration
+## ตรวจโค้ด
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```powershell
+npm run lint
+npm run build
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
-```
+ฝั่ง server: `npm ci` จะ generate Prisma Client โดยอัตโนมัติ จากนั้นรัน `npm run test:all:isolated`. การทดสอบ staging, CORS origin จริง, mobile/keyboard กับข้อมูลและความจุจริง ยังต้องทำในสภาพแวดล้อม deployment ของทีมก่อนเปิดใช้งาน

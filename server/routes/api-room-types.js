@@ -28,7 +28,7 @@ module.exports = (prisma) => {
     const name = str(req.body.name, 'name', 80);
     const item = await prisma.roomType.create({ data: {
       name, nameKey: name.toLocaleLowerCase('en-US'), capacity: int(req.body.capacity, 'capacity', 1, 20),
-      basePrice: int(req.body.basePrice, 'basePrice', 0), amenities: amenities(req.body.amenities ?? []),
+      basePrice: int(req.body.basePrice, 'basePrice', 0, 2147483647), amenities: amenities(req.body.amenities ?? []),
       createdById: req.actor.id, updatedById: req.actor.id,
     } });
     res.status(201).json(item);
@@ -39,7 +39,7 @@ module.exports = (prisma) => {
     const data = { updatedById: req.actor.id };
     if ('name' in req.body) { data.name = str(req.body.name, 'name', 80); data.nameKey = data.name.toLocaleLowerCase('en-US'); }
     if ('capacity' in req.body) data.capacity = int(req.body.capacity, 'capacity', 1, 20);
-    if ('basePrice' in req.body) data.basePrice = int(req.body.basePrice, 'basePrice', 0);
+    if ('basePrice' in req.body) data.basePrice = int(req.body.basePrice, 'basePrice', 0, 2147483647);
     if ('amenities' in req.body) data.amenities = amenities(req.body.amenities);
     if ('active' in req.body) data.active = bool(req.body.active, 'active');
     const item = await prisma.$transaction(async (tx) => {

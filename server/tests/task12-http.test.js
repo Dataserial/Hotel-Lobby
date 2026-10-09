@@ -90,6 +90,22 @@ test('room types and rooms: validation, roles, legacy number, references, occupi
   expect((await request(app).get(`/api/rooms/${legacy.id}`).set(auth(receptionToken))).body.roomNumber).toBe('OLD-1');
 });
 
+test('room type price respects Prisma Int boundaries on create and update', async () => {
+  const endpoint = '/api/room-types';
+  const headers = auth(adminToken);
+  const maxPrice = 2147483647;
+  const valid = await request(app).post(endpoint).set(headers)
+    .send({ name: 'Max price', capacity: 2, basePrice: maxPrice }).expect(201);
+  expect(valid.body.basePrice).toBe(maxPrice);
+  const count = await prisma.roomType.count();
+  await request(app).post(endpoint).set(headers)
+    .send({ name: 'Too high', capacity: 2, basePrice: maxPrice + 1 }).expect(400);
+  await request(app).patch(`${endpoint}/${valid.body.id}`).set(headers)
+    .send({ basePrice: maxPrice + 1 }).expect(400);
+  expect(await prisma.roomType.count()).toBe(count);
+  expect((await prisma.roomType.findUnique({ where: { id: valid.body.id } })).basePrice).toBe(maxPrice);
+});
+
 test('guests: search, masking, duplicate, archive with booking reference, validation rollback', async () => {
   const created = await request(app).post('/api/guests').set(auth(receptionToken)).send({ fullName: 'Jane Doe', phone: '+66812345678', documentNo: 'Passport 1234' });
   expect(created.status).toBe(201);

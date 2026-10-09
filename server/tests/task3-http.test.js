@@ -152,6 +152,13 @@ test('adjacent stays, leap day and 365 nights succeed', async () => {
   await post(input({ checkInDate: '2029-01-01', checkOutDate: '2030-01-01' })).expect(201);
 });
 
+test('booking rejects a stay total above Prisma Int without writes', async () => {
+  await db.prisma.roomType.update({ where: { id: sample.roomTypes[0]._id }, data: { basePrice: 2147483647 } });
+  const result = await post(input()).expect(400);
+  expect(result.body.error.code).toBe('INVALID_PRICE');
+  expect(await db.prisma.booking.count()).toBe(sample.bookings.length);
+});
+
 test('HTTP exposes payment guards and preserves rollback on conflicting edits', async () => {
   const b = await createBooking(db.prisma, input(), actorId);
   await createBooking(db.prisma, input({ roomId: sample.rooms[2]._id }), actorId);
