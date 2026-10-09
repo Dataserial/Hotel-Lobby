@@ -39,7 +39,7 @@ async function main() {
       await mongo.stop();
     }
   }
-  await run(jest, ['--runInBand', '--silent', '--runTestsByPath', 'tests/task12-http.test.js'], process.env);
+  await run(jest, ['--runInBand', '--silent', '--runTestsByPath', 'tests/task12-http.test.js', 'tests/booking-departures.test.js'], process.env);
   await run(jest, ['--runInBand', '--silent', '--testTimeout=30000', '--runTestsByPath',
     'tests/task3-invariants.test.js', 'tests/task3-service.test.js', 'tests/task3-http.test.js',
     'tests/task3-race.test.js', 'tests/task3-claims.test.js'], process.env);

@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: hotel-lobby-api
+    runtime: node
+    region: singapore
+    plan: free
+    branch: develop
+    rootDir: server
+    buildCommand: npm ci --include=dev && npx prisma validate
+    startCommand: npm start
+    healthCheckPath: /ready
+    autoDeployTrigger: off
+    envVars:
+      - key: NODE_VERSION
+        value: 24.21.0
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: PUBLIC_CORS_ORIGINS
+        sync: false

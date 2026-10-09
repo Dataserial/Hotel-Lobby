@@ -1,5 +1,9 @@
 # Hotel-Lobby
 
+## Deploy
+
+สำหรับ Vercel (เว็บ), Render (API) และ MongoDB Atlas ดู [ขั้นตอน deploy](docs/deploy-vercel-render-atlas.md). ใช้ `client/vercel.json` และ `render.yaml`; ตั้ง secrets ใน hosting dashboard เท่านั้น
+
 ## Task 5 — Dashboard / Public API / ส่งมอบ backend
 
 เพิ่ม `GET /api/dashboard` (admin/receptionist), `GET /api/dashboard/report` (admin) และ `GET /api/public/rooms/availability` (anonymous, 60 requests/IP/minute) โดยใช้ Booking availability service เดิม. Hotel timezone ใช้ Asia/Bangkok ตาม check-in/out; ราคาเป็นจำนวนเต็มบาท. `/ready` ตรวจ MongoDB แยกจาก `/health`.
