@@ -25,13 +25,18 @@ test('seed creates a usable room catalog and preserves edits on rerun', async ()
   expect(await db.prisma.room.count()).toBe(9);
   const edited = await db.prisma.room.update({ where: { number: 'DEMO-103' }, data: { status: 'maintenance' } });
   const hash = (await db.prisma.user.findUnique({ where: { email: credentials.email } })).passwordHash;
-  await seedDemo(db.prisma, { ...credentials, password: 'another-demo-password' });
+  await seedDemo(db.prisma, credentials);
   expect(await db.prisma.user.count()).toBe(1);
   expect(await db.prisma.roomType.count()).toBe(3);
   expect(await db.prisma.room.count()).toBe(9);
   expect((await db.prisma.room.findUnique({ where: { id: edited.id } })).status).toBe('maintenance');
   expect((await db.prisma.user.findUnique({ where: { email: credentials.email } })).passwordHash).toBe(hash);
   expect(await bcrypt.compare(credentials.password, hash)).toBe(true);
+  await expect(seedDemo(db.prisma, { ...credentials, password: 'another-demo-password' }))
+    .rejects.toThrow('different password');
+  await db.prisma.user.update({ where: { email: credentials.email }, data: { active: false } });
+  await expect(seedDemo(db.prisma, credentials)).rejects.toThrow('inactive');
+  await db.prisma.user.update({ where: { email: credentials.email }, data: { active: true } });
 
   const app = createApp(db.prisma);
   const token = (await request(app).post('/api/auth/login').send(credentials).expect(200)).body.token;

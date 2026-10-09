@@ -24,6 +24,10 @@ function demoConfig(env) {
 }
 
 async function seedDemo(prisma, { email, password }) {
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing && (existing.role !== 'admin' || !existing.active || !await bcrypt.compare(password, existing.passwordHash))) {
+    throw new Error('Existing demo admin is inactive, has a different role, or uses a different password');
+  }
   const admin = await prisma.user.upsert({
     where: { email },
     create: { email, name: 'Demo Admin', passwordHash: await bcrypt.hash(password, 12), role: 'admin', active: true },
