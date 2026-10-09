@@ -26,6 +26,8 @@ npm start
 
 คัดลอก `server/.env.example` เป็น `server/.env` และแก้ `DATABASE_URL` ให้ตรงฐานที่ตั้งใจใช้ ตัวอย่างในไฟล์ชี้ `hotel_lobby`; **อย่ารัน `db:push` กับฐานนี้โดยไม่ผ่านขั้นตอนตรวจและสำรองข้อมูล** เริ่มทดลองจากฐานแยกชื่อ `hotel_lobby_task12_demo` แล้วตั้ง `DATABASE_URL` ไปฐานนั้น ค่อยรัน `npm run db:push` และ `npm run db:seed:demo` (ตั้ง `DEMO_ADMIN_EMAIL` และ `DEMO_ADMIN_PASSWORD` ก่อน) จากนั้น `npm start` API อยู่ที่ `/api` และ health ที่ `/health`; contract ดู `docs/api-task12.md`
 
+รายละเอียดบัญชีที่ seed จริง, fixture ผู้ใช้, ห้องพัก 9 ห้อง, พฤติกรรมเมื่อรันซ้ำ และวิธีทดสอบอยู่ใน [Demo seed](docs/seed-demo.md)
+
 `npm run db:local` มองหา `mongod` จาก `MONGOD_PATH`, PATH หรือโฟลเดอร์ MongoDB Server ใน Program Files ตามลำดับ และเปิด replica set `rs0` พอร์ต `27018` โดยเก็บข้อมูลใน `server/.local-mongo/data` หากใช้ MongoDB service/Atlas อยู่แล้ว ให้ตั้ง `DATABASE_URL` ไปยัง replica set นั้นแทน
 
 Task 3 เพิ่ม Booking API สำหรับ admin/receptionist หลัง auth และ availability ภายในที่ `/api/rooms/availability`; contract และวิธี audit/backfill claims อยู่ที่ [docs/api-task3.md](docs/api-task3.md), OpenAPI ที่ [docs/openapi-task3.yaml](docs/openapi-task3.yaml). Write routes ใช้ actor จาก session เท่านั้น และเรียก service เดิมเพื่อสร้าง/แก้/ยกเลิกพร้อม claims/payment ใน transaction.
