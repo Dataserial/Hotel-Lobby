@@ -22,7 +22,8 @@ async function assertActor(tx, actorId) {
 
 async function assertGuest(tx, guestId) {
   assertId(guestId, 'guestId');
-  if (!await tx.guest.findUnique({ where: { id: guestId }, select: { id: true } })) {
+  const guest = await tx.guest.findUnique({ where: { id: guestId }, select: { id: true, active: true } });
+  if (!guest || guest.active === false) {
     throw new BookingError(404, 'GUEST_NOT_FOUND', 'Guest does not exist.');
   }
 }

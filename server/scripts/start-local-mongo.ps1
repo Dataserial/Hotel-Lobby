@@ -1,7 +1,14 @@
 $ErrorActionPreference = 'Stop'
 
 $serverPath = Split-Path $PSScriptRoot -Parent
-$mongoPath = 'C:\Program Files\MongoDB\Server\8.0\bin\mongod.exe'
+$mongoPath = if ($env:MONGOD_PATH) { $env:MONGOD_PATH } else {
+  $command = Get-Command mongod -ErrorAction SilentlyContinue
+  if ($command) { $command.Source } else {
+    $candidates = Get-ChildItem 'C:\Program Files\MongoDB\Server' -Filter mongod.exe -Recurse -ErrorAction SilentlyContinue |
+      Sort-Object FullName -Descending
+    if ($candidates) { $candidates[0].FullName } else { $null }
+  }
+}
 $localPath = Join-Path $serverPath '.local-mongo'
 $dataPath = Join-Path $localPath 'data'
 $logPath = Join-Path $localPath 'mongod.log'
@@ -20,8 +27,8 @@ function Test-LocalMongoPort {
   }
 }
 
-if (-not (Test-Path -LiteralPath $mongoPath)) {
-  throw "MongoDB Server was not found at $mongoPath"
+if (-not $mongoPath -or -not (Test-Path -LiteralPath $mongoPath)) {
+  throw 'MongoDB Server not found. Install MongoDB, add mongod to PATH, or set MONGOD_PATH.'
 }
 
 New-Item -ItemType Directory -Force -Path $dataPath | Out-Null

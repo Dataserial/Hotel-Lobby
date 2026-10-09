@@ -1,0 +1,313 @@
+openapi: 3.0.3
+info:
+  title: Hotel Lobby Task 1–2 API
+  version: 0.2.0
+  description: Prisma/MongoDB API. Prices use integer baht; all timestamps use UTC.
+servers:
+  - url: http://localhost:3000
+security:
+  - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  parameters:
+    id:
+      in: path
+      name: id
+      required: true
+      schema: { type: string, pattern: '^[0-9a-fA-F]{24}$' }
+    page:
+      in: query
+      name: page
+      schema: { type: integer, minimum: 1, default: 1 }
+    limit:
+      in: query
+      name: limit
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string, example: VALIDATION_ERROR }
+            message: { type: string }
+            requestId: { type: string, format: uuid }
+    User:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string, format: email }
+        role: { type: string, enum: [admin, receptionist] }
+        active: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    RoomType:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        nameKey: { type: string }
+        capacity: { type: integer, minimum: 1, maximum: 20 }
+        basePrice: { type: integer, minimum: 0, description: Baht per night }
+        amenities: { type: array, items: { type: string } }
+        active: { type: boolean }
+        createdById: { type: string, nullable: true }
+        updatedById: { type: string, nullable: true }
+    Room:
+      type: object
+      properties:
+        id: { type: string }
+        roomNumber: { type: string }
+        floor: { type: integer, nullable: true }
+        roomTypeId: { type: string, nullable: true }
+        status: { type: string, enum: [available, occupied, maintenance], nullable: true }
+        active: { type: boolean, nullable: true }
+        createdById: { type: string, nullable: true }
+        updatedById: { type: string, nullable: true }
+    Guest:
+      type: object
+      properties:
+        id: { type: string }
+        fullName: { type: string }
+        phone: { type: string }
+        email: { type: string, nullable: true }
+        documentNo: { type: string, description: Admin only }
+        documentNoMasked: { type: string, description: Receptionist only }
+        active: { type: boolean, nullable: true }
+        createdById: { type: string, nullable: true }
+        updatedById: { type: string, nullable: true }
+    UserInput:
+      type: object
+      required: [name, email, password, role]
+      properties:
+        name: { type: string, maxLength: 120 }
+        email: { type: string, format: email }
+        password: { type: string, minLength: 12, maxLength: 128 }
+        role: { type: string, enum: [admin, receptionist] }
+    RoomTypeInput:
+      type: object
+      required: [name, capacity, basePrice]
+      properties:
+        name: { type: string, maxLength: 80 }
+        capacity: { type: integer, minimum: 1, maximum: 20 }
+        basePrice: { type: integer, minimum: 0 }
+        amenities: { type: array, items: { type: string, maxLength: 60 } }
+    RoomInput:
+      type: object
+      required: [roomNumber, floor, roomTypeId]
+      properties:
+        roomNumber: { type: string, maxLength: 20 }
+        floor: { type: integer }
+        roomTypeId: { type: string }
+        status: { type: string, enum: [available, maintenance] }
+    GuestInput:
+      type: object
+      required: [fullName, phone, documentNo]
+      properties:
+        fullName: { type: string, maxLength: 160 }
+        phone: { type: string }
+        email: { type: string, format: email, nullable: true }
+        documentNo: { type: string, maxLength: 60 }
+    UserPatch:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        name: { type: string, maxLength: 120 }
+        email: { type: string, format: email }
+        password: { type: string, minLength: 12, maxLength: 128 }
+        role: { type: string, enum: [admin, receptionist] }
+        active: { type: boolean }
+    RoomTypePatch:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        name: { type: string, maxLength: 80 }
+        capacity: { type: integer, minimum: 1, maximum: 20 }
+        basePrice: { type: integer, minimum: 0 }
+        amenities: { type: array, items: { type: string, maxLength: 60 } }
+        active: { type: boolean }
+    RoomPatch:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        roomNumber: { type: string, maxLength: 20 }
+        floor: { type: integer }
+        roomTypeId: { type: string }
+        status: { type: string, enum: [available, maintenance] }
+        active: { type: boolean }
+    GuestPatch:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        fullName: { type: string, maxLength: 160 }
+        phone: { type: string }
+        email: { type: string, format: email, nullable: true }
+        documentNo: { type: string, maxLength: 60 }
+        active: { type: boolean }
+  responses:
+    BadRequest:
+      description: Invalid input
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Unauthorized:
+      description: Missing, expired, or revoked token
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Forbidden:
+      description: Wrong role
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    NotFound:
+      description: Record missing
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Conflict:
+      description: Duplicate value or reference/state conflict
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+paths:
+  /health:
+    get:
+      security: []
+      summary: Process health (no DB readiness check)
+      responses: { '200': { description: Process running } }
+  /api/auth/login:
+    post:
+      security: []
+      summary: Exchange credentials for an 8 hour bearer token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200': { description: 'Token, tokenType, expiresIn, and user' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/auth/me:
+    get:
+      summary: Current user
+      responses:
+        '200': { description: Current user }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/auth/logout:
+    post:
+      summary: Revoke current bearer token
+      responses:
+        '204': { description: Revoked }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/users:
+    get:
+      summary: List users (admin)
+      parameters:
+        - { $ref: '#/components/parameters/page' }
+        - { $ref: '#/components/parameters/limit' }
+        - { in: query, name: role, schema: { type: string, enum: [admin, receptionist] } }
+        - { in: query, name: active, schema: { type: boolean } }
+        - { in: query, name: q, schema: { type: string } }
+      responses: { '200': { description: Paginated users without password hashes }, '403': { $ref: '#/components/responses/Forbidden' } }
+    post:
+      summary: Create user (admin)
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/UserInput' } } } }
+      responses: { '201': { description: User }, '400': { $ref: '#/components/responses/BadRequest' }, '409': { $ref: '#/components/responses/Conflict' } }
+  /api/users/{id}:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    get:
+      summary: Get user (admin)
+      responses: { '200': { description: User }, '404': { $ref: '#/components/responses/NotFound' } }
+    patch:
+      summary: Update user (admin); accepts any nonempty subset of UserInput plus active
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/UserPatch' } } } }
+      responses: { '200': { description: User }, '400': { $ref: '#/components/responses/BadRequest' }, '409': { $ref: '#/components/responses/Conflict' } }
+  /api/users/{id}/deactivate:
+    post:
+      summary: Deactivate user (admin)
+      parameters: [{ $ref: '#/components/parameters/id' }]
+      responses: { '200': { description: User }, '409': { $ref: '#/components/responses/Conflict' } }
+  /api/room-types:
+    get:
+      summary: List room types
+      parameters:
+        - { $ref: '#/components/parameters/page' }
+        - { $ref: '#/components/parameters/limit' }
+        - { in: query, name: active, schema: { type: boolean } }
+        - { in: query, name: q, schema: { type: string } }
+      responses: { '200': { description: Paginated room types } }
+    post:
+      summary: Create room type (admin)
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/RoomTypeInput' } } } }
+      responses: { '201': { description: Room type }, '409': { $ref: '#/components/responses/Conflict' } }
+  /api/room-types/{id}:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    get:
+      summary: Get room type
+      responses: { '200': { description: Room type }, '404': { $ref: '#/components/responses/NotFound' } }
+    patch:
+      summary: Update room type (admin); any nonempty input subset plus active
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/RoomTypePatch' } } } }
+      responses: { '200': { description: Room type }, '409': { $ref: '#/components/responses/Conflict' } }
+    delete:
+      summary: Delete room type without room references (admin)
+      responses: { '204': { description: Deleted }, '409': { $ref: '#/components/responses/Conflict' } }
+  /api/rooms:
+    get:
+      summary: List and search rooms
+      parameters:
+        - { $ref: '#/components/parameters/page' }
+        - { $ref: '#/components/parameters/limit' }
+        - { in: query, name: active, schema: { type: boolean } }
+        - { in: query, name: status, schema: { type: string, enum: [available, occupied, maintenance] } }
+        - { in: query, name: roomTypeId, schema: { type: string } }
+        - { in: query, name: q, schema: { type: string } }
+      responses: { '200': { description: Paginated rooms with roomNumber } }
+    post:
+      summary: Create room (admin)
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/RoomInput' } } } }
+      responses: { '201': { description: Room }, '409': { $ref: '#/components/responses/Conflict' } }
+  /api/rooms/{id}:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    get:
+      summary: Get room including type
+      responses: { '200': { description: Room }, '404': { $ref: '#/components/responses/NotFound' } }
+    patch:
+      summary: Update room (admin); any nonempty input subset plus active
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/RoomPatch' } } } }
+      responses: { '200': { description: Room }, '409': { $ref: '#/components/responses/Conflict' } }
+    delete:
+      summary: Delete room without booking history (admin)
+      responses: { '204': { description: Deleted }, '409': { $ref: '#/components/responses/Conflict' } }
+  /api/guests:
+    get:
+      summary: List and search guests
+      parameters:
+        - { $ref: '#/components/parameters/page' }
+        - { $ref: '#/components/parameters/limit' }
+        - { in: query, name: active, schema: { type: boolean } }
+        - { in: query, name: q, schema: { type: string } }
+        - { in: query, name: documentNo, schema: { type: string } }
+      responses: { '200': { description: Paginated masked guests for receptionist } }
+    post:
+      summary: Create guest
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/GuestInput' } } } }
+      responses: { '201': { description: Guest }, '409': { $ref: '#/components/responses/Conflict' } }
+  /api/guests/{id}:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    get:
+      summary: Get guest
+      responses: { '200': { description: Guest }, '404': { $ref: '#/components/responses/NotFound' } }
+    patch:
+      summary: Update guest; any nonempty input subset plus active
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/GuestPatch' } } } }
+      responses: { '200': { description: Guest }, '409': { $ref: '#/components/responses/Conflict' } }
+    delete:
+      summary: Delete without bookings or archive with booking history
+      responses: { '200': { description: Archived guest }, '204': { description: Deleted } }
