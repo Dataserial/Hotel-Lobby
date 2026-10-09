@@ -6,6 +6,7 @@
     "postinstall": "prisma generate",
     "lint": "node scripts/lint.js",
     "test:task5": "jest --runInBand --testTimeout=30000 --runTestsByPath tests/task5.test.js",
+    "test:seed:demo": "jest --runInBand --testTimeout=30000 --runTestsByPath tests/seed-demo.test.js",
     "start": "node ./bin/www",
     "db:local": "powershell -ExecutionPolicy Bypass -File ./scripts/start-local-mongo.ps1",
     "db:push": "prisma db push",
