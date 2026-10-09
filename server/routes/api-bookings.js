@@ -18,7 +18,7 @@ module.exports = (prisma) => {
   const router = express.Router();
   router.use(role('admin', 'receptionist'));
   router.get('/', asyncRoute(async (req, res) => {
-    const pagination = page(req.query, ['status', 'guestId', 'roomId', 'checkInFrom', 'checkInTo']);
+    const pagination = page(req.query, ['status', 'guestId', 'roomId', 'checkInFrom', 'checkInTo', 'checkOutFrom', 'checkOutTo']);
     const where = {};
     if (req.query.status !== undefined) {
       if (!['confirmed', 'checked_in', 'checked_out', 'cancelled'].includes(req.query.status)) {
@@ -37,6 +37,15 @@ module.exports = (prisma) => {
     }
     if (where.checkInDate?.gte && where.checkInDate?.lte && where.checkInDate.gte > where.checkInDate.lte) {
       fail(400, 'INVALID_DATE_RANGE', 'checkInFrom must not exceed checkInTo');
+    }
+    for (const [field, operator] of [['checkOutFrom', 'gte'], ['checkOutTo', 'lte']]) {
+      if (req.query[field] !== undefined) {
+        parseHotelDate(req.query[field]);
+        where.checkOutDate = { ...where.checkOutDate, [operator]: req.query[field] };
+      }
+    }
+    if (where.checkOutDate?.gte && where.checkOutDate?.lte && where.checkOutDate.gte > where.checkOutDate.lte) {
+      fail(400, 'INVALID_DATE_RANGE', 'checkOutFrom must not exceed checkOutTo');
     }
     res.json(await list(prisma.booking, where, pagination, [{ createdAt: 'desc' }, { id: 'desc' }], select));
   }));
