@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react'
-import { errorText, query, request, type AvailableRoom, type Paged, type User } from './api'
+import { errorText, query, request, type AvailableRoom, type Paged, type RoomAvailabilitySearch, type User } from './api'
 import { Brand } from './Brand'
 import { contactChannels } from './contact'
 import { setupReveal } from './reveal'
@@ -12,7 +12,7 @@ const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok',
 const tomorrow = (date: string) => new Date(Date.parse(date + 'T00:00:00Z') + 86400000).toISOString().slice(0, 10)
 const money = (amount: number) => new Intl.NumberFormat('th-TH').format(amount)
 const dateLabel = (date: string) => new Intl.DateTimeFormat('th-TH-u-ca-gregory', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(date + 'T00:00:00Z'))
-type Stay = { checkInDate: string; checkOutDate: string; guestCount: number }
+type Stay = RoomAvailabilitySearch
 
 export default function PublicHotel({ staff, member, user = null, logout }: { staff: () => void; member?: () => void; user?: User | null; logout?: () => void }) {
   const root = useRef<HTMLElement>(null)
@@ -24,6 +24,7 @@ export default function PublicHotel({ staff, member, user = null, logout }: { st
   const [form, setForm] = useState<Stay>(() => ({ checkInDate: today(), checkOutDate: tomorrow(today()), guestCount: 2 }))
   const [initialStay] = useState(form)
   const [summaryRefresh, setSummaryRefresh] = useState(0)
+  const [roomTypeId, setRoomTypeId] = useState('')
   const [stay, setStay] = useState<Stay | null>(null)
   const [rooms, setRooms] = useState<Paged<AvailableRoom> | null>(null)
   const [page, setPage] = useState(1)
@@ -53,7 +54,7 @@ export default function PublicHotel({ staff, member, user = null, logout }: { st
   }, [stay])
   async function search(event?: FormEvent, targetPage = 1, snapshot?: Stay) {
     event?.preventDefault()
-    const searched = snapshot || (targetPage === 1 ? { ...form } : stay!)
+    const searched = snapshot || (targetPage === 1 ? { ...form, roomTypeId: roomTypeId || undefined } : stay!)
     const nights = (Date.parse(searched.checkOutDate) - Date.parse(searched.checkInDate)) / 86400000
     if (!Number.isInteger(nights) || nights < 1 || nights > 365) { setError('กรุณาเลือกวันเช็กเอาต์หลังวันเช็กอิน โดยพักได้ 1–365 คืน'); return }
     const version = ++searchVersion.current.version
@@ -88,11 +89,11 @@ export default function PublicHotel({ staff, member, user = null, logout }: { st
         <button className="primary" disabled={busy}>{busy ? 'กำลังค้นหา…' : <><span className="desktop-copy">ค้นหาโรงแรม</span><span className="mobile-copy">ค้นหาห้องว่าง →</span></>}</button>
       </form><p className="hotel-amenities">Wi-Fi ฟรี  •  ใกล้ BTS สนามกีฬาแห่งชาติ  •  พื้นที่ส่วนกลาง 24 ชั่วโมง</p></div>
     </section>
-    <RoomAvailability key={`${summaryStay.checkInDate}:${summaryStay.checkOutDate}:${summaryStay.guestCount}:${summaryRefresh}`} stay={summaryStay} choose={snapshot => { setForm(snapshot); void search(undefined, 1, snapshot) }} />
+    <RoomAvailability key={`${summaryStay.checkInDate}:${summaryStay.checkOutDate}:${summaryStay.guestCount}:${summaryRefresh}`} stay={summaryStay} roomTypeId={roomTypeId} selectRoomType={setRoomTypeId} choose={snapshot => { setForm(snapshot); void search(undefined, 1, snapshot) }} />
     <section ref={results} className="public-results" aria-live="polite" aria-busy={busy} hidden={!stay && !error}>
       <h2>ห้องพักสำหรับคืนที่ดีของคุณ</h2>
       {stay && <p className="stay-summary">{dateLabel(stay.checkInDate)} – {dateLabel(stay.checkOutDate)} · {nights} คืน · {stay.guestCount} คน</p>}
-      {error && <div className="notice error" role="alert">{error}<button onClick={() => void search()}>ลองอีกครั้ง</button></div>}
+      {error && <div className="notice error" role="alert">{error}<button onClick={() => void search(undefined, 1, stay || undefined)}>ลองอีกครั้ง</button></div>}
       {busy && <p className="loading">กำลังค้นหาห้องพักสำหรับคุณ…</p>}
       {rooms && <>{rooms.items.length ? <><div className="public-room-grid">{rooms.items.map(room => <article className="public-room-card" data-reveal key={room.roomId}>
         <img className="result-room-photo" src={roomPhoto(room.roomType)} alt={'ภาพประกอบห้องพัก ' + room.roomType} loading="lazy" /><h3>{room.roomType}</h3><p>สูงสุด {room.capacity} คน · ห้อง {room.roomNumber}</p><span className="pill good">พร้อมจอง</span><strong>฿{money(room.pricePerNight)} / คืน</strong><p className="room-total">รวม {nights} คืน ฿{money(room.pricePerNight * nights)} · ติดต่อพนักงานเพื่อยืนยัน</p><button className="primary" onClick={() => showContact(room)}>ติดต่อพนักงาน</button>
