@@ -50,3 +50,26 @@ test('stale member update callback cannot overwrite the replacement session',asy
     assert.ok(!h.dom.window.document.body.textContent.includes('Stale Profile'));
   }finally{await h.close();globalThis.fetch=originalFetch}
 });
+
+test('customer hotel staff callback logs out, opens staff login and its logo returns home',async()=>{
+  const originalFetch=globalThis.fetch;const h=domApp('http://localhost:5173/#member');let logouts=0;
+  globalThis.fetch=async(url)=>{
+    if(url.endsWith('/auth/login'))return Response.json({token:'customer-token',expiresIn:3600,user:member('Customer Member')});
+    if(url.endsWith('/auth/logout')){logouts++;return new Response(null,{status:204})}
+    if(url.endsWith('/public/overview'))return Response.json({date:'2026-10-13',checkOutDate:'2026-10-14',timezone:'Asia/Bangkok',updatedAt:'2026-10-13T03:00:00Z',totalRooms:0,availableRooms:0,bookedRooms:0,roomTypes:[]});
+    throw new Error('Unexpected URL '+url);
+  };
+  try {
+    // The logged-in hotel hides its staff control; expose only the existing callback
+    // at the test seam while keeping the real PublicHotel and React DOM mounted.
+    const module=h.loadSource('PublicHotel.tsx');const PublicHotel=module.default;
+    module.default=props=>h.React.createElement(h.React.Fragment,null,h.React.createElement(PublicHotel,props),h.React.createElement('button',{'data-test-staff':true,onClick:props.staff},'Test staff route'));
+    const App=h.loadSource('App.tsx').default;await h.React.act(async()=>h.root.render(h.React.createElement(App)));await login(h);
+    await h.React.act(async()=>h.button('ดูห้องพัก').click());await h.waitFor(()=>h.dom.window.document.querySelector('.hotel-header'));
+    await h.React.act(async()=>h.dom.window.document.querySelector('[data-test-staff]').click());
+    await h.waitFor(()=>h.dom.window.document.querySelector('.login-card'),500);
+    assert.equal(logouts,1);assert.ok(h.dom.window.document.querySelector('.login-card').textContent.includes('Admin และ Receptionist'));
+    await h.React.act(async()=>h.dom.window.document.querySelector('.login-brand').click());await h.waitFor(()=>h.dom.window.document.querySelector('.home-page'));
+    assert.equal(h.dom.window.location.hash,'#home');assert.ok(!h.dom.window.document.querySelector('.home-header').textContent.includes('Customer Member'));
+  }finally{await h.close();globalThis.fetch=originalFetch}
+});

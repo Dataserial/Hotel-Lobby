@@ -1,4 +1,12 @@
 .home-page { background: var(--canvas); }
+.home-overview { background: #fff8df; border-bottom: 1px solid #ebdfb2; }
+#home-rooms { background: #edf4f7; }
+.home-guide { border-top: 1px solid #dde8ed; }
+.home-faq { background: var(--navy); color: white; }
+.home-faq .eyebrow { color: var(--yellow); }
+.home-page .home-faq p { color: #d0dfe7; }
+.home-page .home-faq details { border-color: #426779; }
+.home-guide li { background: #f3f7f9; border: 1px solid #e2ecf0; border-radius: 20px; padding: 24px; }
 .home-header { background: var(--navy); color: white; display: flex; align-items: center; flex-wrap: wrap; gap: 24px; padding: 20px 5%; }
 .home-link { display: inline-flex; text-decoration: none; color: inherit; border-radius: 8px; }
 .home-link:focus-visible, .home-page a:focus-visible, .home-faq summary:focus-visible { outline: 3px solid var(--yellow); outline-offset: 5px; }
