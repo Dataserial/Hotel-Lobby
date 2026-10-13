@@ -1,6 +1,6 @@
 # Task 5 API contract
 
-Base `/api`. JSON, integer baht, UTC event timestamps, hotel dates in Asia/Bangkok as already used by Task 4. No cookie authentication: use the existing eight-hour revocable Bearer session. Credentials are never accepted from query strings. Keep browser tokens in memory; CSRF tokens are unnecessary for this header-only authentication. Use TLS outside local development.
+Base `/api`. JSON, integer baht, UTC event timestamps, hotel dates in Asia/Bangkok as already used by Task 4. No cookie authentication: use the existing eight-hour revocable Bearer session. Credentials are never accepted from query strings. The browser keeps the token and original expiry in tab-scoped sessionStorage so reloads preserve login, and verifies the current user through `/auth/me` before restoring the account. Passwords and cached user roles are not persisted. Logout, local expiry and server rejection clear the stored session; temporary connection failures allow retry. CSRF tokens are unnecessary for this header-only authentication. Use TLS outside local development.
 
 ## Dashboard
 

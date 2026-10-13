@@ -9,6 +9,7 @@ import HomePage from './HomePage'
 import AuthIntro from './AuthIntro'
 import StaffStayRequests from './StaffStayRequests'
 import AccountMenu from './AccountMenu'
+import { readStoredSession, storeSession, clearStoredSession, type Session } from './session'
 import './AuthPage.css'
 
 type Tab = 'dashboard' | 'availability' | 'bookings' | 'guests' | 'rooms' | 'types' | 'users' | 'report' | 'stayRequests'
@@ -99,7 +100,11 @@ function PaymentHistory({ call, bookingId, setError }: { call: Call; bookingId: 
 function App() {
   useEffect(() => { document.addEventListener('click', handleNavigation); return () => document.removeEventListener('click', handleNavigation) }, [])
   const [locationPath, setLocationPath] = useState(() => currentPath())
-  const [session, setSession] = useState<{ token: string; user: User; expires: number } | null>(null)
+  const [session, setSession] = useState<Session | null>(null)
+  const [savedSession, setSavedSession] = useState(readStoredSession)
+  const [restoringSession, setRestoringSession] = useState(!!savedSession)
+  const [restoreError, setRestoreError] = useState('')
+  const [restoreAttempt, setRestoreAttempt] = useState(0)
   const [roomChoice, setRoomChoice] = useState<RoomChoice | null>(null)
   const [requestedBooking, setRequestedBooking] = useState<string | null>(null)
   const clearRequestedBooking = useCallback(() => setRequestedBooking(null), [])
@@ -112,8 +117,30 @@ function App() {
   const [tab, setTab] = useState<Tab>('dashboard')
   const [email, setEmail] = useState(''); const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false); const [error, setError] = useState(''); const [notice, setNotice] = useState('')
-  const expire = useCallback(() => { setRoomChoice(null); setRequestedBooking(null); setSession(null); setTab('dashboard'); setError('เซสชันหมดอายุ กรุณาเข้าสู่ระบบอีกครั้ง') }, [])
-  useEffect(() => { if (!session) return; const id = window.setTimeout(expire, Math.max(0, session.expires - Date.now())); return () => window.clearTimeout(id) }, [session, expire])
+  const expire = useCallback(() => { clearStoredSession(); setRoomChoice(null); setRequestedBooking(null); setSession(null); setTab('dashboard'); setError('เซสชันหมดอายุ กรุณาเข้าสู่ระบบอีกครั้ง') }, [])
+  useEffect(() => { if (session) storeSession(session) }, [session])
+  useEffect(() => {
+    if (!savedSession) return
+    const controller = new AbortController()
+    void request<{ user: User }>('/auth/me', savedSession.token, { signal: controller.signal }).then(result => {
+      if (controller.signal.aborted) return
+      if (savedSession.expires <= Date.now()) expire()
+      else setSession({ ...savedSession, user: result.user })
+      setSavedSession(null); setRestoringSession(false); setRestoreError('')
+    }).catch(error => {
+      if (controller.signal.aborted) return
+      if ((error as ApiError).status === 401) { expire(); setSavedSession(null) }
+      else setRestoreError(errorText(error))
+      setRestoringSession(false)
+    })
+    return () => controller.abort()
+  }, [savedSession, restoreAttempt, expire])
+  useEffect(() => {
+    const current = session || savedSession
+    if (!current) return
+    const id = window.setTimeout(() => { expire(); setSavedSession(null); setRestoringSession(false); setRestoreError('') }, Math.max(0, current.expires - Date.now()))
+    return () => window.clearTimeout(id)
+  }, [session, savedSession, expire])
   const call = useCallback(async <T,>(path: string, options?: { method?: string; body?: unknown; idempotencyKey?: string; signal?: AbortSignal }): Promise<T> => {
     if (!session || session.expires <= Date.now()) { expire(); throw new Error('เซสชันหมดอายุ') }
     try { return await request<T>(path, session.token, options) } catch (e) { if ((e as ApiError).status === 401) expire(); throw e }
@@ -130,11 +157,12 @@ function App() {
       setSession({ token: result.token, user: result.user, expires: Date.now() + result.expiresIn * 1000 }); setPassword(''); setConfirmPassword(''); setRegistering(false); navigate(sessionStorage.getItem('hotel-lobby-booking-draft') ? '/discover' : '/member')
     } catch (e) { setError(errorText(e)) } finally { setBusy(false) }
   }
-  async function logout() { setRoomChoice(null); setRequestedBooking(null); if (session) await request('/auth/logout', session.token, { method: 'POST' }).catch(() => undefined); setSession(null); setTab('dashboard'); setError(''); setNotice('') }
+  async function logout() { clearStoredSession(); setRoomChoice(null); setRequestedBooking(null); if (session) await request('/auth/logout', session.token, { method: 'POST' }).catch(() => undefined); setSession(null); setTab('dashboard'); setError(''); setNotice('') }
   const openStaff = () => { navigate('/staff'); window.scrollTo(0, 0); setStaffPage(true); setMemberPage(false) }
   const openMember = () => { navigate('/member'); window.scrollTo(0, 0); setStaffPage(false); setMemberPage(true) }
   const openHome = () => { navigate('/'); setLocationPath('/'); setStaffPage(false); setMemberPage(false); window.scrollTo(0, 0) }
   const openHotel = () => { navigate('/discover'); setLocationPath('/discover'); setStaffPage(false); setMemberPage(false) }
+  if (restoringSession || savedSession) return <main className="login-page auth-page"><section className="login-card" aria-busy={restoringSession}><Brand /><h2>กำลังตรวจสอบบัญชีของคุณ</h2>{restoreError ? <><Notice error>{restoreError}</Notice><button className="primary wide" disabled={restoringSession} onClick={() => { setRestoreError(''); setRestoringSession(true); setRestoreAttempt(value => value + 1) }}>ลองเชื่อมต่ออีกครั้ง</button><button className="text-button" disabled={restoringSession} onClick={() => { clearStoredSession(); setSavedSession(null); setRestoringSession(false); setRestoreError(''); if (staffPage) openStaff(); else openMember() }}>เข้าสู่ระบบใหม่</button></> : <p role="status">กำลังเรียกคืนสถานะเข้าสู่ระบบ…</p>}</section></main>
   if (!staffPage && !memberPage && !['/discover', '/hotel'].includes(locationPath)) return <HomePage user={session?.user || null} hotel={openHotel} member={openMember} register={() => { navigate('/register'); setRegistering(true); setMemberPage(true); setStaffPage(false); window.scrollTo(0, 0) }} staff={() => { if (session?.user.role === 'customer') void logout().then(openStaff); else openStaff() }} logout={() => void logout()} />
   if (!staffPage && !memberPage && ['/discover', '/hotel'].includes(locationPath)) return <PublicHotel reauthenticate={() => { expire(); openMember() }} customerLogin={() => { if (session) void logout().then(openMember); else openMember() }} user={session?.user || null} token={session?.token || null} logout={() => void logout()} member={session && session.user.role !== 'customer' ? openStaff : openMember} staff={() => { if (session?.user.role === 'customer') void logout().then(openStaff); else openStaff() }} />
   if (session?.user.role === 'customer') return memberPage ? <MemberAccount user={session.user} call={call} updated={user => setSession(current => current?.token === session.token ? { ...current, user } : current)} logout={() => void logout()} back={() => { navigate('/discover'); setMemberPage(false) }} /> : <PublicHotel reauthenticate={() => { expire(); openMember() }} customerLogin={() => { if (session) void logout().then(openMember); else openMember() }} user={session.user} token={session.token} logout={() => void logout()} member={openMember} staff={() => { void logout().then(openStaff) }} />
