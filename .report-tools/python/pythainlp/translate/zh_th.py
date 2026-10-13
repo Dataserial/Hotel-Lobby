@@ -1,0 +1,204 @@
+# SPDX-FileCopyrightText: 2016-2026 PyThaiNLP Project
+# SPDX-FileType: SOURCE
+# SPDX-License-Identifier: Apache-2.0
+"""
+Translate between Chinese and Thai using Lalita models.
+
+The models are from AI builder.
+
+- GitHub: https://github.com/LalitaDeelert/lalita-mt-zhth
+- Facebook post:
+  https://web.facebook.com/aibuildersx/posts/166736255494822
+"""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    import torch
+    from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+
+
+class ThZhTranslator:
+    """
+    Translate Thai to Chinese.
+
+    The model is from Lalita @ AI builder.
+
+    - GitHub: https://github.com/LalitaDeelert/lalita-mt-zhth
+    - Facebook post:
+      https://web.facebook.com/aibuildersx/posts/166736255494822
+
+    :param bool use_gpu: load the model on a GPU (default: False)
+    """
+
+    def __init__(
+        self,
+        use_gpu: bool = False,
+        pretrained: str = "Lalita/marianmt-th-zh_cn",
+        revision: Optional[str] = None,
+    ) -> None:
+        """
+        Initialize the Thai-to-Chinese translator.
+
+        :param bool use_gpu: load the model on a GPU
+        :param str pretrained: name of the pretrained model
+        :param Optional[str] revision: revision of the pretrained model
+        """
+        from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+
+        self.tokenizer_thzh: AutoTokenizer = AutoTokenizer.from_pretrained(
+            pretrained, revision=revision
+        )
+        self.model_thzh: AutoModelForSeq2SeqLM = (
+            AutoModelForSeq2SeqLM.from_pretrained(
+                pretrained, revision=revision
+            )
+        )
+        if use_gpu:
+            self.model_thzh = self.model_thzh.cuda()
+
+    def translate(
+        self, text: str, exclude_words: Optional[list[str]] = None
+    ) -> str:
+        """
+        Translate text from Thai to Chinese.
+
+        :param str text: text to translate
+        :param Optional[list[str]] exclude_words: words to exclude from
+            translation
+        :return: translated text
+        :rtype: str
+
+        :Example:
+
+        Translate text from Thai to Chinese:
+
+            >>> from pythainlp.translate import (
+            ...     ThZhTranslator,
+            ... )  # doctest: +SKIP
+
+            >>> thzh = ThZhTranslator()  # doctest: +SKIP
+
+            >>> thzh.translate("ผมรักคุณ")  # doctest: +SKIP
+            我爱你
+
+        Translate text from Thai to Chinese with excluded words:
+
+            >>> thzh.translate(
+            ...     "ผมรักคุณ", exclude_words=["ผม"]
+            ... )  # doctest: +SKIP
+            ผม爱你
+
+        """
+        from pythainlp.translate.core import (
+            _prepare_text_with_exclusions,
+            _restore_excluded_words,
+        )
+
+        prepared_text, placeholder_map = _prepare_text_with_exclusions(
+            text, exclude_words
+        )
+        self.translated: torch.Tensor = self.model_thzh.generate(
+            **self.tokenizer_thzh(
+                prepared_text, return_tensors="pt", padding=True
+            )
+        )
+        translated_text = [
+            self.tokenizer_thzh.decode(t, skip_special_tokens=True)
+            for t in self.translated
+        ][0]
+        return _restore_excluded_words(translated_text, placeholder_map)
+
+
+class ZhThTranslator:
+    """
+    Translate Chinese to Thai.
+
+    The model is from Lalita @ AI builder.
+
+    - GitHub: https://github.com/LalitaDeelert/lalita-mt-zhth
+    - Facebook post:
+      https://web.facebook.com/aibuildersx/posts/166736255494822
+
+    :param bool use_gpu: load the model on a GPU (default: False)
+    """
+
+    def __init__(
+        self,
+        use_gpu: bool = False,
+        pretrained: str = "Lalita/marianmt-zh_cn-th",
+        revision: Optional[str] = None,
+    ) -> None:
+        """
+        Initialize the Chinese-to-Thai translator.
+
+        :param bool use_gpu: load the model on a GPU
+        :param str pretrained: name of the pretrained model
+        :param Optional[str] revision: revision of the pretrained model
+        """
+        from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+
+        self.tokenizer_zhth: AutoTokenizer = AutoTokenizer.from_pretrained(
+            pretrained, revision=revision
+        )
+        self.model_zhth: AutoModelForSeq2SeqLM = (
+            AutoModelForSeq2SeqLM.from_pretrained(
+                pretrained, revision=revision
+            )
+        )
+        if use_gpu:
+            self.model_zhth = self.model_zhth.cuda()
+
+    def translate(
+        self, text: str, exclude_words: Optional[list[str]] = None
+    ) -> str:
+        """
+        Translate text from Chinese to Thai.
+
+        :param str text: text to translate
+        :param Optional[list[str]] exclude_words: words to exclude from
+            translation
+        :return: translated text
+        :rtype: str
+
+        :Example:
+
+        Translate text from Chinese to Thai:
+
+            >>> from pythainlp.translate import (
+            ...     ZhThTranslator,
+            ... )  # doctest: +SKIP
+
+            >>> zhth = ZhThTranslator()  # doctest: +SKIP
+
+            >>> zhth.translate("我爱你")  # doctest: +SKIP
+            ผมรักคุณนะ
+
+        Translate text from Chinese to Thai with excluded words:
+
+            >>> zhth.translate(
+            ...     "我爱你", exclude_words=["我"]
+            ... )  # doctest: +SKIP
+            我รักคุณนะ
+
+        """
+        from pythainlp.translate.core import (
+            _prepare_text_with_exclusions,
+            _restore_excluded_words,
+        )
+
+        prepared_text, placeholder_map = _prepare_text_with_exclusions(
+            text, exclude_words
+        )
+        self.translated: torch.Tensor = self.model_zhth.generate(
+            **self.tokenizer_zhth(
+                prepared_text, return_tensors="pt", padding=True
+            )
+        )
+        translated_text = [
+            self.tokenizer_zhth.decode(t, skip_special_tokens=True)
+            for t in self.translated
+        ][0]
+        return _restore_excluded_words(translated_text, placeholder_map)

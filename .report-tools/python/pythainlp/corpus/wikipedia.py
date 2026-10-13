@@ -1,0 +1,39 @@
+# SPDX-FileCopyrightText: 2016-2026 PyThaiNLP Project
+# SPDX-FileType: SOURCE
+# SPDX-License-Identifier: Apache-2.0
+"""Provide an optional word list from Thai Wikipedia titles."""
+
+from __future__ import annotations
+
+from typing import Optional
+
+from pythainlp.corpus.core import get_corpus
+
+_WIKIPEDIA_TITLES: Optional[frozenset[str]] = None
+_WIKIPEDIA_TITLES_FILENAME: str = "wikipedia_titles_th.txt"
+
+
+def thai_wikipedia_titles() -> frozenset[str]:
+    """
+    Return a frozenset of words from the Thai Wikipedia titles corpus.
+
+    The titles are mostly nouns and noun phrases, including event,
+    organization, people, place, and product names.
+    Commonly misspelled words are included intentionally.
+
+    See `dev/pythainlp/corpus/wikipedia_titles_th.txt
+    <https://github.com/PyThaiNLP/pythainlp/blob/dev/pythainlp/corpus/wikipedia_titles_th.txt>`_.
+
+    More info:
+    https://github.com/PyThaiNLP/pythainlp/blob/dev/pythainlp/corpus/corpus_license.md
+
+    :return: frozenset of Thai words
+    :rtype: frozenset[str]
+    """
+    global _WIKIPEDIA_TITLES
+    if not _WIKIPEDIA_TITLES:
+        _WIKIPEDIA_TITLES = get_corpus(
+            _WIKIPEDIA_TITLES_FILENAME, comments=False
+        )
+
+    return _WIKIPEDIA_TITLES

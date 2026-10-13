@@ -1,0 +1,290 @@
+# SPDX-FileCopyrightText: 2016-2026 PyThaiNLP Project
+# SPDX-FileType: SOURCE
+# SPDX-License-Identifier: Apache-2.0
+"""Part-of-speech (POS) tagging for Thai text."""
+
+from __future__ import annotations
+
+from typing import Optional
+
+
+def pos_tag(
+    words: list[str], engine: str = "perceptron", corpus: str = "orchid"
+) -> list[tuple[str, str]]:
+    """
+    Tag words with part-of-speech (POS) tags, such as 'NOUN' and 'VERB'.
+
+    :param list[str] words: list of words to be tagged
+    :param str engine: engine to use for tagging. Options are:
+
+        * *perceptron* - perceptron tagger (default)
+        * *unigram* - unigram tagger
+        * *tltk* - TLTK: Thai Language Toolkit (supports the TNC corpus
+          only; other corpora are converted to the TNC corpus)
+    :param str corpus: corpus used to train the tagger model. Options are:
+
+        * *orchid* - `ORCHID
+          <https://www.academia.edu/9127599/Thai_Treebank>`_ corpus,
+          text from Thai academic articles (default)
+        * *orchid_ud* - ORCHID text, with tags mapped to Universal POS tags
+        * *blackboard* - `blackboard treebank
+          <https://bitbucket.org/kaamanita/blackboard-treebank/src/master/>`_
+        * *blackboard_ud* - blackboard text, with tags mapped to
+          Universal POS tags from
+          `Universal Dependencies <https://universaldependencies.org/>`_
+        * *pud* - `Parallel Universal Dependencies (PUD)
+          <https://github.com/UniversalDependencies/UD_Thai-PUD>`_
+          treebank, natively uses Universal POS tags
+        * *tdtb* - `Thai Discourse Treebank
+          <https://github.com/nlp-chula/thai-discourse-treebank/tree/main>`_,
+          natively uses Universal POS tags
+        * *tud* - `Thai Universal Dependency Treebank (TUD)
+          <https://github.com/nlp-chula/TUD>`_
+    :return: list of tuples (word, POS tag)
+    :rtype: list[tuple[str, str]]
+
+    :Example:
+
+    Tag words with corpus `orchid` (default):
+
+        >>> from pythainlp.tag import pos_tag  # doctest: +SKIP
+
+        >>> words = ['ฉัน','มี','ชีวิต','รอด','ใน','อาคาร','หลบภัย','ของ', \\  # doctest: +SKIP
+        ...     'นายก', 'เชอร์ชิล']
+        >>> pos_tag(words)  # doctest: +SKIP
+        [('ฉัน', 'PPRS'), ('มี', 'VSTA'), ('ชีวิต', 'NCMN'), ('รอด', 'NCMN'),
+          ('ใน', 'RPRE'), ('อาคาร', 'NCMN'), ('หลบภัย', 'NCMN'),
+          ('ของ', 'RPRE'), ('นายก', 'NCMN'), ('เชอร์ชิล', 'NCMN')]
+
+    Tag words with corpus `orchid_ud`:
+
+        >>> from pythainlp.tag import pos_tag  # doctest: +SKIP
+
+        >>> words = ['ฉัน','มี','ชีวิต','รอด','ใน','อาคาร','หลบภัย','ของ', \\  # doctest: +SKIP
+        ...     'นายก', 'เชอร์ชิล']
+        >>> pos_tag(words, corpus="orchid_ud")  # doctest: +SKIP
+        [('ฉัน', 'PROPN'), ('มี', 'VERB'), ('ชีวิต', 'NOUN'),
+          ('รอด', 'NOUN'), ('ใน', 'ADP'),  ('อาคาร', 'NOUN'),
+          ('หลบภัย', 'NOUN'), ('ของ', 'ADP'), ('นายก', 'NOUN'),
+          ('เชอร์ชิล', 'NOUN')]
+
+    Tag words with corpus `pud`:
+
+        >>> from pythainlp.tag import pos_tag  # doctest: +SKIP
+
+        >>> words = ['ฉัน','มี','ชีวิต','รอด','ใน','อาคาร','หลบภัย','ของ', \\  # doctest: +SKIP
+        ...     'นายก', 'เชอร์ชิล']
+        >>> pos_tag(words, corpus="pud")  # doctest: +SKIP
+        >>> # [('ฉัน', 'PRON'), ('มี', 'VERB'), ('ชีวิต', 'NOUN'), ('รอด', 'VERB'),
+        >>> #   ('ใน', 'ADP'), ('อาคาร', 'NOUN'), ('หลบภัย', 'NOUN'),
+        >>> #   ('ของ', 'ADP'), ('นายก', 'NOUN'), ('เชอร์ชิล', 'PROPN')]
+
+    Tag words with different engines including *perceptron* and *unigram*:
+
+        >>> from pythainlp.tag import pos_tag  # doctest: +SKIP
+
+        >>> words = [
+        ...     "เก้าอี้",
+        ...     "มี",
+        ...     "จำนวน",
+        ...     "ขา",
+        ...     " ",
+        ...     "=",
+        ...     "3",
+        ... ]  # doctest: +SKIP
+
+        >>> pos_tag(
+        ...     words, engine="perceptron", corpus="orchid"
+        ... )  # doctest: +SKIP
+        [('เก้าอี้', 'NCMN'), ('มี', 'VSTA'), ('จำนวน', 'NCMN'),
+          ('ขา', 'NCMN'), (' ', 'PUNC'),
+          ('=', 'PUNC'), ('3', 'NCNM')]
+
+        >>> pos_tag(words, engine="unigram", corpus="pud")  # doctest: +SKIP
+        [('เก้าอี้', None), ('มี', 'VERB'), ('จำนวน', 'NOUN'), ('ขา', None),
+          ('<space>', None), ('<equal>', None), ('3', 'NUM')]
+    """
+    if not words:
+        return []
+
+    _support_corpus = [
+        "blackboard",
+        "blackboard_ud",
+        "orchid",
+        "orchid_ud",
+        "pud",
+        "tdtb",
+        "tud",
+    ]
+
+    if engine == "perceptron" and corpus in _support_corpus:
+        from pythainlp.tag.perceptron import tag as tag_
+    elif engine == "tltk":
+        from pythainlp.tag.tltk import pos_tag as tag_
+
+        corpus = "tnc"
+    elif engine == "unigram" and corpus in _support_corpus:  # default
+        from pythainlp.tag.unigram import tag as tag_
+    else:
+        raise ValueError(
+            f"pos_tag not support {engine} engine or {corpus} corpus."
+        )
+
+    word_tags = tag_(words, corpus=corpus)
+
+    return word_tags
+
+
+def pos_tag_sents(
+    sentences: list[list[str]],
+    engine: str = "perceptron",
+    corpus: str = "orchid",
+) -> list[list[tuple[str, str]]]:
+    """
+    Tag sentences with part-of-speech (POS) tags.
+
+    :param list[list[str]] sentences: list of lists of words to be tagged
+    :param str engine: engine to use for tagging. Options are:
+
+        * *perceptron* - perceptron tagger (default)
+        * *unigram* - unigram tagger
+        * *tltk* - TLTK: Thai Language Toolkit (supports the TNC corpus
+          only; other corpora are converted to the TNC corpus)
+    :param str corpus: corpus used to train the tagger model. Options are:
+
+        * *orchid* - `ORCHID
+          <https://www.academia.edu/9127599/Thai_Treebank>`_ corpus,
+          text from Thai academic articles (default)
+        * *orchid_ud* - ORCHID text, with tags mapped to Universal POS tags
+        * *blackboard* - `blackboard treebank
+          <https://bitbucket.org/kaamanita/blackboard-treebank/src/master/>`_
+        * *blackboard_ud* - blackboard text, with tags mapped to
+          Universal POS tags from
+          `Universal Dependencies <https://universaldependencies.org/>`_
+        * *pud* - `Parallel Universal Dependencies (PUD)
+          <https://github.com/UniversalDependencies/UD_Thai-PUD>`_
+          treebank, natively uses Universal POS tags
+        * *tnc* - Thai National Corpus (supports the tltk engine only)
+    :return: list of lists of tuples (word, POS tag)
+    :rtype: list[list[tuple[str, str]]]
+
+    :Example:
+
+    Labels POS for two sentences:
+
+        >>> from pythainlp.tag import pos_tag_sents  # doctest: +SKIP
+
+        >>> sentences = [['เก้าอี้','มี','3','ขา'], \\  # doctest: +SKIP
+        ...                     ['นก', 'บิน', 'กลับ', 'รัง']]
+        >>> pos_tag_sents(sentences, corpus="pud")  # doctest: +SKIP
+        [[('เก้าอี้', 'PROPN'), ('มี', 'VERB'), ('3', 'NUM'),
+          ('ขา', 'NOUN')], [('นก', 'NOUN'), ('บิน', 'VERB'),
+          ('กลับ', 'VERB'), ('รัง', 'NOUN')]]
+    """
+    if not sentences:
+        return []
+
+    return [pos_tag(sent, engine=engine, corpus=corpus) for sent in sentences]
+
+
+def pos_tag_transformers(
+    sentence: str,
+    engine: str = "bert",
+    corpus: str = "blackboard",
+    revision: Optional[str] = None,
+) -> list[list[tuple[str, str]]]:
+    """
+    Tag a sentence with part-of-speech (POS) tags using a transformer model.
+
+    :param str sentence: sentence to be tagged
+    :param str engine: engine to use for tagging. Options are:
+
+        * *bert* - BERT: Bidirectional Encoder Representations from
+          Transformers (default)
+        * *wangchanberta* - fine-tuned version of
+          airesearch/wangchanberta-base-att-spm-uncased on the PUD corpus
+          (supports the PUD corpus only)
+        * *phayathai* - fine-tuned version of clicknext/phayathaibert
+          on the blackboard corpus (supports the blackboard corpus only)
+        * *mdeberta* - mDeBERTa: Multilingual Decoding-enhanced BERT
+          with disentangled attention (supports the PUD corpus only)
+    :param str corpus: corpus used to train the tagger model. Options are:
+
+        * *blackboard* - `blackboard treebank
+          <https://bitbucket.org/kaamanita/blackboard-treebank/src/master/>`_
+          (supports the bert engine only) (default)
+        * *pud* - `Parallel Universal Dependencies (PUD)
+          <https://github.com/UniversalDependencies/UD_Thai-PUD>`_
+          treebank, natively uses Universal POS tags
+          (supports the wangchanberta and mdeberta engines)
+    :param Optional[str] revision: git revision (branch, tag, or commit
+        hash) of the model. Pin to a full commit hash for secure downloads
+    :return: list of lists of tuples (word, POS tag)
+    :rtype: list[list[tuple[str, str]]]
+
+    :Example:
+
+    Labels POS for given sentence:
+
+        >>> from pythainlp.tag import pos_tag_transformers  # doctest: +SKIP
+
+        >>> sentences = "แมวทำอะไรตอนห้าโมงเช้า"  # doctest: +SKIP
+        >>> pos_tag_transformers(
+        ...     sentences, engine="bert", corpus="blackboard"
+        ... )  # doctest: +SKIP
+        [[('แมว', 'NOUN'), ('ทําอะไร', 'VERB'), ('ตอนห้าโมงเช้า', 'NOUN')]]
+    """
+    try:
+        from transformers import (
+            AutoModelForTokenClassification,
+            AutoTokenizer,
+            TokenClassificationPipeline,
+        )
+    except ImportError as e:
+        raise ImportError(
+            "transformers is not installed. Install it with: pip install transformers"
+        ) from e
+
+    if not sentence:
+        return []
+
+    _blackboard_support_engine = {
+        "bert": "lunarlist/pos_thai",
+        "phayathai": "lunarlist/pos_thai_phayathai",
+    }
+
+    _pud_support_engine = {
+        "wangchanberta": "Pavarissy/wangchanberta-ud-thai-pud-upos",
+        "mdeberta": "Pavarissy/mdeberta-v3-ud-thai-pud-upos",
+    }
+
+    if corpus == "blackboard" and engine in _blackboard_support_engine:
+        base_model = _blackboard_support_engine.get(engine)
+        model = AutoModelForTokenClassification.from_pretrained(
+            base_model, revision=revision
+        )
+        tokenizer = AutoTokenizer.from_pretrained(
+            base_model, revision=revision
+        )
+    elif corpus == "pud" and engine in _pud_support_engine:
+        base_model = _pud_support_engine.get(engine)
+        model = AutoModelForTokenClassification.from_pretrained(
+            base_model, revision=revision
+        )
+        tokenizer = AutoTokenizer.from_pretrained(
+            base_model, revision=revision
+        )
+    else:
+        raise ValueError(
+            f"pos_tag_transformers not support {engine} engine or {corpus} corpus."
+        )
+
+    pipeline = TokenClassificationPipeline(
+        model=model,
+        tokenizer=tokenizer,
+        aggregation_strategy="simple",
+    )
+
+    outputs = pipeline(sentence)
+    word_tags = [[(tag["word"], tag["entity_group"]) for tag in outputs]]
+    return word_tags

@@ -1,0 +1,131 @@
+# SPDX-FileCopyrightText: 2016-2026 PyThaiNLP Project
+# SPDX-FileType: SOURCE
+# SPDX-License-Identifier: Apache-2.0
+"""
+Tokenize text with wtpsplit.
+
+wtpsplit implements "Where's the Point? Self-Supervised Multilingual
+Punctuation-Agnostic Sentence Segmentation".
+
+GitHub: https://github.com/bminixhofer/wtpsplit
+"""
+
+from __future__ import annotations
+
+import threading
+from typing import Optional, cast
+
+from wtpsplit import WtP
+
+_MODEL: Optional[WtP] = None
+_MODEL_NAME: Optional[str] = None
+_model_lock: threading.Lock = threading.Lock()
+
+
+def _tokenize(
+    text: str,
+    lang_code: str = "th",
+    model: str = "wtp-bert-mini",
+    tokenize: str = "sentence",
+    paragraph_threshold: float = 0.5,
+    style: str = "newline",
+) -> list[str]:
+    """
+    Tokenize text with a WtP model, protecting model loading.
+
+    The wrapper uses a lock to protect model loading when switching models.
+    However, thread-safety of the underlying WtP library itself is not
+    guaranteed. Refer to the WtP library documentation for its
+    thread-safety guarantees.
+
+    :param str text: text to be tokenized
+    :param str lang_code: language code of the text
+    :param str model: name of the WtP model
+    :param str tokenize: level of tokenization, ``"sentence"`` or
+        ``"paragraph"``
+    :param float paragraph_threshold: threshold for paragraph boundaries
+    :param str style: paragraph style, ``"newline"`` or ``"opus100"``
+    :return: list of sentences or paragraphs
+    :rtype: list[str]
+    :raises RuntimeError: if the model fails to load
+    :raises ValueError: if the paragraph style is unknown
+    """
+    # Thread-safe model loading
+    global _MODEL, _MODEL_NAME
+    with _model_lock:
+        if model != _MODEL_NAME:
+            _MODEL = WtP(model_name_or_model=model)
+            _MODEL_NAME = model
+        model_instance = _MODEL
+
+    # Ensure model is loaded
+    if model_instance is None:
+        raise RuntimeError("Model failed to load")
+
+    if tokenize == "sentence":
+        return cast(
+            "list[str]", model_instance.split(text, lang_code=lang_code)
+        )
+    # Paragraph
+    if style == "newline":
+        return cast(
+            "list[str]",
+            model_instance.split(
+                text,
+                lang_code=lang_code,
+                do_paragraph_segmentation=True,
+                paragraph_threshold=paragraph_threshold,
+            ),
+        )
+    if style == "opus100":
+        return cast(
+            "list[str]",
+            model_instance.split(
+                text,
+                lang_code=lang_code,
+                do_paragraph_segmentation=True,
+                threshold=paragraph_threshold,
+                style=style,
+            ),
+        )
+    raise ValueError(
+        f"""Segmentation style \"{style}\" not found.
+              It might be a typo; if not, please consult our document."""
+    )
+
+
+def tokenize(
+    text: str,
+    size: str = "mini",
+    tokenize: str = "sentence",
+    paragraph_threshold: float = 0.5,
+    style: str = "newline",
+) -> list[str]:
+    """
+    Tokenize text into sentences or paragraphs with wtpsplit.
+
+    :param str text: text to be tokenized
+    :param str size: model size (tiny, mini, base, or large)
+    :param str tokenize: tokenization level (sentence or paragraph)
+    :param float paragraph_threshold: threshold for the paragraph boundary
+    :param str style: paragraph separator style (newline or newline-char)
+    :return: list of sentences or paragraphs
+    :rtype: list[str]
+    """
+    _model_load = ""
+    if size == "tiny":
+        _model_load = "wtp-bert-tiny"
+    elif size == "base":
+        _model_load = "wtp-canine-s-1l"
+    elif size == "large":
+        _model_load = "wtp-canine-s-12l"
+    else:  # mini
+        _model_load = "wtp-bert-mini"
+
+    return _tokenize(
+        text,
+        model=_model_load,
+        tokenize=tokenize,
+        paragraph_threshold=paragraph_threshold,
+        style=style,
+    )
