@@ -32,6 +32,9 @@ export default function PublicHotel({ staff, member, user = null, logout }: { st
     if (root.current) return setupReveal(root.current)
   }, [])
   useEffect(() => {
+    if (window.location.hash === '#discover') discover.current?.scrollIntoView({ behavior: 'instant' })
+  }, [])
+  useEffect(() => {
     const searches = searchVersion.current
     let frame = 0
     const update = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(() => setProgress(Math.min(1, Math.max(0, -(intro.current?.getBoundingClientRect().top || 0) / window.innerHeight)))) }
@@ -67,7 +70,7 @@ export default function PublicHotel({ staff, member, user = null, logout }: { st
       </div>
     </section>
     <section ref={discover} id="discover" className="discover-section">
-      <header className="hotel-header"><a href="#discover" aria-label="Lub d หน้าแรก"><Brand publicLogo /></a><div className="hotel-account-actions">{user ? <><button className="member-profile" onClick={member} aria-label={'บัญชีสมาชิก ' + user.name}><img src="/figma/profile.svg" alt="" /><span><strong>{user.name}</strong><small>เข้าสู่ระบบแล้ว</small></span></button><button onClick={logout}>ออกจากระบบ</button></> : <>{member && <button onClick={member}>สมัครสมาชิก / เข้าสู่ระบบ</button>}<button className="staff-profile" onClick={staff} aria-label="เข้าสู่ระบบพนักงาน"><img src="/figma/profile.svg" alt="" /><span>พนักงาน</span></button></>}</div></header>
+      <header className="hotel-header"><a className="home-link" href="#home" aria-label="Lub d หน้าแรก"><Brand publicLogo /></a><div className="hotel-account-actions">{user ? <><button className="member-profile" onClick={member} aria-label={'บัญชีสมาชิก ' + user.name}><img src="/figma/profile.svg" alt="" /><span><strong>{user.name}</strong><small>เข้าสู่ระบบแล้ว</small></span></button><button onClick={logout}>ออกจากระบบ</button></> : <>{member && <button onClick={member}>สมัครสมาชิก / เข้าสู่ระบบ</button>}<button className="staff-profile" onClick={staff} aria-label="เข้าสู่ระบบพนักงาน"><img src="/figma/profile.svg" alt="" /><span>พนักงาน</span></button></>}</div></header>
       <div className="discover-heading" data-reveal><h1>A GOOD STAY. <br className="mobile-break" />A GREAT DAY.</h1><p className="desktop-copy">พักใจกลางเมือง แล้วออกไปพบเรื่องราวใหม่</p><p className="mobile-copy">ค้นพบห้องพักที่ใช่ ใจกลางกรุงเทพฯ</p></div>
       <div className="hotel-gallery" data-reveal aria-label="ภาพโรงแรม"><picture><source media="(max-width: 680px)" srcSet="/figma/hotel-mobile.png" /><img src="/figma/hotel.png" alt="อาคาร Lub d Bangkok Siam ในยามค่ำคืน" /></picture><img src="/figma/pool.png" alt="สระว่ายน้ำและพื้นที่พักผ่อนของโรงแรม" /><div className="lobby-photo"><img src="/figma/lobby.png" alt="ล็อบบี้และพื้นที่ส่วนกลาง" /></div></div>
       <div className="discover-search" data-reveal><form className="availability-search" onSubmit={e => void search(e)}>

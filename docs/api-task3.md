@@ -8,7 +8,7 @@ Task 4 ต่อจาก contract นี้: update/cancel จะคืน `409
 
 | Endpoint | Input | Response |
 |---|---|---|
-| `GET /api/rooms/availability` | ต้องมี `checkInDate`, `checkOutDate`, `guestCount`; เพิ่ม `page`, `limit` ได้ | 200 `{items,page,limit,total}` |
+| `GET /api/rooms/availability` | ต้องมี `checkInDate`, `checkOutDate`, `guestCount`; เพิ่ม `page`, `limit`, `excludeBookingId` ได้ | 200 `{items,page,limit,total}` |
 | `GET /api/bookings` | `status`, `guestId`, `roomId`, `checkInFrom`, `checkInTo`, `page`, `limit` | 200 `{items,page,limit,total}` |
 | `GET /api/bookings/:id` | ObjectId; ไม่รับ query | 200 Booking หรือ 404 `BOOKING_NOT_FOUND` |
 | `POST /api/bookings` | `guestId`, `roomId`, `guestCount`, `checkInDate`, `checkOutDate` ครบทุกฟิลด์ | 201 Booking |
@@ -17,7 +17,9 @@ Task 4 ต่อจาก contract นี้: update/cancel จะคืน `409
 
 List ใช้ page 1, limit 20 เป็นค่าเริ่มต้น สูงสุด 100; booking เรียง `createdAt desc, id desc`. ตัวกรองวันเป็น **วันเข้า** แบบ inclusive ทั้งสองด้าน ไม่ใช่การหา overlap และไม่จำกัด filter เป็น 365 วัน; ใช้ตัว parser วันเดิมตรวจแต่ละขอบเขต. ปฏิเสธ unknown body/query fields. Write routes ไม่รับ query.
 
-Availability เรียก service เดิมและแบ่งหน้าหลังกรองครบ จึงได้ total ของห้องว่างจริง; response มีเฉพาะ `roomId,roomNumber,roomType,capacity,pricePerNight`. กรองห้อง/ประเภทที่ active, capacity เพียงพอ, ห้อง status `available` และไม่มี claims ของคืนที่ค้น. ห้อง occupied/maintenance ถูกตัดออกแม้ค้นวันอนาคต. ขณะนี้ service อ่าน candidates ทั้งชุดก่อนกรองและ pagination; ปริมาณ response ถูกจำกัด แต่ยังไม่ได้ทำ database pagination.
+Availability แบ่งหน้าหลังกรองครบ จึงได้ total ของห้องว่างจริง; response มีเฉพาะ `roomId,roomNumber,roomType,capacity,pricePerNight`. ต้องเป็นห้อง/ประเภท active, capacity เพียงพอ และไม่มี claims ชน. ห้อง `available` จองได้ตามปกติ; ห้อง `occupied` จองอนาคตได้เมื่อมีผู้พัก checked_in เพียงหนึ่ง booking วันออกยังไม่ถึงตามเวลา Asia/Bangkok และวันเข้าใหม่ไม่น้อยกว่าวันออกเดิม. หากถึง/เลยกำหนดออก ข้อมูลผู้พักขาดหรือกำกวมจะไม่เปิดจอง ห้อง maintenance/inactive ยังถูกตัดออกเสมอ. ตั้ง `ALLOW_FUTURE_OCCUPIED_BOOKINGS=false` เพื่อปิดการจองอนาคตของ occupied ทั้งหมด. Check-in จริงยังต้องให้พนักงานปล่อยห้องก่อน ไม่ได้เปลี่ยนสถานะกายภาพจากการค้นหา. Service อ่าน candidates ก่อนกรองและ pagination; ยังไม่ได้ทำ database pagination.
+
+`excludeBookingId` ใช้เฉพาะ staff availability ตอนแก้ confirmed booking ที่มีอยู่จริง เพื่อยกเว้น claims ของ booking นั้นเท่านั้น ไม่ยกเว้นผู้อื่น และยังตรวจ capacity/สถานะตามเดิม. Public availability ไม่ยอมรับฟิลด์นี้. การบันทึกจริงตรวจ claims ซ้ำใน transaction.
 
 Booking response ใช้ allowlist: `id,guestId,roomId,guestCount,checkInDate,checkOutDate,status,pricePerNight,totalPrice,actualCheckInAt,actualCheckOutAt,cancelledAt,createdAt,updatedAt,createdById,updatedById`. ไม่มี guest document, user/session relation, claims หรือ payment records แนบมา; UI ใช้ guest/room APIs เดิมเมื่อจำเป็น.
 

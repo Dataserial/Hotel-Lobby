@@ -49,6 +49,14 @@ test('API rejects malformed rendered guest and room fields while preserving lega
   assert.equal((await api(async()=>Response.json({...room,roomTypeId:'t1',status:'available',floor:1,active:true})).request('/rooms/r1',null)).floor,1);
 });
 
+for(const field of ['date','checkOutDate']) test('API validates real YYYY-MM-DD public overview '+field,async()=>{
+  const overview={date:'2026-10-13',checkOutDate:'2026-10-14',timezone:'Asia/Bangkok',updatedAt:'2026-10-13T03:00:00Z',totalRooms:0,availableRooms:0,bookedRooms:0,roomTypes:[]};
+  for(const value of ['not-a-date','2026-02-30','2026-02-29','2026-13-01','2026-00-01','2026-10-00','2026-4-01','2026-10-13T00:00:00Z']) {
+    await assert.rejects(api(async()=>Response.json({...overview,[field]:value})).request('/public/overview',null),error=>error.code==='PROTOCOL_ERROR',field+' '+value);
+  }
+  assert.equal((await api(async()=>Response.json({...overview,[field]:'2028-02-29'})).request('/public/overview',null))[field],'2028-02-29');
+});
+
 test('API deadline and caller cancellation settle hung fetch and attach a signal',async()=>{
   const fetch=(_url,{signal})=>new Promise((_,reject)=>{signal.addEventListener('abort',()=>reject(new DOMException('aborted','AbortError')),{once:true});if(signal.aborted)reject(new DOMException('aborted','AbortError'))});
   await assert.rejects(api(fetch).request('/guests',null,{timeoutMs:10}),e=>e.code==='TIMEOUT');

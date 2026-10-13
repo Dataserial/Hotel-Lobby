@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Hotel Lobby Task 1–2 API
   version: 0.2.0
-  description: Prisma/MongoDB API. Prices use integer baht; all timestamps use UTC.
+  description: Prisma/MongoDB API. Prices use integer baht; timestamps use UTC. Customer auth additions are in openapi-membership.yaml; operational routes require admin/receptionist, and user management requires admin.
 servers:
   - url: http://localhost:3000
 security:
@@ -42,7 +42,7 @@ components:
         id: { type: string }
         name: { type: string }
         email: { type: string, format: email }
-        role: { type: string, enum: [admin, receptionist] }
+        role: { type: string, enum: [admin, receptionist, customer] }
         active: { type: boolean }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
@@ -87,8 +87,8 @@ components:
       properties:
         name: { type: string, maxLength: 120 }
         email: { type: string, format: email }
-        password: { type: string, minLength: 12, maxLength: 128 }
-        role: { type: string, enum: [admin, receptionist] }
+        password: { type: string, minLength: 12, maxLength: 72, description: Maximum 72 UTF-8 bytes; preserve whitespace exactly }
+        role: { type: string, enum: [admin, receptionist, customer] }
     RoomTypeInput:
       type: object
       required: [name, capacity, basePrice]
@@ -120,8 +120,8 @@ components:
       properties:
         name: { type: string, maxLength: 120 }
         email: { type: string, format: email }
-        password: { type: string, minLength: 12, maxLength: 128 }
-        role: { type: string, enum: [admin, receptionist] }
+        password: { type: string, minLength: 12, maxLength: 72, description: Maximum 72 UTF-8 bytes; preserve whitespace exactly }
+        role: { type: string, enum: [admin, receptionist, customer] }
         active: { type: boolean }
     RoomTypePatch:
       type: object
@@ -211,7 +211,7 @@ paths:
       parameters:
         - { $ref: '#/components/parameters/page' }
         - { $ref: '#/components/parameters/limit' }
-        - { in: query, name: role, schema: { type: string, enum: [admin, receptionist] } }
+        - { in: query, name: role, schema: { type: string, enum: [admin, receptionist, customer] } }
         - { in: query, name: active, schema: { type: boolean } }
         - { in: query, name: q, schema: { type: string } }
       responses: { '200': { description: Paginated users without password hashes }, '403': { $ref: '#/components/responses/Forbidden' } }

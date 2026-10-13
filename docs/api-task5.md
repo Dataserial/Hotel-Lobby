@@ -10,7 +10,7 @@ Base `/api`. JSON, integer baht, UTC event timestamps, hotel dates in Asia/Bangk
 {"date":"2026-10-09","timezone":"Asia/Bangkok","availableRooms":3,"occupiedRooms":1,"arrivalsToday":2,"departuresToday":1}
 ```
 
-- `availableRooms`: rooms bookable for one guest for tonight `[date,date+1)`, using the exact Booking availability service. Requires active room/type, sufficient capacity, available status and no night claim. Occupied and maintenance rooms are excluded even for future searches.
+- `availableRooms`: rooms bookable for one guest for tonight `[date,date+1)`, using the exact Booking availability service. Requires active room/type, sufficient capacity and no night claim. Occupied rooms are not bookable tonight, but future searches may include them after a single occupant's future scheduled checkout; due/overdue or ambiguous occupancy remains blocked. See `api-task3.md`. Maintenance rooms are always excluded.
 - `occupiedRooms`: active rooms whose current physical status is occupied. These counts are not complements: unavailable, legacy and maintenance rooms are excluded.
 - `arrivalsToday` / `departuresToday`: non-cancelled bookings with scheduled check-in/check-out on the hotel date, including already processed stays. These are scheduled arrivals, not bookings created today.
 - Counts are live independent reads, not a financial or transactional snapshot during simultaneous writes.

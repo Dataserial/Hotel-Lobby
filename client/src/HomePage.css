@@ -1,0 +1,68 @@
+.home-page { background: var(--canvas); }
+.home-header { background: var(--navy); color: white; display: flex; align-items: center; flex-wrap: wrap; gap: 24px; padding: 20px 5%; }
+.home-link { display: inline-flex; text-decoration: none; color: inherit; border-radius: 8px; }
+.home-link:focus-visible, .home-page a:focus-visible, .home-faq summary:focus-visible { outline: 3px solid var(--yellow); outline-offset: 5px; }
+.home-header nav { display: flex; align-items: center; flex-wrap: wrap; gap: 24px; margin-left: auto; }
+.home-header nav a { color: white; text-decoration: none; font-size: 14px; }
+.home-header nav a:hover { text-decoration: underline; }
+.home-account { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.home-account span { display: grid; max-width: 200px; overflow-wrap: anywhere; font-size: 14px; }
+.home-account small { color: #bcd0da; }
+.home-header button { min-height: 42px; padding: 10px 18px; font-size: 14px; }
+.home-hero { display: grid; grid-template-columns: 1.1fr 1fr; gap: 6%; padding: 68px 5% 60px; background: var(--navy); color: white; overflow: hidden; }
+.home-hero .eyebrow { color: var(--yellow); letter-spacing: .16em; }
+.home-hero h1 { font-size: clamp(32px, 3.5vw, 58px); font-weight: 600; line-height: 1.45; margin: 22px 0; }
+.home-moon { color: var(--yellow); margin-left: 12px; }
+.home-hero p { color: #d0dfe7; max-width: 580px; line-height: 1.9; font-size: 17px; }
+.home-hero small { display: block; color: #bcd0da; margin-top: 32px; }
+.home-hero-actions { display: flex; flex-wrap: wrap; gap: 24px; align-items: center; margin-top: 30px; }
+.home-hero-actions a { color: white; text-underline-offset: 5px; }
+.home-hero figure { position: relative; margin: 0; min-width: 0; align-self: stretch; min-height: 360px; border-radius: 32px; overflow: hidden; }
+.home-hero figure img { width: 100%; height: 100%; object-fit: cover; position: absolute; }
+.home-hero figcaption { position: absolute; bottom: 0; left: 0; width: 100%; padding: 34px 24px 24px; background: linear-gradient(transparent,#043d55); font-size: 14px; letter-spacing: .1em; }
+.home-section { padding: 60px 5%; scroll-margin-top: 24px; }
+.home-section h2 { font-size: clamp(25px, 2.4vw, 36px); font-weight: 600; margin: 12px 0; }
+.home-section p { color: var(--muted); line-height: 1.8; }
+.home-section-head { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: 28px; }
+.home-section-head p { margin-bottom: 0; }
+.home-stat-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 20px; }
+.home-stat-grid article { background: white; padding: 28px; border-radius: 24px; display: grid; gap: 8px; }
+.home-stat-grid article:first-child { background: var(--yellow); }
+.home-stat-grid strong { font-size: clamp(34px,4vw,48px); font-weight: 600; color: var(--navy); }
+.home-stat-grid small { color: var(--muted); line-height: 1.7; }
+.home-stat-grid article:first-child small { color: var(--navy); }
+.home-data-note { font-size: 13px; margin-bottom: 0; }
+.home-room-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 24px; }
+.home-room-card { display: flex; flex-direction: column; align-items: start; background: white; padding: 32px; border-radius: 24px; gap: 16px; min-width: 0; overflow-wrap: anywhere; }
+.home-room-card h3 { font-size: 26px; margin: 0; font-weight: 600; }
+.home-room-card p { font-size: 14px; margin: 0; }
+.home-room-card ul { padding-left: 20px; margin: 0; color: var(--muted); font-size: 14px; line-height: 1.8; }
+.home-room-symbol { color: var(--navy); font-size: 38px; }
+.home-room-price { margin-top: auto; padding-top: 12px; }
+.home-room-price strong { font-size: 30px; font-weight: 600; }
+.home-room-price span { color: var(--muted); }
+.home-room-card button { width: 100%; }
+.home-guide { background: white; }
+.home-guide ol { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 24px; padding: 0; margin: 36px 0; list-style: none; }
+.home-guide li > span { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; background: var(--yellow); border-radius: 50%; font-weight: 600; }
+.home-guide h3 { font-size: 18px; margin: 20px 0 10px; }
+.home-guide p { font-size: 14px; }
+.home-guide-note { border-top: 1px solid var(--line); padding-top: 24px; }
+.home-faq { display: grid; grid-template-columns: 1fr 1.3fr; gap: 8%; }
+.home-faq details { border-bottom: 1px solid var(--line); padding: 22px 0; }
+.home-faq summary { cursor: pointer; font-weight: 600; line-height: 1.7; }
+.home-faq details p { margin-bottom: 0; }
+.home-cta { background: var(--navy); color: white; border-radius: 32px; margin: 20px 5% 60px; padding: 40px; display: flex; justify-content: space-between; align-items: center; gap: 24px; }
+.home-cta h2 { font-size: 28px; font-weight: 600; margin: 0 0 10px; }
+.home-cta p { color: #d0dfe7; margin: 0; }
+.home-cta button { flex-shrink: 0; }
+.home-footer { background: var(--navy); color: white; padding: 28px 5%; display: flex; flex-wrap: wrap; align-items: center; gap: 24px; }
+.home-footer > span { color: #bcd0da; font-size: 12px; margin-right: auto; }
+@media (max-width: 1100px) { .home-header nav { margin-left: 0; }.home-hero { gap: 4%; }.home-guide ol { grid-template-columns: repeat(2,minmax(0,1fr)); }.home-room-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 680px) {
+  .home-header { gap: 20px; padding: 20px; }.home-header .lub-brand { font-size: 30px; }
+  .home-header nav { order: 2; gap: 18px; width: 100%; }.home-account { margin-left: auto; }.home-account span { max-width: 140px; }
+  .home-hero { grid-template-columns: 1fr; padding: 36px 20px; gap: 32px; }.home-hero figure { min-height: 260px; border-radius: 24px; }.home-hero h1 { font-size: 36px; }.home-hero p { font-size: 16px; }
+  .home-section { padding: 40px 20px; }.home-stat-grid, .home-room-grid, .home-guide ol, .home-faq { grid-template-columns: 1fr; }.home-stat-grid { gap: 12px; }.home-stat-grid article { padding: 24px; }.home-stat-grid strong { font-size: 38px; }
+  .home-room-card { padding: 24px; }.home-faq { gap: 16px; }.home-cta { margin: 0 20px 40px; padding: 28px; flex-direction: column; align-items: start; }.home-cta button { width: 100%; }.home-footer { padding: 28px 20px; }
+}

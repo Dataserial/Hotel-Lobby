@@ -28,7 +28,7 @@ Example: a receptionist calls `POST /api/guests` with `{"fullName":"Jane Doe","p
 | Route | Input / behavior |
 |---|---|
 | `GET /api/users` | filters `role`, `active`, `q`; admin only; no hash |
-| `POST /api/users` | `name,email,password,role`; password 12–128 chars, bcrypt; admin only |
+| `POST /api/users` | `name,email,password,role`; new password ≥12 characters and ≤72 UTF-8 bytes, exact whitespace preserved, bcrypt; admin only |
 | `GET/PATCH /api/users/:id` | PATCH accepts `name,email,password,role,active`; active admin cannot demote/deactivate self or remove last admin |
 | `POST /api/users/:id/deactivate` | admin only; invalidates active sessions through per-request active check |
 | `GET /api/room-types` | filters `active`, `q` |

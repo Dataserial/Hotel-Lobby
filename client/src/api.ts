@@ -7,6 +7,7 @@ export type Guest = { id: string; fullName: string; phone: string; email?: strin
 export type RoomType = { id: string; name: string; capacity: number; basePrice: number; amenities: string[]; active: boolean }
 export type Room = { id: string; roomNumber: string; floor?: number; roomTypeId: string; status: string; active: boolean }
 export type AvailableRoom = { roomId: string; roomNumber: string; roomType: string; capacity: number; pricePerNight: number }
+export type PublicOverview = { date: string; checkOutDate: string; timezone: string; updatedAt: string; totalRooms: number; availableRooms: number; bookedRooms: number; roomTypes: { id: string; name: string; capacity: number; pricePerNight: number; amenities: string[]; totalRooms: number; availableRooms: number }[] }
 export type Booking = { id: string; guestId: string; roomId: string; guestCount: number; checkInDate: string; checkOutDate: string; status: string; pricePerNight: number; totalPrice: number }
 export type Payment = { amount: number; paidAmount: number; refundedAmount: number; net: number; remaining: number; status: string; ledgerReady: boolean }
 export type Transaction = { id: string; kind: string; amount: number; method: string; reference: string; receiptId?: string; occurredAt: string }
@@ -38,6 +39,7 @@ function validItem(resource: string, item: unknown): boolean {
 function validPayload(path: string, data: unknown, method: string): boolean {
   if (!record(data)) return false
   const resource = path.split('?')[0]
+  if (resource === '/public/overview') return strings(data, 'date', 'checkOutDate', 'timezone', 'updatedAt') && Number.isFinite(Date.parse(String(data.updatedAt))) && numbers(data, 'totalRooms', 'availableRooms', 'bookedRooms') && ['totalRooms', 'availableRooms', 'bookedRooms'].every(key => Number(data[key]) >= 0) && Array.isArray(data.roomTypes) && data.roomTypes.every(type => record(type) && strings(type, 'id', 'name') && numbers(type, 'capacity', 'pricePerNight', 'totalRooms', 'availableRooms') && Number(type.capacity) > 0 && Number(type.pricePerNight) >= 0 && Number(type.totalRooms) >= 0 && Number(type.availableRooms) >= 0 && Array.isArray(type.amenities) && type.amenities.every(amenity => typeof amenity === 'string'))
   if (resource === '/auth/login') return strings(data, 'token') && numbers(data, 'expiresIn') && Number(data.expiresIn) > 0 && validItem('/users', data.user)
   if (['/auth/me', '/auth/register', '/auth/profile'].includes(resource)) return validItem('/users', data.user)
   if (resource === '/dashboard/report') return numbers(data, 'receivedBaht', 'refundedBaht', 'netBaht', 'unreconciledPayments')
