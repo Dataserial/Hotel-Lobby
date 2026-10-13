@@ -82,6 +82,15 @@
 
 .hotel-header { height: auto; min-height: 88px; flex-wrap: wrap; gap: 12px; }
 .hotel-account-actions { display: flex; align-items: center; gap: 12px; }
+.member-profile { display: flex; align-items: center; gap: 10px; text-align: left; max-width: 320px; }
+.member-profile img { width: 36px; height: 36px; flex: 0 0 auto; }
+.member-profile span { min-width: 0; }
+.member-profile strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.member-profile small { display: block; color: var(--muted); font-weight: 400; font-size: 12px; }
+.contact-member { display: flex; gap: 10px; align-items: center; padding: 12px 0; }
+.contact-member img { width: 32px; height: 32px; }
+.contact-member strong, .contact-member small { display: block; overflow-wrap: anywhere; }
+.contact-member small { color: var(--muted); }
 .contact-links { display: grid; gap: 12px; margin: 20px 0; }
 .contact-links a { display: block; color: var(--navy); border: 1px solid var(--line); border-radius: 12px; padding: 12px; overflow-wrap: anywhere; }
 @media (max-width: 680px) { .hotel-account-actions { width: 100%; gap: 8px; } .hotel-account-actions > button { flex: 1; font-size: 13px; min-width: 0; padding: 12px; } }

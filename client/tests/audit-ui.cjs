@@ -48,6 +48,15 @@ test('room type selector and refund source use independent searchable pagination
   assert.ok(nodes(h.render('RoomsView'),n=>typeof n.type==='function'&&n.type.name==='PagedPicker'&&n.props.path.startsWith('/room-types'))[0]);h.unmount();
 });
 
+test('booking room search can reach a room beyond the first inventory page',async()=>{
+  const calls=[];
+  const call=async url=>{calls.push(url);return url.includes('/availability')?page([{roomId:url.includes('page=2')?'room101':'room1',roomNumber:url.includes('page=2')?'ROOM-101':'ROOM-1',roomType:'Standard',capacity:2,pricePerNight:1200}],101,url.includes('page=2')?2:1,20):page([])};
+  const h=harness({call,action:async()=>true,busy:false,setError(){},choice:null,clearChoice(){}});
+  h.render('BookingsView');await h.flush();button(h.render('BookingsView'),'＋ สร้างการจอง').props.onClick();await button(h.render('BookingsView'),'ค้นหาห้องว่าง').props.onClick();await tick();
+  const pager=nodes(h.render('BookingsView'),n=>typeof n.props.change==='function'&&n.props.data?.total===101)[0];assert.ok(pager);await pager.props.change(2);await tick();
+  assert.ok(calls.some(url=>url.includes('page=2')&&url.includes('limit=20')));assert.ok(JSON.stringify(h.render('BookingsView')).includes('ROOM-101'));h.unmount();
+});
+
 test('booking detail ignores old responses and does not reopen after close', async () => {
   const old=deferred(),current=deferred();
   const bookings=[{id:'old001',guestId:'g1',status:'confirmed'},{id:'new002',guestId:'g1',status:'confirmed'}];
