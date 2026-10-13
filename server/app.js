@@ -44,6 +44,7 @@ function createApp(db = prisma, { trustedProxyCidrs = process.env.TRUSTED_PROXY_
     finally { clearTimeout(timer); }
   });
   app.use('/api/public/rooms/availability', rateLimit({ limit: 60 }), require('./routes/api-availability')(db, { publicAccess: true }));
+  app.use('/api/public/rooms/summary', rateLimit({ limit: 60 }), require('./routes/api-public-room-summary')(db));
   app.use('/api/public/overview', rateLimit({ limit: 60 }), require('./routes/api-public-overview')(db));
   app.use('/api/auth/login', rateLimit({ limit: 20, windowMs: 900000 }));
   app.use('/api/auth/register', rateLimit({ limit: 20, windowMs: 900000 }));

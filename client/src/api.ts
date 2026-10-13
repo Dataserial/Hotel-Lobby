@@ -8,6 +8,8 @@ export type RoomType = { id: string; name: string; capacity: number; basePrice: 
 export type Room = { id: string; roomNumber: string; floor?: number; roomTypeId: string; status: string; active: boolean }
 export type AvailableRoom = { roomId: string; roomNumber: string; roomType: string; capacity: number; pricePerNight: number }
 export type PublicOverview = { date: string; checkOutDate: string; timezone: string; updatedAt: string; totalRooms: number; availableRooms: number; bookedRooms: number; roomTypes: { id: string; name: string; capacity: number; pricePerNight: number; amenities: string[]; totalRooms: number; availableRooms: number }[] }
+export type AvailabilityStay = { checkInDate: string; checkOutDate: string; guestCount: number }
+export type RoomAvailabilitySummary = AvailabilityStay & { nights: number; previewDays: number; timezone: string; updatedAt: string; totalAvailableRooms: number; roomTypes: (PublicOverview['roomTypes'][number] & { dates: { checkInDate: string; checkOutDate: string; availableRooms: number }[] })[] }
 export type Booking = { id: string; guestId: string; roomId: string; guestCount: number; checkInDate: string; checkOutDate: string; status: string; pricePerNight: number; totalPrice: number }
 export type Payment = { amount: number; paidAmount: number; refundedAmount: number; net: number; remaining: number; status: string; ledgerReady: boolean }
 export type Transaction = { id: string; kind: string; amount: number; method: string; reference: string; receiptId?: string; occurredAt: string }
@@ -29,6 +31,13 @@ function calendarDate(value: unknown): boolean {
   const date = new Date(value + 'T00:00:00Z')
   return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value
 }
+function validRoomSummary(data: Record<string, unknown>): boolean {
+  if (!calendarDate(data.checkInDate) || !calendarDate(data.checkOutDate) || !strings(data, 'updatedAt') || !Number.isFinite(Date.parse(String(data.updatedAt))) || data.timezone !== 'Asia/Bangkok' || !numbers(data, 'guestCount', 'nights', 'previewDays', 'totalAvailableRooms')) return false
+  if (Number(data.guestCount) < 1 || Number(data.guestCount) > 20 || Number(data.nights) < 1 || Number(data.nights) > 365 || Number(data.previewDays) < 1 || Number(data.previewDays) > 14 || Number(data.totalAvailableRooms) < 0) return false
+  const duration = (start: unknown, end: unknown) => (Date.parse(String(end) + 'T00:00:00Z') - Date.parse(String(start) + 'T00:00:00Z')) / 86400000
+  if (duration(data.checkInDate, data.checkOutDate) !== data.nights || !Array.isArray(data.roomTypes)) return false
+  return data.roomTypes.every(type => record(type) && strings(type, 'id', 'name') && numbers(type, 'capacity', 'pricePerNight', 'totalRooms', 'availableRooms') && Number(type.capacity) >= 1 && Number(type.capacity) <= 20 && Number(type.pricePerNight) >= 0 && Number(type.totalRooms) >= 1 && Number(type.availableRooms) >= 0 && Number(type.availableRooms) <= Number(type.totalRooms) && Array.isArray(type.amenities) && type.amenities.every(amenity => typeof amenity === 'string') && Array.isArray(type.dates) && type.dates.length === data.previewDays && type.dates.every(date => record(date) && calendarDate(date.checkInDate) && calendarDate(date.checkOutDate) && duration(date.checkInDate, date.checkOutDate) === data.nights && numbers(date, 'availableRooms') && Number(date.availableRooms) >= 0 && Number(date.availableRooms) <= Number(type.totalRooms)))
+}
 function validItem(resource: string, item: unknown): boolean {
   if (!record(item)) return false
   if (resource.includes('availability')) return strings(item, 'roomId', 'roomNumber', 'roomType') && numbers(item, 'capacity', 'pricePerNight')
@@ -44,6 +53,7 @@ function validItem(resource: string, item: unknown): boolean {
 function validPayload(path: string, data: unknown, method: string): boolean {
   if (!record(data)) return false
   const resource = path.split('?')[0]
+  if (resource === '/public/rooms/summary') return validRoomSummary(data)
   if (resource === '/public/overview') return calendarDate(data.date) && calendarDate(data.checkOutDate) && strings(data, 'timezone', 'updatedAt') && Number.isFinite(Date.parse(String(data.updatedAt))) && numbers(data, 'totalRooms', 'availableRooms', 'bookedRooms') && ['totalRooms', 'availableRooms', 'bookedRooms'].every(key => Number(data[key]) >= 0) && Array.isArray(data.roomTypes) && data.roomTypes.every(type => record(type) && strings(type, 'id', 'name') && numbers(type, 'capacity', 'pricePerNight', 'totalRooms', 'availableRooms') && Number(type.capacity) > 0 && Number(type.pricePerNight) >= 0 && Number(type.totalRooms) >= 0 && Number(type.availableRooms) >= 0 && Array.isArray(type.amenities) && type.amenities.every(amenity => typeof amenity === 'string'))
   if (resource === '/auth/login') return strings(data, 'token') && numbers(data, 'expiresIn') && Number(data.expiresIn) > 0 && validItem('/users', data.user)
   if (['/auth/me', '/auth/register', '/auth/profile'].includes(resource)) return validItem('/users', data.user)
