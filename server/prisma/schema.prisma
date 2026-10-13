@@ -43,6 +43,19 @@ enum PaymentTransactionKind {
   refund
 }
 
+enum ServiceUnit {
+  per_night
+  per_set
+  per_stay
+}
+
+enum StayRequestStatus {
+  new
+  read
+  processed
+  rejected
+}
+
 model User {
   id               String    @id @default(auto()) @map("_id") @db.ObjectId
   name             String
@@ -59,6 +72,7 @@ model User {
   sessions         Session[]
   customerGuests   Guest[] @relation("CustomerGuests")
   customerBookings Booking[] @relation("CustomerBookings")
+  stayRequests     StayRequest[] @relation("StayRequestMember")
   createdById      String?   @db.ObjectId
   updatedById      String?   @db.ObjectId
 
@@ -73,6 +87,7 @@ model RoomType {
   basePrice Int
   amenities String[]
   active    Boolean  @default(true)
+  supportsExtraBed Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   rooms     Room[]
@@ -80,6 +95,71 @@ model RoomType {
   updatedById String? @db.ObjectId
 
   @@map("roomTypes")
+}
+
+model AdditionalService {
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  nameKey         String      @unique
+  unit            ServiceUnit
+  price           Int?
+  included        Boolean     @default(false)
+  extraBed        Boolean     @default(false)
+  roomTypeIds     String[]    @db.ObjectId
+  maxQuantity     Int         @default(1)
+  active          Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  createdById     String?     @db.ObjectId
+  updatedById     String?     @db.ObjectId
+
+  @@map("additionalServices")
+}
+
+model StayRequest {
+  id                    String            @id @default(auto()) @map("_id") @db.ObjectId
+  memberId              String            @db.ObjectId
+  member                User              @relation("StayRequestMember", fields: [memberId], references: [id])
+  contactName           String
+  contactPhone          String
+  roomTypeId            String            @db.ObjectId
+  roomTypeName          String
+  roomId                String?           @db.ObjectId
+  roomNumber            String?
+  checkInDate           String
+  checkOutDate          String
+  guestCount            Int
+  roomPricePerNight     Int
+  estimatedRoomTotal    Int
+  estimatedServiceTotal Int               @default(0)
+  notes                 String?
+  status                StayRequestStatus @default(new)
+  clientRequestId       String
+  relatedBookingId      String?           @db.ObjectId
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  services              StayRequestService[]
+
+  @@unique([memberId, clientRequestId])
+  @@index([status, createdAt])
+  @@index([memberId, createdAt])
+  @@map("stayRequests")
+}
+
+model StayRequestService {
+  id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  requestId     String      @db.ObjectId
+  request       StayRequest @relation(fields: [requestId], references: [id])
+  serviceId     String      @db.ObjectId
+  name          String
+  quantity      Int
+  unit          ServiceUnit
+  price         Int?
+  included      Boolean
+  estimatedTotal Int        @default(0)
+
+  @@index([requestId])
+  @@map("stayRequestServices")
 }
 
 model Room {

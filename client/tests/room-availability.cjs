@@ -1,6 +1,7 @@
 const {test}=require('node:test');const assert=require('node:assert/strict');
 const {domApp}=require('./helpers/dom.cjs');
-test('availability filters the selected room type before pagination',{timeout:180000},async()=>{
+
+test('category selector has no alternative-date controls and filters paginated results',{timeout:180000},async()=>{
   const {startDatabase}=require('../../server/tests/task3-db');const {createApp}=require('../../server/app');
   const db=await startDatabase('hotel_lobby_task5_test');let server;
   try{

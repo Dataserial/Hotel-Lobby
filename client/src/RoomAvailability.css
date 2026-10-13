@@ -10,6 +10,7 @@
 .availability-banner-empty p, .availability-banner-empty .availability-banner-icon { color: var(--navy); }
 .room-type-browser { background: white; border-radius: 24px; overflow: hidden; }
 .room-type-selector { display: flex; flex-wrap: wrap; gap: 10px; padding: 20px 24px; border-bottom: 1px solid var(--line); }
+.room-type-selector h3 { width: 100%; margin: 0 0 4px; font-size: 18px; }
 .room-type-selector button { flex: 1; min-width: 100px; font-weight: 600; }
 .room-type-selector button[aria-pressed="true"] { background: var(--yellow); border-color: var(--yellow); color: var(--navy); }
 .room-type-summary-grid { display: grid; grid-template-columns: minmax(0,1fr); }
@@ -39,5 +40,6 @@ button.date-chip { min-height: 58px; padding: 8px 3px; border-radius: 10px; font
 .availability-panel .notice button { display: block; margin-top: 12px; }
 .availability-feedback { padding: 24px; border-radius: 20px; background: white; color: var(--muted); }
 .public-room-card .result-room-photo { width: calc(100% + 64px); height: 200px; object-fit: cover; margin: -32px -32px 0; border-radius: 24px 24px 0 0; }
+.stay-request-form { margin: 0 24px 24px; padding: 20px; border-radius: 16px; background: #edf4f7; }.stay-request-form h3,.stay-request-form h4 { margin: 0 0 8px; }.stay-request-form > p { color: var(--muted); font-size: 13px; }.service-list { display: grid; gap: 8px; margin: 16px 0; }.service-option { display: flex; align-items: center; gap: 10px; padding: 12px; background: white; border-radius: 12px; }.service-option > span:nth-child(2) { display: grid; gap: 3px; flex: 1; }.service-option small { color: var(--muted); }.quantity { display: flex !important; align-items: center; gap: 6px; }.quantity button { min-height: 34px; min-width: 34px; padding: 2px 9px; }.stay-request-summary { border-top: 1px solid var(--line); padding-top: 16px; }.stay-request-summary p { margin: 7px 0; font-size: 14px; }.confirm-request { display: grid; gap: 10px; margin-top: 16px; }.confirm-request label { display: grid; gap: 4px; font-size: 13px; }.confirm-request input,.confirm-request textarea { min-height: 40px; }.confirm-request textarea { min-height: 72px; }
 @media (max-width: 960px) { .room-type-summary-grid .room-type-card { grid-template-columns: 1fr; }.room-type-photo { aspect-ratio: 3/2; } }
 @media (max-width: 680px) { .availability-panel { margin: 0 20px 32px; padding: 20px 16px; border-radius: 24px; }.room-type-selector { padding: 16px; gap: 6px; }.room-type-selector button { min-width: 0; padding: 12px 8px; font-size: 13px; }.availability-banner { align-items: start; padding: 18px; gap: 12px; }.availability-banner strong { font-size: 17px; }.availability-panel-head { gap: 16px; }.availability-panel-head > button { width: 100%; }.room-type-content { padding: 20px; }.room-type-content h3 { font-size: 24px; } }

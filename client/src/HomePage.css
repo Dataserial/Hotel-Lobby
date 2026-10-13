@@ -11,12 +11,12 @@
 .home-link { display: inline-flex; text-decoration: none; color: inherit; border-radius: 8px; }
 .home-link:focus-visible, .home-page a:focus-visible, .home-faq summary:focus-visible { outline: 3px solid var(--yellow); outline-offset: 5px; }
 .home-header nav { display: flex; align-items: center; flex-wrap: wrap; gap: 24px; margin-left: auto; }
-.home-header nav a { color: white; text-decoration: none; font-size: 14px; }
-.home-header nav a:hover { text-decoration: underline; }
+.home-header nav a { display: inline-flex; align-items: center; border-radius: 999px; padding: 9px 12px; color: white; text-decoration: none; font-size: 14px; transition: color 220ms ease, background-color 220ms ease, box-shadow 220ms ease; }
+.home-header nav a:hover { color: var(--navy); background-color: var(--yellow); text-decoration: none; }
 .home-account { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .home-account span { display: grid; max-width: 200px; overflow-wrap: anywhere; font-size: 14px; }
 .home-account small { color: #bcd0da; }
-.home-header button { min-height: 42px; padding: 10px 18px; font-size: 14px; }
+.home-header button { min-height: 42px; padding: 10px 18px; font-size: 14px; transition: color 220ms ease, background-color 220ms ease, border-color 220ms ease, box-shadow 220ms ease; }
 .home-hero { display: grid; grid-template-columns: 1.1fr 1fr; gap: 6%; padding: 68px 5% 60px; background: var(--navy); color: white; overflow: hidden; }
 .home-hero .eyebrow { color: var(--yellow); letter-spacing: .16em; }
 .home-hero h1 { font-size: clamp(32px, 3.5vw, 58px); font-weight: 600; line-height: 1.45; margin: 22px 0; }

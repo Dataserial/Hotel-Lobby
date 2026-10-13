@@ -24,7 +24,7 @@ async function publicRoomSummary(prisma, input, now = new Date()) {
     const types = new Map();
     for (const { roomType: type } of rooms) if (!types.has(type.id)) types.set(type.id, {
       id: type.id, name: type.name, capacity: type.capacity, pricePerNight: type.basePrice,
-      amenities: type.amenities, totalRooms: 0, availableRooms: 0,
+      amenities: type.amenities, supportsExtraBed: type.supportsExtraBed, totalRooms: 0, availableRooms: 0,
       dates: ranges.map(range => ({ ...range, availableRooms: 0 })),
     });
     for (const room of rooms) {

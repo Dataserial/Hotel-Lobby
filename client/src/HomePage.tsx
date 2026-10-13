@@ -3,6 +3,8 @@ import { Brand } from './Brand'
 import { errorText, request, type PublicOverview, type User } from './api'
 import { setupReveal } from './reveal'
 import AccountMenu from './AccountMenu'
+import MoonIntro from './MoonIntro'
+import { scrollToTarget } from './navigation'
 import './HomePage.css'
 
 const money = (value: number) => new Intl.NumberFormat('th-TH').format(value)
@@ -10,6 +12,7 @@ const dateLabel = (value: string) => new Intl.DateTimeFormat('th-TH-u-ca-gregory
 
 export default function HomePage({ user, hotel, member, register, staff, logout }: { user: User | null; hotel: () => void; member: () => void; register: () => void; staff: () => void; logout: () => void }) {
   const root = useRef<HTMLElement>(null)
+  const content = useRef<HTMLDivElement>(null)
   const [overview, setOverview] = useState<PublicOverview | null>(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(true)
@@ -26,14 +29,14 @@ export default function HomePage({ user, hotel, member, register, staff, logout 
   }, [refresh])
   const reload = () => { setBusy(true); setRefresh(value => value + 1) }
   const minimum = overview?.roomTypes.length ? Math.min(...overview.roomTypes.map(type => type.pricePerNight)) : null
-  return <main id="home" ref={root} className="home-page">
+  return <main id="home" ref={root} className="home-page"><MoonIntro begin={() => scrollToTarget(content.current)} /><div ref={content}>
     <header className="home-header floating-navbar">
-      <a className="home-link" href="/" aria-label="Lub d หน้าแรก"><Brand publicLogo /></a>
-      <nav aria-label="เมนูหน้าแรก"><a href="/" onClick={event => { event.preventDefault(); document.getElementById('home-rooms')?.scrollIntoView({ behavior: 'smooth' }) }}>ห้องพักและราคา</a><a href="/" onClick={event => { event.preventDefault(); document.getElementById('home-guide')?.scrollIntoView({ behavior: 'smooth' }) }}>วิธีใช้งาน</a><button onClick={hotel}>ค้นหาห้องพัก</button></nav>
+      <a className="home-link" href="#home" aria-label="Lub d หน้าแรก"><Brand publicLogo /></a>
+      <nav aria-label="เมนูหน้าแรก"><a href="#home-rooms">ห้องพักและราคา</a><a href="#home-guide">วิธีใช้งาน</a><button onClick={hotel}>ค้นหาห้องพัก</button></nav>
       <div className="home-account">{user ? <AccountMenu user={user} account={user.role === 'customer' ? member : staff} logout={logout} /> : <><button onClick={member}>เข้าสู่ระบบ</button><button className="primary" onClick={register}>สมัครสมาชิก</button></>}</div>
     </header>
     <section className="home-hero">
-      <div className="home-hero-copy"><span className="eyebrow">LUB D · BANGKOK SIAM</span><h1>เริ่มต้นวันดี ๆ<br />ด้วยห้องพักที่ใช่<span className="home-moon" aria-hidden="true">☾</span></h1><p>ค้นหาห้องว่าง เปรียบเทียบราคา และเตรียมการเข้าพักของคุณในที่เดียว ตั้งแต่เลือกวันพักไปจนถึงติดต่อพนักงานเพื่อยืนยันการจอง</p><div className="home-hero-actions"><button className="primary" onClick={hotel}>ค้นหาห้องพัก</button><a href="/" onClick={event => { event.preventDefault(); document.getElementById('home-guide')?.scrollIntoView({ behavior: 'smooth' }) }}>ดูวิธีใช้งาน ↓</a></div><small>Wi-Fi · ใกล้ BTS สนามกีฬาแห่งชาติ · พื้นที่ส่วนกลาง</small></div>
+      <div className="home-hero-copy"><span className="eyebrow">LUB D · BANGKOK SIAM</span><h1>เริ่มต้นวันดี ๆ<br />ด้วยห้องพักที่ใช่<span className="home-moon" aria-hidden="true">☾</span></h1><p>ค้นหาห้องว่าง เปรียบเทียบราคา และเตรียมการเข้าพักของคุณในที่เดียว ตั้งแต่เลือกวันพักไปจนถึงติดต่อพนักงานเพื่อยืนยันการจอง</p><div className="home-hero-actions"><button className="primary" onClick={hotel}>ค้นหาห้องพัก</button><a href="#home-guide">ดูวิธีใช้งาน ↓</a></div><small>Wi-Fi · ใกล้ BTS สนามกีฬาแห่งชาติ · พื้นที่ส่วนกลาง</small></div>
       <figure><img src="/figma/hotel.png" alt="อาคารโรงแรม Lub d Bangkok Siam ในยามค่ำคืน" /><figcaption>A GOOD STAY. A GREAT DAY.</figcaption></figure>
     </section>
     <section className="home-section home-overview" aria-labelledby="overview-title" aria-busy={busy} data-reveal>
@@ -49,5 +52,6 @@ export default function HomePage({ user, hotel, member, register, staff, logout 
     <section className="home-section home-faq" aria-labelledby="faq-title" data-reveal><div><span className="eyebrow">GOOD TO KNOW</span><h2 id="faq-title">ก่อนจอง ควรรู้อะไรบ้าง?</h2><p>ข้อมูลที่ช่วยให้การเข้าพักของคุณชัดเจนตั้งแต่เริ่มต้น</p></div><div><details><summary>ต้องสมัครสมาชิกก่อนค้นหาหรือไม่?</summary><p>ค้นหาห้องพักได้โดยไม่ต้องเข้าสู่ระบบ หากสมัครสมาชิกจะจัดการชื่อและอีเมลของตัวเองได้ และหน้าโรงแรมจะแสดงบัญชีที่ใช้อยู่</p></details><details><summary>ห้องว่างหน้าแรกต่างจากผลค้นหาอย่างไร?</summary><p>หน้าแรกแสดงห้องสำหรับคืนนี้และผู้พักอย่างน้อย 1 คน ผลค้นหาตรวจตามช่วงวันที่และจำนวนคนที่คุณเลือก จึงอาจมีจำนวนต่างกัน</p></details><details><summary>ราคาและเงื่อนไขยกเลิกยืนยันที่ไหน?</summary><p>ราคานี้เป็นราคาต่อคืนปัจจุบันในระบบ ราคารวมคำนวณตามช่วงวันพัก โปรดยืนยันราคาสุดท้าย วิธีชำระเงิน และเงื่อนไขยกเลิกกับพนักงานก่อนตกลงจอง</p></details></div></section>
     <section className="home-cta" data-reveal><div><h2>พร้อมสำหรับวันพักของคุณแล้วหรือยัง?</h2><p>เลือกวันพัก แล้วค้นหาห้องที่เหมาะกับคุณ</p></div><button className="primary" onClick={hotel}>ค้นหาห้องพัก</button></section>
     <footer className="home-footer"><a className="home-link" href="/" aria-label="Lub d หน้าแรก"><Brand publicLogo /></a><span>BANGKOK SIAM · A GOOD STAY. A GREAT DAY.</span><button onClick={staff}>{user && user.role !== 'customer' ? 'ระบบพนักงาน' : 'สำหรับพนักงาน'}</button></footer>
-  </main>
+  </div></main>
+
 }

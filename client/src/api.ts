@@ -18,6 +18,8 @@ export type Payment = { amount: number; paidAmount: number; refundedAmount: numb
 export type Transaction = { id: string; kind: string; amount: number; method: string; reference: string; receiptId?: string; occurredAt: string }
 export type Dashboard = { date: string; availableRooms: number; occupiedRooms: number; arrivalsToday: number; departuresToday: number }
 export type Report = { receivedBaht: number; refundedBaht: number; netBaht: number; unreconciledPayments: number }
+export type AdditionalService = { id: string; name: string; unit: 'per_night' | 'per_set' | 'per_stay'; price: number | null; included: boolean; extraBed: boolean; roomTypeIds: string[]; maxQuantity: number; active: boolean }
+export type StayRequest = { id: string; status: 'new' | 'read' | 'processed' | 'rejected'; createdAt?: string; contactPhone?: string; member?: { name: string }; roomTypeName: string; checkInDate: string; checkOutDate: string; guestCount: number; estimatedRoomTotal: number; estimatedServiceTotal: number; services: { id: string; name: string; quantity: number; unit: string; price: number | null; included: boolean; estimatedTotal: number }[] }
 
 export function query(values: Record<string, string | number | undefined>) {
   const params = new URLSearchParams()
@@ -63,6 +65,9 @@ function validPayload(path: string, data: unknown, method: string): boolean {
   }
   if (resource === '/public/rooms/summary') return validRoomSummary(data)
   if (resource === '/public/overview') return calendarDate(data.date) && calendarDate(data.checkOutDate) && strings(data, 'timezone', 'updatedAt') && Number.isFinite(Date.parse(String(data.updatedAt))) && numbers(data, 'totalRooms', 'availableRooms', 'bookedRooms') && ['totalRooms', 'availableRooms', 'bookedRooms'].every(key => Number(data[key]) >= 0) && Array.isArray(data.roomTypes) && data.roomTypes.every(type => record(type) && strings(type, 'id', 'name') && numbers(type, 'capacity', 'pricePerNight', 'totalRooms', 'availableRooms') && Number(type.capacity) > 0 && Number(type.pricePerNight) >= 0 && Number(type.totalRooms) >= 0 && Number(type.availableRooms) >= 0 && Array.isArray(type.amenities) && type.amenities.every(amenity => typeof amenity === 'string'))
+  if (resource === '/public/additional-services') return Array.isArray(data.items) && numbers(data, 'page', 'limit', 'total') && data.items.every(item => validItem('/additional-services', item))
+  if (resource === '/additional-services' && method === 'GET') return Array.isArray(data.items) && numbers(data, 'page', 'limit', 'total') && data.items.every(item => validItem('/additional-services', item))
+  if (resource === '/stay-requests' && method === 'GET') return Array.isArray(data.items) && numbers(data, 'page', 'limit', 'total')
   if (resource === '/auth/login') return strings(data, 'token') && numbers(data, 'expiresIn') && Number(data.expiresIn) > 0 && validItem('/users', data.user)
   if (['/auth/me', '/auth/register', '/auth/profile'].includes(resource)) return validItem('/users', data.user)
   if (resource === '/dashboard/report') return numbers(data, 'receivedBaht', 'refundedBaht', 'netBaht', 'unreconciledPayments')
