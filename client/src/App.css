@@ -8,7 +8,7 @@ h1, h2, h3, p { margin-top: 0; }
 .brand small, .sidebar-foot small { display: block; color: #b7ccd7; font-size: 11px; }
 .nav-title { color: var(--yellow); font-size: 11px; letter-spacing: .14em; padding: 0 14px 13px; text-transform: uppercase; }
 .sidebar nav { display: grid; gap: 4px; }
-.nav-item { width: 100%; display: flex; align-items: center; gap: 13px; color: #fff; background: transparent; border: 0; border-radius: 9px; padding: 10px 13px; text-align: left; font-size: 14px; }
+.nav-item { width: 100%; display: flex; align-items: center; gap: 13px; color: #fff; background: transparent; border: 0; border-radius: 9px; padding: 10px 13px; text-align: left; font-size: 14px; transition: color 220ms ease, background-color 220ms ease, box-shadow 220ms ease; }
 .nav-item span { width: 20px; font-size: 18px; color: #b7ccd7; text-align: center; }
 .nav-item:hover, .nav-item.active { background: var(--blue); color: #fff; }
 .nav-item.active { box-shadow: inset 3px 0 var(--yellow); }
@@ -27,6 +27,7 @@ h1, h2, h3, p { margin-top: 0; }
 button { border: 1px solid var(--line); background: #fff; color: var(--navy); border-radius: 8px; padding: 9px 16px; font-weight: 600; transition: background .15s, transform .15s; }
 button:hover:not(:disabled) { background: var(--canvas); }
 .sidebar .nav-item:hover:not(:disabled), .sidebar .nav-item.active { background: var(--blue); color: #fff; }
+.sidebar .nav-item:hover:not(:disabled) { background: #0d536c; color: var(--yellow); }
 button:active:not(:disabled) { transform: translateY(1px); }
 button.primary { color: #fff; background: var(--yellow); border-color: var(--yellow); }
 button.primary:hover:not(:disabled) { background: #f5c544; }
