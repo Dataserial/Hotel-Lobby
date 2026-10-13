@@ -103,3 +103,27 @@
 .contact-links { display: grid; gap: 12px; margin: 20px 0; }
 .contact-links a { display: block; color: var(--navy); border: 1px solid var(--line); border-radius: 12px; padding: 12px; overflow-wrap: anywhere; }
 @media (max-width: 680px) { .hotel-account-actions { width: 100%; gap: 8px; } .hotel-account-actions > button { flex: 1; font-size: 13px; min-width: 0; padding: 12px; } }
+
+/* The booking flow follows the existing navy, lavender and white palette. */
+.booking-steps { display: flex; flex-wrap: wrap; gap: 12px; list-style: none; padding: 0; margin: 24px 0; }
+.booking-steps li { border: 1px solid var(--line); border-radius: 24px; padding: 10px 16px; background: #fff; color: var(--navy); }
+.booking-steps [aria-current="step"] { font-weight: 700; border: 2px solid var(--navy); }
+.room-number-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); gap: 12px; margin: 20px 0 32px; }
+.room-number { min-height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--line); padding: 12px 8px; }
+.room-number small { font-size: 14px; }
+.room-number[aria-pressed="true"], .room-type-content button[aria-pressed="true"] { outline: 3px solid var(--navy); outline-offset: 3px; background: var(--navy); color: white; }
+.room-number.unavailable, .room-number.maintenance { background: #ececf1; color: #535368; opacity: 1; cursor: not-allowed; }
+.booking-confirm { background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 24px; margin: 24px 0; overflow-wrap: anywhere; }
+.booking-confirm form > p { grid-column: 1 / -1; }
+.booking-confirm input { min-width: 0; }
+.my-bookings article { border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin: 14px 0; overflow-wrap: anywhere; }
+.public-hotel button:focus-visible, .public-hotel input:focus-visible { outline: 3px solid var(--navy); outline-offset: 4px; }
+.public-results, .public-hotel button, .public-hotel input { scroll-margin-top: 120px; scroll-margin-bottom: 24px; }
+@media (max-width: 680px) {
+  .booking-steps { gap: 8px; }
+  .booking-steps li { flex: 1 1 40%; padding: 10px; font-size: 13px; }
+  .booking-confirm { padding: 18px; }
+  .booking-confirm .form-grid { grid-template-columns: 1fr; }
+  .room-number-grid { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); }
+  .public-results, .public-hotel button, .public-hotel input { scroll-margin-top: 180px; }
+}

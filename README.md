@@ -1,5 +1,9 @@
 # Hotel-Lobby
 
+## การจองผ่านเว็บ
+
+หน้า `/discover` ให้เลือกวันที่ ประเภทห้อง และเลขห้อง ก่อนเข้าสู่ระบบลูกค้าเพื่อยืนยันจองแบบชำระที่โรงแรม อ่าน [API และขั้นตอนเตรียม index แบบเพิ่มข้อมูล](docs/customer-booking-release.md) และ [หลักฐานทดสอบบนฐานแยก](docs/qa-booking-2026-10-14/report.md).
+
 ## Deploy
 
 สำหรับ Vercel (เว็บ), Render (API) และ MongoDB Atlas ดู [ขั้นตอน deploy](docs/deploy-vercel-render-atlas.md). ใช้ `client/vercel.json` และ `render.yaml`; ตั้ง secrets ใน hosting dashboard เท่านั้น

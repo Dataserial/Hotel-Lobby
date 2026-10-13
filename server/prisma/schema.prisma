@@ -200,6 +200,7 @@ model Guest {
 
   @@index([fullName])
   @@index([phone])
+  @@index([customerId, createdAt])
   @@map("guests")
 }
 
