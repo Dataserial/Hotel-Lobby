@@ -10,6 +10,9 @@ function testPrisma() {
 }
 
 async function resetTestDatabase(prisma) {
+  await prisma.stayRequestService.deleteMany();
+  await prisma.stayRequest.deleteMany();
+  await prisma.additionalService.deleteMany();
   await prisma.roomNightClaim.deleteMany();
   await prisma.paymentTransaction.deleteMany({ where: { kind: 'refund' } });
   await prisma.paymentTransaction.deleteMany();

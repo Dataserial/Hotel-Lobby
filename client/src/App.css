@@ -170,3 +170,4 @@ input::placeholder { opacity: 1; }
 .member-page > header { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 32px; }
 .member-page > header > div { display: flex; flex-wrap: wrap; gap: 8px; }
 .member-card { padding: 32px; }
+.service-manager { margin-top: 32px; padding: 24px; background: white; border-radius: 20px; }.service-manager h2 { margin-top: 0; }.service-admin-row { display: grid; grid-template-columns: 1.4fr .8fr 100px 110px auto; gap: 10px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); }.service-admin-row input { min-height: 38px; padding: 8px; }.service-admin-row button { min-height: 38px; padding: 6px 12px; }@media (max-width:680px){.service-admin-row{grid-template-columns:1fr 1fr}.service-admin-row strong{grid-column:1/-1}}
