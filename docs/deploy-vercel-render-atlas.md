@@ -20,26 +20,9 @@ For local administration, temporarily allow your own IP as well.
 
 An empty staging database needs Prisma indexes and an initial administrator.
 From `server`, after setting `DATABASE_URL` privately to the verified **empty
-<<<<<<< Updated upstream
-staging** database, run `npm run db:push`. Set `BOOTSTRAP_ADMIN_EMAIL`,
-`BOOTSTRAP_ADMIN_PASSWORD` and optionally `BOOTSTRAP_ADMIN_NAME` privately, then run:
-
-```powershell
-npm run db:bootstrap:admin -- --database hotel_lobby_staging --initial-admin
-```
-
-The database argument must exactly match `DATABASE_URL`. This creates only the
-first administrator, never demo rooms. It refuses to reset an existing account
-or create another initial admin when users already exist; rerunning with the
-same active admin and credentials only verifies it. New passwords need at least
-12 characters and at most 72 UTF-8 bytes. The command never prints credentials.
-`db:seed:demo` remains restricted to a separate **local** demo database and must
-not be used on Atlas. Neither command is part of the deployment build.
-=======
 staging** database, run `npm run db:push`. To create the administrator, follow
 the one-time setup below. `db:seed:demo` accepts only local demo/test databases;
 it cannot seed Atlas.
->>>>>>> Stashed changes
 For an existing database, follow `implementation-audit.md`, the booking claims
 audit and payment reconciliation runbooks before enabling writes. Never seed
 or push automatically as part of deploy.

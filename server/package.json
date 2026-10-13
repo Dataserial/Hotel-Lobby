@@ -12,12 +12,8 @@
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
     "db:seed:demo": "node ./scripts/seed-demo.js",
-<<<<<<< Updated upstream
-    "db:bootstrap:admin": "node ./scripts/bootstrap-admin.js",
-=======
     "db:seed:rooms": "node ./scripts/seed-rooms.js",
     "db:admin:create": "node ./scripts/create-admin.js",
->>>>>>> Stashed changes
     "db:claims": "node ./scripts/booking-claims.js",
     "db:payments": "node ./scripts/payment-ledger.js",
     "test": "jest --runInBand",

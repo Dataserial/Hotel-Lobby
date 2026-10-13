@@ -6,8 +6,9 @@ const { createAdmin } = require('../scripts/create-admin');
 const env = { ADMIN_EMAIL: ' TEST@example.com ', ADMIN_PASSWORD: 'new-admin-password-123' };
 let prisma;
 beforeEach(() => {
-  prisma = { user: { findUnique: jest.fn().mockResolvedValue(null), create: jest.fn() },
+  prisma = { user: { findUnique: jest.fn().mockResolvedValue(null), create: jest.fn(), update: jest.fn().mockResolvedValue({}) },
     session: { create: jest.fn().mockResolvedValue({}) } };
+  prisma.$transaction = jest.fn(async (callback) => callback(prisma));
 });
 
 test('creates a normalized active admin whose password works with the login endpoint', async () => {
