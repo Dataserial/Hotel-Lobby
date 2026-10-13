@@ -30,7 +30,7 @@ Booking response ใช้ allowlist: `id,guestId,roomId,guestCount,checkInDate,
 - Create สร้าง confirmed Booking, claims ทุกคืน และ Payment summary ใน transaction เดียวกัน. ราคาถูกบันทึกเป็น snapshot.
 - แก้ guest/จำนวนคน หรือส่งวัน/ห้องค่าเดิม คง snapshot. เมื่อวันหรือห้องเปลี่ยนจริง คำนวณราคาทั้ง stay จาก basePrice ปัจจุบัน พร้อมแทน claims และปรับ Payment summary ใน transaction เดียวกัน.
 - แก้และยกเลิกได้เฉพาะ confirmed. หากรับเงินสุทธิแล้ว ห้ามแก้จน total เปลี่ยน และห้าม cancel จนคืนเงินและบันทึกยอดคืนครบ. Task นี้ไม่มี endpoint รับ/คืนเงินจริง.
-- Cancel เก็บ Booking/Payment เดิม เปลี่ยน status, cancelledAt และ updatedById พร้อมลบ claims. Claims ของ confirmed/checked_in/checked_out คงคืนเดิมตามแบบข้อมูล.
+- Cancel เก็บ Booking/Payment เดิม เปลี่ยน status, cancelledAt และ updatedById พร้อมลบ claims. Claims ถือครองคืนเฉพาะ confirmed/checked_in; เมื่อเช็กเอาต์จะปลดล็อกคืนพักเพื่อให้จองใหม่ได้ โดยเก็บประวัติ Booking/Payment ไว้.
 
 ผล availability ใช้ให้พนักงานเลือกห้อง; ระหว่างค้นกับยืนยันมีผู้อื่นจองได้เสมอ. Unique `(roomId,night)` กับ transaction เป็นตัวรับประกันการจอง. UI ต้องรับ 409 แล้วโหลด availability ใหม่.
 

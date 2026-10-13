@@ -15,9 +15,10 @@ test('database guard rejects production, remote hosts and standalone URLs', () =
   ]) expect(() => assertTestUrl(url)).toThrow();
 });
 
-test('sample and checked-out bookings retain exactly their original nights', async () => {
+test('completed bookings have no inventory holds while active bookings retain their nights', async () => {
   await expectConsistent(db.prisma);
   await db.prisma.booking.update({ where: { id: sample.bookings[0]._id }, data: { status: 'checked_out' } });
+  await db.prisma.roomNightClaim.deleteMany({ where: { bookingId: sample.bookings[0]._id } });
   await expectConsistent(db.prisma);
 });
 

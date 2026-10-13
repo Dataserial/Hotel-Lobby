@@ -69,7 +69,7 @@ async function expectConsistent(prisma) {
   for (const claim of claims) {
     const booking = byId.get(claim.bookingId);
     expect(booking).toBeDefined();
-    expect(booking.status).not.toBe('cancelled');
+    expect(['confirmed', 'checked_in']).toContain(booking.status);
     expect(claim.roomId).toBe(booking.roomId);
     expect(validateStay(booking.checkInDate, booking.checkOutDate).nights).toContain(claim.night);
     const key = `${claim.roomId}:${claim.night}`;
@@ -77,7 +77,7 @@ async function expectConsistent(prisma) {
     keys.add(key);
   }
   for (const booking of bookings) {
-    const expected = booking.status === 'cancelled' ? [] :
+    const expected = ['cancelled', 'checked_out'].includes(booking.status) ? [] :
       validateStay(booking.checkInDate, booking.checkOutDate).nights;
     expect(claims.filter((c) => c.bookingId === booking.id).map((c) => c.night).sort()).toEqual(expected);
     const rows = payments.filter((p) => p.bookingId === booking.id);

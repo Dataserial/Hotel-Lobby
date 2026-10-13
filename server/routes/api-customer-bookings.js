@@ -4,6 +4,7 @@ const { asyncRoute, body, str, objectId, fail, page } = require('../lib/http');
 const { role } = require('../lib/auth');
 const { validateStay, validateGuestCount, calculatePrice } = require('../services/booking-validation');
 const { roomBookable } = require('../services/room-bookability');
+const { createClaims } = require('../services/room-night-claims');
 const { operationTransaction } = require('../services/operation-transaction');
 const { hotelToday } = require('../services/stay-service');
 
@@ -72,8 +73,7 @@ module.exports = prisma => {
           checkInDate: stay.checkInDate, checkOutDate: stay.checkOutDate, status: 'confirmed', ...price,
           customerId: actor.id,
           createdById: actor.id, updatedById: actor.id } });
-        try { await tx.roomNightClaim.createMany({ data: stay.nights.map(night => ({ bookingId: created.id, roomId, night })) }); }
-        catch (error) { if (error.code === 'P2002') fail(409, 'ROOM_UNAVAILABLE', 'Room booked by someone else'); throw error; }
+        await createClaims(tx, created.id, roomId, stay.nights);
         await tx.payment.create({ data: { bookingId: created.id, amount: price.totalPrice,
           paidAmount: 0, refundedAmount: 0, ledgerReady: true, status: 'pending', recordedById: actor.id } });
         await tx.customerBookingRequest.create({ data: { key, hash, customerId: actor.id, bookingId: created.id } });

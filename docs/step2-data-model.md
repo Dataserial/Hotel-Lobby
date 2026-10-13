@@ -120,7 +120,7 @@ ObjectId ที่อ้างอิงต้องตรวจว่ามี�
 | `actualCheckInAt`, `actualCheckOutAt`, `cancelledAt` | UTC timestamp หรือ `null`; ตั้งค่าเมื่อเกิด transition |
 | `createdAt`, `updatedAt`, `createdById`, `updatedById` | audit |
 
-กฎการทับซ้อน: booking สถานะ `confirmed`, `checked_in` และ `checked_out` ถือครองคืนตามช่วงวันที่เดิม; `cancelled` ไม่ถือครองคืน สองช่วงทับกันเมื่อ `existing.checkInDate < new.checkOutDate && new.checkInDate < existing.checkOutDate` โดยเทียบวัน ISO ที่ validate แล้ว การแก้วัน/ห้องต้องตรวจซ้ำและแทน claims ใน transaction เดียวกัน; ไม่อนุญาตแก้ห้อง/วันหลัง check-in
+กฎการทับซ้อน: booking สถานะ `confirmed` และ `checked_in` ถือครองคืนตามช่วงวันที่เดิม; `checked_out` และ `cancelled` ไม่ถือครองคืน สองช่วงทับกันเมื่อ `existing.checkInDate < new.checkOutDate && new.checkInDate < existing.checkOutDate` โดยเทียบวัน ISO ที่ validate แล้ว การแก้วัน/ห้องต้องตรวจซ้ำและแทน claims ใน transaction เดียวกัน; ไม่อนุญาตแก้ห้อง/วันหลัง check-in
 
 ### `payments`
 

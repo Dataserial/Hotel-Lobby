@@ -74,14 +74,33 @@ test('booking detail ignores old responses and does not reopen after close', asy
 
 test('dashboard passes the exact booking ID, not just a navigation tab', async () => {
   const navigated=[];
-  const call=async url=>url==='/dashboard'?{date:'2026-10-13'}:url.includes('checkOut')?page([{id:'outside-page-id',guestId:'g1',roomId:'r1',status:'checked_in'}]):url==='/guests/g1'?{id:'g1',fullName:'Archived'}:url==='/rooms/r1'?{id:'r1',roomNumber:'101'}:page([]);
+  const call=async url=>url==='/dashboard'?{date:'2026-10-13'}:url.includes('activityDate')?page([{id:'outside-page-id',guestId:'g1',roomId:'r1',status:'checked_in'}]):url==='/guests/g1'?{id:'g1',fullName:'Archived'}:url==='/rooms/r1'?{id:'r1',roomNumber:'101'}:page([]);
   const h=harness({call,user:{name:'Desk'},go:(...args)=>navigated.push(args)});
   h.render('DashboardView');await h.flush();button(h.render('DashboardView'),'ดูการจอง →').props.onClick();
   assert.deepEqual(navigated,[['bookings','outside-page-id']]);h.unmount();
 });
 
 test('dashboard resolves archived guests and rooms by referenced ID outside first page',async()=>{
-  const call=async url=>url==='/dashboard'?{date:'2026-10-13'}:url.includes('checkOut')?page([{id:'beyond001',guestId:'archived101',roomId:'room101',status:'checked_in'}]):url==='/guests/archived101'?{id:'archived101',fullName:'Archived Guest 101',active:false}:url==='/rooms/room101'?{id:'room101',roomNumber:'ROOM-101'}:page([]);
+  const call=async url=>url==='/dashboard'?{date:'2026-10-13'}:url.includes('activityDate')?page([{id:'beyond001',guestId:'archived101',roomId:'room101',status:'checked_in'}]):url==='/guests/archived101'?{id:'archived101',fullName:'Archived Guest 101',active:false}:url==='/rooms/room101'?{id:'room101',roomNumber:'ROOM-101'}:page([]);
   const h=harness({call,user:{name:'Desk'},go(){}});h.render('DashboardView');await h.flush();
   const tree=JSON.stringify(h.render('DashboardView'));assert.ok(tree.includes('Archived Guest 101'));assert.ok(tree.includes('ROOM-101'));h.unmount();
+});
+
+test('dashboard shows actual early departure even when the scheduled dates are outside today', async () => {
+  const urls = [];
+  const call = async url => {
+    urls.push(url);
+    if (url === '/dashboard') return { date: '2026-10-14', availableRooms: 60, occupiedRooms: 0, arrivalsToday: 0, departuresToday: 1 };
+    if (url.includes('activityDate')) return page([{ id: 'early-checkout', guestId: 'guest', roomId: 'room', checkInDate: '2026-10-13', checkOutDate: '2026-10-15', status: 'checked_out' }]);
+    if (url === '/guests/guest') return { id: 'guest', fullName: 'Early Guest' };
+    if (url === '/rooms/room') return { id: 'room', roomNumber: '301' };
+    return page([]);
+  };
+  const h = harness({ call, user: { name: 'Desk' }, go() {} });
+  h.render('DashboardView'); await h.flush();
+  const tree = JSON.stringify(h.render('DashboardView'));
+  assert.ok(tree.includes('Early Guest'));
+  assert.ok(tree.includes('เช็กเอาต์แล้ววันนี้ตามเวลาไทย'));
+  assert.ok(urls.some(url => url.includes('activityDate=2026-10-14')));
+  h.unmount();
 });

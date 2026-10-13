@@ -3,6 +3,7 @@ const { role } = require('../lib/auth');
 const { asyncRoute, body, page, list, objectId, fail } = require('../lib/http');
 const { parseHotelDate } = require('../services/booking-validation');
 const { createBooking, updateBooking, cancelBooking } = require('../services/booking-service');
+const { hotelDayRange } = require('../services/stay-service');
 
 const writable = ['guestId', 'roomId', 'guestCount', 'checkInDate', 'checkOutDate'];
 const select = Object.fromEntries([
@@ -18,8 +19,16 @@ module.exports = (prisma) => {
   const router = express.Router();
   router.use(role('admin', 'receptionist'));
   router.get('/', asyncRoute(async (req, res) => {
-    const pagination = page(req.query, ['status', 'guestId', 'roomId', 'checkInFrom', 'checkInTo', 'checkOutFrom', 'checkOutTo']);
+    const pagination = page(req.query, ['status', 'guestId', 'roomId', 'checkInFrom', 'checkInTo', 'checkOutFrom', 'checkOutTo', 'activityDate']);
     const where = {};
+    if (req.query.activityDate !== undefined) {
+      parseHotelDate(req.query.activityDate);
+      const range = hotelDayRange(req.query.activityDate);
+      where.OR = [
+        { checkInDate: req.query.activityDate }, { checkOutDate: req.query.activityDate },
+        { actualCheckInAt: range }, { actualCheckOutAt: range },
+      ];
+    }
     if (req.query.status !== undefined) {
       if (!['confirmed', 'checked_in', 'checked_out', 'cancelled'].includes(req.query.status)) {
         fail(400, 'VALIDATION_ERROR', 'Invalid status');

@@ -7,6 +7,7 @@ const {
 const { assertLedger, summarize } = require('./payment-ledger');
 const { assertActor, operationTransaction: bookingTransaction } = require('./operation-transaction');
 const { roomBookable } = require('./room-bookability');
+const { createClaims } = require('./room-night-claims');
 
 function assertId(value, field) {
   if (typeof value !== 'string' || !/^[0-9a-fA-F]{24}$/.test(value)) {
@@ -35,21 +36,6 @@ async function bookableRoom(tx, roomId, guestCount, checkInDate) {
   }
   validateGuestCount(guestCount, room.roomType.capacity);
   return room;
-}
-
-async function createClaims(tx, bookingId, roomId, nights) {
-  try {
-    await tx.roomNightClaim.createMany({
-      data: nights.map((night) => ({ bookingId, roomId, night })),
-    });
-  } catch (error) {
-    // Only a unique failure while inserting claims denotes unavailable nights.
-    // Payment/Booking unique errors must retain their own meaning.
-    if (error.code === 'P2002') {
-      throw new BookingError(409, 'ROOM_UNAVAILABLE', 'The room was booked for one of these nights.');
-    }
-    throw error;
-  }
 }
 
 function assertAllowedFields(input, fields) {

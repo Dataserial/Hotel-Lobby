@@ -2,6 +2,8 @@ const request = require('supertest');
 const bcrypt = require('bcryptjs');
 const { startDatabase } = require('./task3-db');
 const { createApp } = require('../app');
+const { checkIn, checkOut } = require('../services/stay-service');
+const { recordTestReceipt } = require('./payment-fixture');
 
 let db, app, token, secondToken, room, type, actor;
 beforeAll(async () => {
@@ -160,4 +162,27 @@ test('occupied room may accept future bookings only after the existing departure
     expect(after.body.items.find(row => row.roomId === occupied.id).status).toBe('available');
     expect((await request(app).get('/api/public/rooms/grid').query({ checkInDate: '2020-01-01', checkOutDate: '2020-01-02', roomTypeId: type.id })).status).toBe(400);
   } finally { if (original === undefined) delete process.env.ALLOW_FUTURE_OCCUPIED_BOOKINGS; else process.env.ALLOW_FUTURE_OCCUPIED_BOOKINGS = original; }
+});
+
+test('customers can book a checked-out room again, including legacy holds, with only one race winner', async () => {
+  const currentType = await db.prisma.roomType.findUnique({ where: { id: type.id } });
+  const payload = { ...input(), checkInDate: '2026-12-10', checkOutDate: '2026-12-12', expectedPricePerNight: currentType.basePrice };
+  const prior = (await request(app).post('/api/customer/bookings').set(auth(token)).set('Idempotency-Key', 'checkout-prior-reservation').send(payload).expect(201)).body;
+  const desk = await db.prisma.user.create({ data: { name: 'Checkout Desk', email: 'checkout-desk@example.test', role: 'receptionist', passwordHash: 'unused-test-hash' } });
+  const clock = () => new Date('2026-12-10T01:00:00Z');
+  await checkIn(db.prisma, prior.id, desk.id, clock);
+  await recordTestReceipt(db.prisma, prior.id, desk.id, prior.totalPrice);
+  await checkOut(db.prisma, prior.id, desk.id, clock);
+  // Reproduce persisted holds left by the previous version of checkout.
+  await db.prisma.roomNightClaim.createMany({ data: ['2026-12-10', '2026-12-11'].map(night => ({ roomId: room.id, bookingId: prior.id, night })) });
+  const grid = (await request(app).get('/api/public/rooms/grid').query({ checkInDate: payload.checkInDate, checkOutDate: payload.checkOutDate, roomTypeId: type.id }).expect(200)).body;
+  expect(grid.items.find(item => item.roomId === room.id).status).toBe('available');
+  const results = await Promise.all([
+    request(app).post('/api/customer/bookings').set(auth(token)).set('Idempotency-Key', 'checkout-rebook-customer-one').send(payload),
+    request(app).post('/api/customer/bookings').set(auth(secondToken)).set('Idempotency-Key', 'checkout-rebook-customer-two').send({ ...payload, documentNo: 'PASSPORT-CHECKOUT-SECOND' }),
+  ]);
+  expect(results.map(result => result.status).sort()).toEqual([201, 409]);
+  expect(await db.prisma.roomNightClaim.count({ where: { bookingId: prior.id } })).toBe(0);
+  expect(await db.prisma.roomNightClaim.count({ where: { roomId: room.id, night: { in: ['2026-12-10', '2026-12-11'] } } })).toBe(2);
+  expect(await db.prisma.booking.findUnique({ where: { id: prior.id } })).toMatchObject({ status: 'checked_out', actualCheckOutAt: clock(), totalPrice: prior.totalPrice });
 });

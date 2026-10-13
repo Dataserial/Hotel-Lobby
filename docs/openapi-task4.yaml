@@ -132,7 +132,7 @@ paths:
         Empty or omitted body; unknown queries rejected. Checked_in and occupied
         room belonging solely to this stay required. Payment status paid and net
         equal total required. Server records time/actor. Repeated calls return
-        INVALID_TRANSITION. Original room-night claims are retained on early checkout.
+        INVALID_TRANSITION. Room-night claims are released atomically on checkout, including early checkout.
       requestBody:
         content:
           application/json:

@@ -11,6 +11,11 @@ function hotelToday(now) {
   return `${value('year')}-${value('month')}-${value('day')}`;
 }
 
+function hotelDayRange(date) {
+  const start = new Date(`${date}T00:00:00+07:00`);
+  return { gte: start, lt: new Date(start.getTime() + 86400000) };
+}
+
 async function stayOperation(prisma, bookingId, actorId, kind, clock) {
   bookingId = objectId(bookingId).toLowerCase();
   return operationTransaction(prisma, async (tx) => {
@@ -46,9 +51,10 @@ async function stayOperation(prisma, bookingId, actorId, kind, clock) {
       data: { status: checkingIn ? 'occupied' : 'available', updatedById: actorId },
     });
     if (changed.count !== 1) fail(409, 'ROOM_NOT_READY', 'Room state changed');
+    if (!checkingIn) await tx.roomNightClaim.deleteMany({ where: { bookingId } });
     return updated;
   });
 }
 const checkIn = (prisma, id, actorId, clock = () => new Date()) => stayOperation(prisma, id, actorId, 'check-in', clock);
 const checkOut = (prisma, id, actorId, clock = () => new Date()) => stayOperation(prisma, id, actorId, 'check-out', clock);
-module.exports = { checkIn, checkOut, hotelToday };
+module.exports = { checkIn, checkOut, hotelToday, hotelDayRange };

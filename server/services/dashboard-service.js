@@ -1,15 +1,16 @@
-const { hotelToday } = require('./stay-service');
+const { hotelToday, hotelDayRange } = require('./stay-service');
 const { findAvailableRooms } = require('./availability-service');
 
 async function dashboard(prisma, now = new Date()) {
   const date = hotelToday(now);
+  const today = hotelDayRange(date);
   const nextDate = new Date(`${date}T00:00:00Z`);
   nextDate.setUTCDate(nextDate.getUTCDate() + 1);
   const [rooms, occupied, arrivals, departures] = await Promise.all([
-    findAvailableRooms(prisma, { checkInDate: date, checkOutDate: nextDate.toISOString().slice(0, 10), guestCount: 1 }),
+    findAvailableRooms(prisma, { checkInDate: date, checkOutDate: nextDate.toISOString().slice(0, 10), guestCount: 1, now }),
     prisma.room.count({ where: { active: true, status: 'occupied' } }),
-    prisma.booking.count({ where: { checkInDate: date, status: { not: 'cancelled' } } }),
-    prisma.booking.count({ where: { checkOutDate: date, status: { not: 'cancelled' } } }),
+    prisma.booking.count({ where: { actualCheckInAt: today, status: { not: 'cancelled' } } }),
+    prisma.booking.count({ where: { actualCheckOutAt: today, status: 'checked_out' } }),
   ]);
   return { date, timezone: 'Asia/Bangkok', availableRooms: rooms.length, occupiedRooms: occupied,
     arrivalsToday: arrivals, departuresToday: departures };

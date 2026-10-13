@@ -1,5 +1,6 @@
 const { validateStay, validateGuestCount, parseHotelDate } = require('./booking-validation');
 const { roomBookable } = require('./room-bookability');
+const { heldClaims } = require('./room-night-claims');
 const DAY = 86400000;
 
 async function publicRoomSummary(prisma, input, now = new Date()) {
@@ -16,7 +17,7 @@ async function publicRoomSummary(prisma, input, now = new Date()) {
     const rooms = inventory.filter(room => room.roomType?.active);
     const ids = rooms.map(room => room.id);
     const occupants = await tx.booking.findMany({ where: { roomId: { in: ids }, status: 'checked_in' }, select: { roomId: true, checkOutDate: true } });
-    const claims = await tx.roomNightClaim.findMany({ where: { roomId: { in: ids }, night: { gte: stay.checkInDate, lt: ranges[ranges.length - 1].checkOutDate } }, select: { roomId: true, night: true } });
+    const claims = await tx.roomNightClaim.findMany({ where: { ...heldClaims, roomId: { in: ids }, night: { gte: stay.checkInDate, lt: ranges[ranges.length - 1].checkOutDate } }, select: { roomId: true, night: true } });
     const occupantsByRoom = new Map(ids.map(id => [id, []]));
     const claimsByRoom = new Map(ids.map(id => [id, []]));
     for (const occupant of occupants) occupantsByRoom.get(occupant.roomId).push(occupant);

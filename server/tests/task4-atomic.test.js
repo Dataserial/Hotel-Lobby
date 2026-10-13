@@ -49,6 +49,7 @@ const writeStages = [
   ...['receive', 'refund'].flatMap((op) => ['booking.update', 'paymentTransaction.create', 'payment.update'].map((stage) => [op, stage])),
   ...['booking.update', 'payment.update', 'roomNightClaim.deleteMany'].map((stage) => ['cancel', stage]),
   ...['check-in', 'check-out'].flatMap((op) => ['booking.update', 'room.updateMany'].map((stage) => [op, stage])),
+  ['check-out', 'roomNightClaim.deleteMany'],
 ];
 test.each(writeStages)('%s rolls back all models after %s fails', async (operation, stage) => {
   const prepared = await prepare(operation);

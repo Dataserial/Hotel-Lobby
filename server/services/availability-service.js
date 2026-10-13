@@ -1,6 +1,7 @@
 const { validateStay, validateGuestCount } = require('./booking-validation');
 const { objectId, fail } = require('../lib/http');
 const { roomBookable } = require('./room-bookability');
+const { heldClaims } = require('./room-night-claims');
 
 async function findAvailableRooms(prisma, { checkInDate, checkOutDate, guestCount, roomTypeId, excludeBookingId, now = new Date() }) {
   const { nights } = validateStay(checkInDate, checkOutDate);
@@ -24,6 +25,7 @@ async function findAvailableRooms(prisma, { checkInDate, checkOutDate, guestCoun
 
   const claims = await prisma.roomNightClaim.findMany({
     where: {
+      ...heldClaims,
       roomId: { in: candidates.map((room) => room.id) },
       night: { in: nights },
       ...(excludeBookingId ? { bookingId: { not: excludeBookingId } } : {}),

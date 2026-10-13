@@ -6,13 +6,15 @@ Base `/api`. JSON, integer baht, UTC event timestamps, hotel dates in Asia/Bangk
 
 `GET /api/dashboard`: admin and receptionist, no query parameters.
 
+`arrivalsToday` and `departuresToday` count actual check-in/check-out timestamps within the Bangkok calendar day (inclusive midnight, exclusive next midnight). An early checkout counts on the day the guest actually leaves, rather than the scheduled departure day. `GET /api/bookings?activityDate=YYYY-MM-DD` includes both scheduled arrivals/departures and actual activity for that day, with normal pagination. Completed bookings remain in history but no longer hold inventory. Legacy checkout claims are ignored by staff/public availability and reclaimed transactionally when the affected nights are booked again.
+
 ```json
 {"date":"2026-10-09","timezone":"Asia/Bangkok","availableRooms":3,"occupiedRooms":1,"arrivalsToday":2,"departuresToday":1}
 ```
 
 - `availableRooms`: rooms bookable for one guest for tonight `[date,date+1)`, using the exact Booking availability service. Requires active room/type, sufficient capacity and no night claim. Occupied rooms are not bookable tonight, but future searches may include them after a single occupant's future scheduled checkout; due/overdue or ambiguous occupancy remains blocked. See `api-task3.md`. Maintenance rooms are always excluded.
 - `occupiedRooms`: active rooms whose current physical status is occupied. These counts are not complements: unavailable, legacy and maintenance rooms are excluded.
-- `arrivalsToday` / `departuresToday`: non-cancelled bookings with scheduled check-in/check-out on the hotel date, including already processed stays. These are scheduled arrivals, not bookings created today.
+- `arrivalsToday` / `departuresToday`: actual check-ins and completed checkouts during the hotel date, including early departures. Confirmed bookings without an actual check-in timestamp do not increase the check-in count.
 - Counts are live independent reads, not a financial or transactional snapshot during simultaneous writes.
 
 `GET /api/dashboard/report`: admin only, no query. All-time ledger totals, not revenue recognition or a full accounting report:
