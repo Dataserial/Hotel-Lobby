@@ -18,7 +18,7 @@ function harness(component, props) {
     + '\nexport { StaffAvailability, BookingsView, allBookings };'
   const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React, jsxFactory: 'React.createElement' } }).outputText
   const exports = {}
-  vm.runInNewContext(code, { exports, React: react, Intl, Date, Map, window: {}, require: name => name === 'react' ? react : name === './api' ? { query: values => new URLSearchParams(values).toString(), errorText: e => e.message } : {} })
+  vm.runInNewContext(code, { exports, React: react, Intl, Date, Map, AbortController, window: {}, require: name => name === 'react' ? react : name === './api' ? { query: values => new URLSearchParams(values).toString(), errorText: e => e.message } : {} })
   return { exports, render() { cursor = 0; return exports[component](props) } }
 }
 function nodes(tree, predicate) {

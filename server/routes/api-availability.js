@@ -7,7 +7,7 @@ module.exports = (prisma, { publicAccess = false } = {}) => {
   const router = express.Router();
   if (!publicAccess) router.use(role('admin', 'receptionist'));
   router.get('/', asyncRoute(async (req, res) => {
-    const pagination = page(req.query, ['checkInDate', 'checkOutDate', 'guestCount']);
+    const pagination = page(req.query, ['checkInDate', 'checkOutDate', 'guestCount', ...(!publicAccess ? ['excludeBookingId'] : [])]);
     const count = req.query.guestCount;
     if (typeof count !== 'string' || !/^\d+$/.test(count)) {
       fail(400, 'INVALID_GUEST_COUNT', 'Guest count must be an integer.');
@@ -15,6 +15,7 @@ module.exports = (prisma, { publicAccess = false } = {}) => {
     const rooms = await findAvailableRooms(prisma, {
       checkInDate: req.query.checkInDate, checkOutDate: req.query.checkOutDate,
       guestCount: Number(count),
+      ...(!publicAccess && req.query.excludeBookingId !== undefined ? { excludeBookingId: req.query.excludeBookingId } : {}),
     });
     res.json({
       items: rooms.slice(pagination.skip, pagination.skip + pagination.take),

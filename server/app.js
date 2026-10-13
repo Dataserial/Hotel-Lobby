@@ -1,13 +1,15 @@
 const express = require('express');
 const prisma = require('./lib/prisma');
 const { requestId, errors } = require('./lib/http');
-const { requireAuth } = require('./lib/auth');
+const { requireAuth, role } = require('./lib/auth');
 const { rateLimit, headersAndLimits } = require('./lib/security');
+const { trustedProxies } = require('./lib/proxy');
 
-function createApp(db = prisma) {
+function createApp(db = prisma, { trustedProxyCidrs = process.env.TRUSTED_PROXY_CIDRS || '' } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.set('query parser', 'simple');
+  app.set('trust proxy', trustedProxies(trustedProxyCidrs));
   app.locals.draining = false;
   app.use(requestId);
   app.use(headersAndLimits);
@@ -22,6 +24,7 @@ function createApp(db = prisma) {
       res.setHeader('Vary', 'Origin');
       res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, Idempotency-Key');
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
+      res.setHeader('Access-Control-Expose-Headers', 'X-Request-Id, Retry-After');
     }
     if (req.method === 'OPTIONS') return res.status(204).end();
     next();
@@ -42,8 +45,9 @@ function createApp(db = prisma) {
   });
   app.use('/api/public/rooms/availability', rateLimit({ limit: 60 }), require('./routes/api-availability')(db, { publicAccess: true }));
   app.use('/api/auth/login', rateLimit({ limit: 20, windowMs: 900000 }));
+  app.use('/api/auth/register', rateLimit({ limit: 20, windowMs: 900000 }));
   app.use('/api/auth', require('./routes/api-auth')(db));
-  app.use('/api', requireAuth(db));
+  app.use('/api', requireAuth(db), role('admin', 'receptionist'));
   app.use('/api/dashboard', require('./routes/api-dashboard')(db));
   app.use('/api/users', require('./routes/api-users')(db));
   app.use('/api/room-types', require('./routes/api-room-types')(db));

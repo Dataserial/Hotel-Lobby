@@ -1,6 +1,7 @@
 require('dotenv').config();
 const bcrypt = require('bcryptjs');
 const { PrismaClient } = require('@prisma/client');
+const { password: credential } = require('../lib/password');
 
 const roomTypes = [
   { name: 'Demo Standard', nameKey: 'demo-standard', capacity: 2, basePrice: 1200, amenities: ['Wi-Fi', 'Air conditioning'], rooms: ['DEMO-101', 'DEMO-102', 'DEMO-103'] },
@@ -20,6 +21,7 @@ function demoConfig(env) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || password.length < 12) {
     throw new Error('Set DEMO_ADMIN_EMAIL and DEMO_ADMIN_PASSWORD (at least 12 characters)');
   }
+  credential(password);
   return { database, email, password };
 }
 

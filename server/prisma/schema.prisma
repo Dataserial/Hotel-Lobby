@@ -10,6 +10,7 @@ datasource db {
 enum UserRole {
   admin
   receptionist
+  customer
 }
 
 enum RoomStatus {

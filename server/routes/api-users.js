@@ -4,12 +4,9 @@ const { asyncRoute, body, str, email, bool, objectId, page, list, fail } = requi
 const { role, publicUser } = require('../lib/auth');
 
 const userSelect = { id: true, name: true, email: true, role: true, active: true, createdAt: true, updatedAt: true };
-const password = (v) => {
-  if (typeof v !== 'string' || v.length < 12 || v.length > 128) fail(400, 'VALIDATION_ERROR', 'Password must be 12–128 characters');
-  return v;
-};
+const { password } = require('../lib/password');
 const userRole = (v) => {
-  if (!['admin', 'receptionist'].includes(v)) fail(400, 'VALIDATION_ERROR', 'Invalid role');
+  if (!['admin', 'receptionist', 'customer'].includes(v)) fail(400, 'VALIDATION_ERROR', 'Invalid role');
   return v;
 };
 
@@ -56,7 +53,9 @@ module.exports = (prisma) => {
         await tx.adminGuard.upsert({ where: { id: 'active-admins' }, create: { id: 'active-admins', version: 1 }, update: { version: { increment: 1 } } });
         if (await tx.user.count({ where: { role: 'admin', active: true } }) <= 1) fail(409, 'LAST_ADMIN', 'Cannot remove the last admin');
       }
-      return tx.user.update({ where: { id }, data, select: userSelect });
+      const updated = await tx.user.update({ where: { id }, data, select: userSelect });
+      if (data.passwordHash) await tx.session.deleteMany({ where: { userId: id } });
+      return updated;
     });
     res.json(user);
   }));

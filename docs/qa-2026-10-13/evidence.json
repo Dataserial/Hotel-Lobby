@@ -1,0 +1,190 @@
+[
+  {
+    "id": "list-race",
+    "requests": [
+      "/rooms?page=1",
+      "/rooms?page=2"
+    ],
+    "newerFirst": "page2",
+    "finalItem": "page1",
+    "expected": "page2"
+  },
+  {
+    "id": "occupied-room-form",
+    "floorDisplayed": 1,
+    "originalFloor": 0,
+    "payload": [
+      "/rooms/room1",
+      "PATCH",
+      {
+        "roomNumber": "101",
+        "floor": 1,
+        "roomTypeId": "type1"
+      }
+    ]
+  },
+  {
+    "id": "dashboard-button",
+    "buttons": [
+      "รีเฟรช",
+      "+ สร้างการจอง",
+      "ดูการจอง →"
+    ],
+    "detailNavigation": "go(bookings) has no booking identifier"
+  },
+  {
+    "id": "public-contact",
+    "links": [
+      "#discover"
+    ],
+    "dialogText": "{\"type\":\"dialog\",\"props\":{\"ref\":{\"current\":null},\"className\":\"contact-dialog\",\"aria-labelledby\":\"contact-title\",\"children\":[{\"type\":\"div\",\"props\":{\"children\":[{\"type\":\"button\",\"props\":{\"className\":\"dialog-close\",\"aria-label\":\"ปิด\",\"children\":[\"×\"]}},{\"type\":\"span\",\"props\":{\"className\":\"eyebrow\",\"children\":[\"LUB D · BANGKOK SIAM\"]}},{\"type\":\"h2\",\"props\":{\"id\":\"contact-title\",\"children\":[\"ติดต่อเคาน์เตอร์โรงแรม\"]}},{\"type\":\"p\",\"props\":{\"children\":[\"แจ้งรายละเอียดนี้กับพนักงาน เพื่อให้ตรวจห้องว่างและยืนยันการจอง\"]}},null,{\"type\":\"p\",\"props\":{\"children\":[\"ผลค้นหานี้ยังไม่ได้สำรองห้อง กรุณาติดต่อพนักงานก่อนยืนยัน\"]}},{\"type\":\"button\",\"props\":{\"className\":\"primary\",\"children\":[\"เข้าใจแล้ว\"]}}]}}]}}",
+    "hasPhoneLink": 0
+  },
+  {
+    "id": "booking-detail-race",
+    "newerModal": [
+      "การจอง #NEW002"
+    ],
+    "finalModal": [
+      "การจอง #OLD001"
+    ]
+  },
+  {
+    "id": "payment-edited-retry",
+    "attempts": [
+      {
+        "body": {
+          "amount": 100,
+          "method": "cash",
+          "reference": "AUDIT-REF-1",
+          "occurredAt": "2026-10-13T10:47:33.490Z"
+        },
+        "key": "0b7378a1-2b66-48ec-b7dd-e1fb666ddc8a"
+      },
+      {
+        "body": {
+          "amount": 200,
+          "method": "cash",
+          "reference": "AUDIT-REF-1",
+          "occurredAt": "2026-10-13T10:47:33.490Z"
+        },
+        "key": "22fc3bac-15fe-4215-bf26-decd7d35e842"
+      }
+    ],
+    "sameKey": false
+  },
+  {
+    "id": "guest-pagination",
+    "requests": [
+      "/guests?active=true&limit=100",
+      "/bookings?page=1"
+    ],
+    "guestRequests": [
+      "/guests?active=true&limit=100"
+    ]
+  },
+  {
+    "id": "api-invalid-json",
+    "result": null,
+    "hasAbortSignal": false
+  },
+  {
+    "id": "text-contrast",
+    "foreground": "#6d8390",
+    "white": 3.9626490741236644,
+    "canvas": 3.7154329184531947,
+    "normalTextMinimum": 4.5,
+    "method": "WCAG relative luminance formula; static CSS, not a browser audit"
+  },
+  {
+    "id": "occupied-future-availability",
+    "checkinStatus": 200,
+    "searchStatus": 200,
+    "roomReturned": false,
+    "futureBookingStatus": 409,
+    "error": {
+      "code": "ROOM_UNAVAILABLE",
+      "message": "Room or room type is not available.",
+      "requestId": "eceb2692-e705-4142-935f-f9227208ccf2"
+    },
+    "requestedDates": [
+      "2026-10-16",
+      "2026-10-17"
+    ],
+    "existingDeparture": "2026-10-14"
+  },
+  {
+    "id": "occupied-edit-http",
+    "status": 409,
+    "error": {
+      "code": "ROOM_OCCUPIED",
+      "message": "Occupied room must use check-out operation",
+      "requestId": "ca46b36a-9feb-4689-8c11-33569141c94d"
+    }
+  },
+  {
+    "id": "password-whitespace",
+    "createStatus": 201,
+    "loginStatus": 401,
+    "error": {
+      "code": "INVALID_CREDENTIALS",
+      "message": "Invalid credentials",
+      "requestId": "1ce51a92-08fa-4b41-a030-b2d6f0abfea7"
+    }
+  },
+  {
+    "id": "password-truncation",
+    "createStatus": 201,
+    "differentSuffixLoginStatus": 200,
+    "bytes": 73,
+    "bcryptTruncates": true
+  },
+  {
+    "id": "password-session-revocation",
+    "passwordChangeStatus": 200,
+    "oldTokenMeStatus": 200,
+    "sessions": 1
+  },
+  {
+    "id": "payment-server-conflict",
+    "first": 201,
+    "editedRetry": 409,
+    "error": {
+      "code": "IDEMPOTENCY_CONFLICT",
+      "message": "Idempotency key was used with a different request",
+      "requestId": "ffbc9d1e-f794-4f4a-9c16-551eae09b1e1"
+    }
+  },
+  {
+    "id": "own-booking-search",
+    "roomReturned": false,
+    "apiEditStatus": 200,
+    "existingDates": [
+      "2026-10-16",
+      "2026-10-17"
+    ],
+    "editedDates": [
+      "2026-10-16",
+      "2026-10-18"
+    ]
+  },
+  {
+    "id": "proxy-config",
+    "trustProxy": false,
+    "forwardedHttpsHsts": null
+  },
+  {
+    "id": "proxy-shared-rate-limit",
+    "lastStatus": 429,
+    "error": {
+      "code": "RATE_LIMITED",
+      "message": "Request limit reached",
+      "requestId": "d3592ab1-482d-4175-bef2-9703f8f00bd4"
+    },
+    "distinctForwardedIps": 21
+  },
+  {
+    "id": "atlas-demo-doc",
+    "seedError": "Demo seed only accepts a local hotel_lobby_*_demo or *_test database"
+  }
+]

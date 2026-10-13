@@ -6,6 +6,7 @@ const {
 } = require('./booking-validation');
 const { assertLedger, summarize } = require('./payment-ledger');
 const { assertActor, operationTransaction: bookingTransaction } = require('./operation-transaction');
+const { roomBookable } = require('./room-bookability');
 
 function assertId(value, field) {
   if (typeof value !== 'string' || !/^[0-9a-fA-F]{24}$/.test(value)) {
@@ -22,14 +23,14 @@ async function assertGuest(tx, guestId) {
   }
 }
 
-async function bookableRoom(tx, roomId, guestCount) {
+async function bookableRoom(tx, roomId, guestCount, checkInDate) {
   assertId(roomId, 'roomId');
   const room = await tx.room.findUnique({
     where: { id: roomId },
     include: { roomType: true },
   });
   if (!room) throw new BookingError(404, 'ROOM_NOT_FOUND', 'Room does not exist.');
-  if (!room.active || room.status !== 'available' || !room.roomType || !room.roomType.active) {
+  if (!await roomBookable(tx, room, checkInDate)) {
     throw new BookingError(409, 'ROOM_UNAVAILABLE', 'Room or room type is not available.');
   }
   validateGuestCount(guestCount, room.roomType.capacity);
@@ -65,7 +66,7 @@ async function createBooking(prisma, input, actorId) {
   return bookingTransaction(prisma, async (tx) => {
     await assertActor(tx, actorId);
     await assertGuest(tx, input.guestId);
-    const room = await bookableRoom(tx, input.roomId, input.guestCount);
+    const room = await bookableRoom(tx, input.roomId, input.guestCount, stay.checkInDate);
     const price = calculatePrice(room.roomType.basePrice, stay.nightCount);
     const booking = await tx.booking.create({
       data: {
@@ -122,7 +123,7 @@ async function updateBooking(prisma, bookingId, changes, actorId) {
     const stay = validateStay(next.checkInDate, next.checkOutDate);
     validateGuestCount(next.guestCount);
     await assertGuest(tx, next.guestId);
-    const room = await bookableRoom(tx, next.roomId, next.guestCount);
+    const room = await bookableRoom(tx, next.roomId, next.guestCount, stay.checkInDate);
     // ObjectId hex casing does not change the selected room.
     next.roomId = room.id;
     const claimsChanged = next.roomId !== current.roomId ||

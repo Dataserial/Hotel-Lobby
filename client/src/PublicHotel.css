@@ -79,3 +79,9 @@
   .public-room-card { min-height: auto; } .public-room-card h3 { font-size: 26px; }
 }
 @media (prefers-reduced-motion: reduce) { .moon-journey { height: 100vh; } .moon-night { position: relative; opacity: 1; } .intro-moon { width: 79px; left: calc(50% - 39.5px); top: 39%; } .moon-quote, .scroll-start { opacity: 1; } }
+
+.hotel-header { height: auto; min-height: 88px; flex-wrap: wrap; gap: 12px; }
+.hotel-account-actions { display: flex; align-items: center; gap: 12px; }
+.contact-links { display: grid; gap: 12px; margin: 20px 0; }
+.contact-links a { display: block; color: var(--navy); border: 1px solid var(--line); border-radius: 12px; padding: 12px; overflow-wrap: anywhere; }
+@media (max-width: 680px) { .hotel-account-actions { width: 100%; gap: 8px; } .hotel-account-actions > button { flex: 1; font-size: 13px; min-width: 0; padding: 12px; } }

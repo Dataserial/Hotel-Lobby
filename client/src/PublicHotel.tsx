@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react'
 import { errorText, query, request, type AvailableRoom, type Paged } from './api'
 import { Brand } from './Brand'
+import { contactChannels } from './contact'
 import './PublicHotel.css'
 
 const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
@@ -9,7 +10,7 @@ const money = (amount: number) => new Intl.NumberFormat('th-TH').format(amount)
 const dateLabel = (date: string) => new Intl.DateTimeFormat('th-TH-u-ca-gregory', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(date + 'T00:00:00Z'))
 type Stay = { checkInDate: string; checkOutDate: string; guestCount: number }
 
-export default function PublicHotel({ staff }: { staff: () => void }) {
+export default function PublicHotel({ staff, member }: { staff: () => void; member?: () => void }) {
   const intro = useRef<HTMLElement>(null)
   const discover = useRef<HTMLElement>(null)
   const results = useRef<HTMLElement>(null)
@@ -22,6 +23,8 @@ export default function PublicHotel({ staff }: { staff: () => void }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [selected, setSelected] = useState<AvailableRoom | null>(null)
+  const [contactStay, setContactStay] = useState<Stay | null>(null)
+  const channels = contactChannels(import.meta.env)
   const searchVersion = useRef({ version: 0 })
   useEffect(() => {
     const searches = searchVersion.current
@@ -48,7 +51,7 @@ export default function PublicHotel({ staff }: { staff: () => void }) {
     } catch (err) { if (version === searchVersion.current.version) setError(errorText(err)) }
     finally { if (version === searchVersion.current.version) setBusy(false) }
   }
-  function showContact(room: AvailableRoom) { setSelected(room); contact.current?.showModal() }
+  function showContact(room: AvailableRoom) { setSelected(room); setContactStay(stay ? { ...stay } : null); contact.current?.showModal() }
   const nights = stay ? (Date.parse(stay.checkOutDate) - Date.parse(stay.checkInDate)) / 86400000 : 0
   return <main className="public-hotel">
     <section ref={intro} className="moon-journey" aria-label="ยินดีต้อนรับสู่ Lub d">
@@ -59,7 +62,7 @@ export default function PublicHotel({ staff }: { staff: () => void }) {
       </div>
     </section>
     <section ref={discover} id="discover" className="discover-section">
-      <header className="hotel-header"><a href="#discover" aria-label="Lub d หน้าแรก"><Brand publicLogo /></a><button className="staff-profile" onClick={staff} aria-label="เข้าสู่ระบบพนักงาน"><img src="/figma/profile.svg" alt="" /><span>พนักงาน</span></button></header>
+      <header className="hotel-header"><a href="#discover" aria-label="Lub d หน้าแรก"><Brand publicLogo /></a><div className="hotel-account-actions">{member && <button onClick={member}>สมัครสมาชิก / เข้าสู่ระบบ</button>}<button className="staff-profile" onClick={staff} aria-label="เข้าสู่ระบบพนักงาน"><img src="/figma/profile.svg" alt="" /><span>พนักงาน</span></button></div></header>
       <div className="discover-heading"><h1>A GOOD STAY. <br className="mobile-break" />A GREAT DAY.</h1><p className="desktop-copy">พักใจกลางเมือง แล้วออกไปพบเรื่องราวใหม่</p><p className="mobile-copy">ค้นพบห้องพักที่ใช่ ใจกลางกรุงเทพฯ</p></div>
       <div className="hotel-gallery" aria-label="ภาพโรงแรม"><picture><source media="(max-width: 680px)" srcSet="/figma/hotel-mobile.png" /><img src="/figma/hotel.png" alt="อาคาร Lub d Bangkok Siam ในยามค่ำคืน" /></picture><img src="/figma/pool.png" alt="สระว่ายน้ำและพื้นที่พักผ่อนของโรงแรม" /><div className="lobby-photo"><img src="/figma/lobby.png" alt="ล็อบบี้และพื้นที่ส่วนกลาง" /></div></div>
       <div className="discover-search"><form className="availability-search" onSubmit={e => void search(e)}>
@@ -78,6 +81,6 @@ export default function PublicHotel({ staff }: { staff: () => void }) {
         <span className="room-crescent" aria-hidden="true">☾</span><h3>{room.roomType}</h3><p>สูงสุด {room.capacity} คน · ห้อง {room.roomNumber}</p><span className="pill good">พร้อมจอง</span><strong>฿{money(room.pricePerNight)} / คืน</strong><p className="room-total">รวม {nights} คืน ฿{money(room.pricePerNight * nights)} · ติดต่อพนักงานเพื่อยืนยัน</p><button className="primary" onClick={() => showContact(room)}>ติดต่อพนักงาน</button>
       </article>)}</div><div className="pagination"><span>พบ {rooms.total} ห้อง · หน้า {page}</span><div><button disabled={busy || page === 1} onClick={() => void search(undefined, page - 1, stay!)}>ก่อนหน้า</button><button disabled={busy || page * rooms.limit >= rooms.total} onClick={() => void search(undefined, page + 1, stay!)}>ถัดไป</button></div></div></> : <div className="public-empty"><h3>ยังไม่มีห้องว่างในช่วงวันที่เลือก</h3><p>ลองเปลี่ยนวันที่หรือจำนวนผู้เข้าพัก แล้วค้นหาอีกครั้ง</p><button onClick={() => discover.current?.scrollIntoView()}>เปลี่ยนการค้นหา</button></div>}<p className="public-help">ต้องการความช่วยเหลือ? ติดต่อเคาน์เตอร์โรงแรมเพื่อยืนยันการจอง</p></>}
     </section>
-    <dialog ref={contact} className="contact-dialog" aria-labelledby="contact-title"><div><button className="dialog-close" onClick={() => contact.current?.close()} aria-label="ปิด">×</button><span className="eyebrow">LUB D · BANGKOK SIAM</span><h2 id="contact-title">ติดต่อเคาน์เตอร์โรงแรม</h2><p>แจ้งรายละเอียดนี้กับพนักงาน เพื่อให้ตรวจห้องว่างและยืนยันการจอง</p>{selected && stay && <dl><dt>ห้องพัก</dt><dd>{selected.roomType} · ห้อง {selected.roomNumber}</dd><dt>วันเข้าพัก</dt><dd>{dateLabel(stay.checkInDate)} – {dateLabel(stay.checkOutDate)}</dd><dt>ผู้เข้าพัก</dt><dd>{stay.guestCount} คน · {nights} คืน</dd><dt>ราคารวม</dt><dd>฿{money(selected.pricePerNight * nights)}</dd></dl>}<p>ผลค้นหานี้ยังไม่ได้สำรองห้อง กรุณาติดต่อพนักงานก่อนยืนยัน</p><button className="primary" onClick={() => contact.current?.close()}>เข้าใจแล้ว</button></div></dialog>
+    <dialog ref={contact} className="contact-dialog" aria-labelledby="contact-title"><div><button className="dialog-close" onClick={() => contact.current?.close()} aria-label="ปิด">×</button><span className="eyebrow">LUB D · BANGKOK SIAM</span><h2 id="contact-title">ติดต่อเคาน์เตอร์โรงแรม</h2><p>แจ้งรายละเอียดนี้กับพนักงาน เพื่อให้ตรวจห้องว่างและยืนยันการจอง</p>{selected && contactStay && <dl><dt>ห้องพัก</dt><dd>{selected.roomType} · ห้อง {selected.roomNumber}</dd><dt>วันเข้าพัก</dt><dd>{dateLabel(contactStay.checkInDate)} – {dateLabel(contactStay.checkOutDate)}</dd><dt>ผู้เข้าพัก</dt><dd>{contactStay.guestCount} คน · {(Date.parse(contactStay.checkOutDate) - Date.parse(contactStay.checkInDate)) / 86400000} คืน</dd><dt>ราคารวม</dt><dd>฿{money(selected.pricePerNight * ((Date.parse(contactStay.checkOutDate) - Date.parse(contactStay.checkInDate)) / 86400000))}</dd></dl>}{channels.length ? <div className="contact-links">{channels.map(channel => <a key={channel.href} href={channel.href} rel="noopener noreferrer">{channel.label}</a>)}</div> : <p role="status">ยังไม่ได้ตั้งค่าช่องทางติดต่อ กรุณาติดต่อเคาน์เตอร์โรงแรมโดยตรง</p>}<p>ผลค้นหานี้ยังไม่ได้สำรองห้อง กรุณาติดต่อพนักงานก่อนยืนยัน</p><button className="primary" onClick={() => contact.current?.close()}>เข้าใจแล้ว</button></div></dialog>
   </main>
 }

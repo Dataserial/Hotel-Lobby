@@ -1,7 +1,7 @@
 export const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '')
 
 export type ApiError = Error & { status?: number; code?: string; requestId?: string }
-export type User = { id: string; name: string; email: string; role: 'admin' | 'receptionist'; active: boolean }
+export type User = { id: string; name: string; email: string; role: 'admin' | 'receptionist' | 'customer'; active: boolean }
 export type Paged<T> = { items: T[]; page: number; limit: number; total: number }
 export type Guest = { id: string; fullName: string; phone: string; email?: string; documentNoMasked?: string; active: boolean }
 export type RoomType = { id: string; name: string; capacity: number; basePrice: number; amenities: string[]; active: boolean }
@@ -19,25 +19,70 @@ export function query(values: Record<string, string | number | undefined>) {
   return params.toString()
 }
 
-export async function request<T>(path: string, token: string | null, options: { method?: string; body?: unknown; idempotencyKey?: string } = {}): Promise<T> {
+export type RequestOptions = { method?: string; body?: unknown; idempotencyKey?: string; signal?: AbortSignal; timeoutMs?: number }
+const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
+const strings = (v: Record<string, unknown>, ...keys: string[]) => keys.every(key => typeof v[key] === 'string')
+const numbers = (v: Record<string, unknown>, ...keys: string[]) => keys.every(key => typeof v[key] === 'number' && Number.isSafeInteger(v[key]))
+function validItem(resource: string, item: unknown): boolean {
+  if (!record(item)) return false
+  if (resource.includes('availability')) return strings(item, 'roomId', 'roomNumber', 'roomType') && numbers(item, 'capacity', 'pricePerNight')
+  if (!strings(item, 'id')) return false
+  if (resource.includes('transactions') || /\/(receipts|refunds)$/.test(resource)) return strings(item, 'kind', 'method', 'reference', 'occurredAt') && numbers(item, 'amount')
+  if (resource.startsWith('/guests')) return strings(item, 'fullName', 'phone')
+  if (resource.startsWith('/room-types')) return strings(item, 'name') && numbers(item, 'capacity', 'basePrice') && Array.isArray(item.amenities) && item.amenities.every(a => typeof a === 'string')
+  if (resource.startsWith('/rooms')) return strings(item, 'roomNumber')
+  if (resource.startsWith('/users')) return strings(item, 'name', 'email', 'role') && ['admin', 'receptionist', 'customer'].includes(String(item.role)) && typeof item.active === 'boolean'
+  if (resource.startsWith('/bookings')) return strings(item, 'guestId', 'roomId', 'checkInDate', 'checkOutDate', 'status') && numbers(item, 'guestCount', 'pricePerNight', 'totalPrice')
+  return true
+}
+function validPayload(path: string, data: unknown, method: string): boolean {
+  if (!record(data)) return false
+  const resource = path.split('?')[0]
+  if ('items' in data) return Array.isArray(data.items) && numbers(data, 'page', 'limit', 'total') && Number(data.page) >= 1 && Number(data.limit) >= 1 && Number(data.total) >= 0 && data.items.every(item => validItem(resource, item))
+  if (resource === '/auth/login') return strings(data, 'token') && numbers(data, 'expiresIn') && Number(data.expiresIn) > 0 && validItem('/users', data.user)
+  if (['/auth/me', '/auth/register', '/auth/profile'].includes(resource)) return validItem('/users', data.user)
+  if (resource === '/dashboard/report') return numbers(data, 'receivedBaht', 'refundedBaht', 'netBaht', 'unreconciledPayments')
+  if (resource === '/dashboard') return strings(data, 'date') && numbers(data, 'availableRooms', 'occupiedRooms', 'arrivalsToday', 'departuresToday')
+  if (/\/payment$/.test(resource)) return numbers(data, 'amount', 'paidAmount', 'refundedAmount', 'net', 'remaining') && strings(data, 'status') && typeof data.ledgerReady === 'boolean'
+  if (method === 'GET' && (/^\/(guests|rooms|room-types|users|bookings)$/.test(resource) || /\/transactions$/.test(resource) || resource.includes('availability'))) return false
+  return validItem(resource, data)
+}
+
+export async function request<T>(path: string, token: string | null, options: RequestOptions = {}): Promise<T> {
   const headers: Record<string, string> = {}
   if (token) headers.Authorization = `Bearer ${token}`
   if (options.body !== undefined) headers['Content-Type'] = 'application/json'
   if (options.idempotencyKey) headers['Idempotency-Key'] = options.idempotencyKey
-  let response: Response
+  const controller = new AbortController()
+  let timedOut = false
+  const cancel = () => controller.abort()
+  options.signal?.addEventListener('abort', cancel, { once: true })
+  if (options.signal?.aborted) cancel()
+  const timeout = Number.isFinite(options.timeoutMs) && Number(options.timeoutMs) > 0 ? Number(options.timeoutMs) : 15000
+  const timer = setTimeout(() => { timedOut = true; controller.abort() }, timeout)
+  let response: Response | undefined
   try {
-    response = await fetch(`${API_BASE}${path}`, { method: options.method || 'GET', headers, body: options.body === undefined ? undefined : JSON.stringify(options.body), cache: 'no-store' })
-  } catch {
+    response = await fetch(`${API_BASE}${path}`, { method: options.method || 'GET', headers, body: options.body === undefined ? undefined : JSON.stringify(options.body), cache: 'no-store', signal: controller.signal })
+    if (response.status === 204 && (options.method === 'DELETE' || (path === '/auth/logout' && options.method === 'POST'))) return null as T
+    const isJson = /^(application\/json|application\/[\w.+-]+\+json)(;|$)/i.test(response.headers.get('Content-Type') || '')
+    const data = isJson ? await response.json().catch(() => null) : null
+    const requestId = response.headers.get('X-Request-Id') || undefined
+    if (!response.ok) {
+      const detail = record(data) && record(data.error) ? data.error : {}
+      throw Object.assign(new Error(typeof detail.message === 'string' ? detail.message : `คำขอไม่สำเร็จ (${response.status})`), { status: response.status, code: detail.code, requestId: detail.requestId || requestId }) as ApiError
+    }
+    if (!isJson || !validPayload(path, data, options.method || 'GET')) throw Object.assign(new Error('เซิร์ฟเวอร์ตอบข้อมูลผิดรูปแบบ กรุณาลองอีกครั้งหรือติดต่อผู้ดูแล'), { code: 'PROTOCOL_ERROR', requestId }) as ApiError
+    return data as T
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw Object.assign(new Error(timedOut ? 'เซิร์ฟเวอร์ตอบช้าเกินกำหนด หากเป็นรายการเงินอาจบันทึกแล้ว ให้ส่งซ้ำด้วยข้อมูลเดิม' : 'ยกเลิกคำขอแล้ว'), { code: timedOut ? 'TIMEOUT' : 'CANCELLED' }) as ApiError
+    }
+    if ((error as ApiError).code || (error as ApiError).status) throw error
     throw Object.assign(new Error('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ โปรดลองอีกครั้ง'), { code: 'NETWORK_ERROR' }) as ApiError
+  } finally {
+    clearTimeout(timer)
+    options.signal?.removeEventListener('abort', cancel)
   }
-  const data = response.status === 204 ? null : await response.json().catch(() => null)
-  if (!response.ok) {
-    const error = Object.assign(new Error(data?.error?.message || `คำขอไม่สำเร็จ (${response.status})`), {
-      status: response.status, code: data?.error?.code, requestId: data?.error?.requestId || response.headers.get('X-Request-Id') || undefined,
-    }) as ApiError
-    throw error
-  }
-  return data as T
 }
 
 const messages: Record<string, string> = {
@@ -49,6 +94,7 @@ const messages: Record<string, string> = {
   PAYMENT_ADJUSTMENT_REQUIRED: 'ต้องคืนเงินก่อนแก้ไขยอดจอง', PAYMENT_RECONCILIATION_REQUIRED: 'ต้องตรวจสอบหลักฐานรับเงินเดิมก่อนดำเนินการ',
   IDEMPOTENCY_CONFLICT: 'รายการเดิมมีข้อมูลต่างกัน กรุณาตรวจสอบหลักฐาน', DUPLICATE_REFERENCE: 'เลขอ้างอิงนี้ถูกใช้แล้ว',
   RATE_LIMITED: 'ส่งคำขอบ่อยเกินไป กรุณารอสักครู่',
+  PASSWORD_POLICY: 'รหัสผ่านต้องมีอย่างน้อย 12 ตัวอักษร และไม่เกิน 72 ไบต์ UTF-8 (ภาษาไทยใช้หลายไบต์ต่อตัว)',
 }
 export function errorText(error: unknown) {
   const e = error as ApiError

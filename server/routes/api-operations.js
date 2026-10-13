@@ -1,6 +1,6 @@
 const express = require('express');
 const { role } = require('../lib/auth');
-const { asyncRoute, objectId, page, list, fail } = require('../lib/http');
+const { asyncRoute, objectId, page, list, fail, str } = require('../lib/http');
 const { receivePayment, refundPayment } = require('../services/payment-service');
 const { assertLedger } = require('../services/payment-ledger');
 const { checkIn, checkOut } = require('../services/stay-service');
@@ -40,10 +40,16 @@ module.exports = (prisma) => {
     }));
   }));
   router.get('/:id/payment/transactions', asyncRoute(async (req, res) => {
-    const pagination = page(req.query);
+    const pagination = page(req.query, ['kind', 'q']);
+    const filter = {};
+    if (req.query.kind !== undefined) {
+      if (!['receive', 'refund'].includes(req.query.kind)) fail(400, 'VALIDATION_ERROR', 'Invalid transaction kind');
+      filter.kind = req.query.kind;
+    }
+    if (req.query.q) filter.reference = { contains: str(req.query.q, 'q', 128), mode: 'insensitive' };
     res.json(await prisma.$transaction(async (tx) => {
       const booking = await bookingPayment(tx, req.params.id);
-      return list(tx.paymentTransaction, { paymentId: booking.payment.id }, pagination,
+      return list(tx.paymentTransaction, { ...filter, paymentId: booking.payment.id }, pagination,
         [{ createdAt: 'desc' }, { id: 'desc' }], transactionSelect);
     }));
   }));

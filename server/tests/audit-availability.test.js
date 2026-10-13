@@ -1,0 +1,44 @@
+const request = require('supertest');
+const crypto = require('crypto');
+const { createApp } = require('../app');
+const { hashToken } = require('../lib/auth');
+const { startDatabase, sample } = require('./task3-db');
+let db, app, token;
+const auth=()=>({Authorization:`Bearer ${token}`});
+const stay={checkInDate:'2026-11-16',checkOutDate:'2026-11-17',guestCount:2};
+beforeAll(async()=>{db=await startDatabase('hotel_lobby_task5_test')},180000);
+beforeEach(async()=>{await db.reset();app=createApp(db.prisma);token=crypto.randomBytes(32).toString('base64url');await db.prisma.session.create({data:{userId:sample.users[0]._id,tokenHash:hashToken(token),expiresAt:new Date(Date.now()+3600000)}})});
+afterAll(async()=>{if(db)await db.stop()},30000);
+test('edit availability excludes only the current confirmed booking claims',async()=>{
+  const input={...stay,guestId:sample.guests[0]._id,roomId:sample.rooms[0]._id};
+  const booking=(await request(app).post('/api/bookings').set(auth()).send(input).expect(201)).body;
+  const query={...stay,checkOutDate:'2026-11-18',excludeBookingId:booking.id};
+  const found=(await request(app).get('/api/rooms/availability').set(auth()).query(query).expect(200)).body;
+  expect(found.items.map(r=>r.roomId)).toContain(input.roomId);
+  await request(app).get('/api/public/rooms/availability').query(query).expect(400);
+  await request(app).get('/api/rooms/availability').set(auth()).query({...query,excludeBookingId:'bad'}).expect(400);
+  await request(app).get('/api/rooms/availability').set(auth()).query({...query,excludeBookingId:'000000000000000000000000'}).expect(404);
+  await request(app).post('/api/bookings').set(auth()).send({...input,checkInDate:'2026-11-17',checkOutDate:'2026-11-18'}).expect(201);
+  const conflict=(await request(app).get('/api/rooms/availability').set(auth()).query(query).expect(200)).body;
+  expect(conflict.items.map(r=>r.roomId)).not.toContain(input.roomId);
+  await request(app).patch(`/api/bookings/${booking.id}`).set(auth()).send({checkOutDate:'2026-11-18'}).expect(409);
+  await request(app).post(`/api/bookings/${booking.id}/cancel`).set(auth()).send({}).expect(200);
+  await request(app).get('/api/rooms/availability').set(auth()).query(query).expect(409);
+});
+
+test('occupied rooms can sell nonoverlapping future nights but never allow physical check-in or overdue sales',async()=>{
+  const {hotelToday,checkIn}=require('../services/stay-service');
+  const {findAvailableRooms}=require('../services/availability-service');
+  const today=hotelToday(new Date());const day=n=>new Date(Date.parse(today+'T00:00:00Z')+n*86400000).toISOString().slice(0,10);
+  const input={guestId:sample.guests[0]._id,roomId:sample.rooms[0]._id,guestCount:2,checkInDate:today,checkOutDate:day(1)};
+  const booking=(await request(app).post('/api/bookings').set(auth()).send(input).expect(201)).body;
+  await request(app).post(`/api/bookings/${booking.id}/check-in`).set(auth()).send({}).expect(200);
+  const query={checkInDate:day(3),checkOutDate:day(4),guestCount:2};
+  const found=(await request(app).get('/api/public/rooms/availability').query(query).expect(200)).body;
+  expect(found.items.map(r=>r.roomId)).toContain(input.roomId);
+  const future=(await request(app).post('/api/bookings').set(auth()).send({...input,...query}).expect(201)).body;
+  expect((await db.prisma.room.findUnique({where:{id:input.roomId}})).status).toBe('occupied');
+  await expect(checkIn(db.prisma,future.id,sample.users[0]._id,()=>new Date(day(3)+'T05:00:00Z'))).rejects.toMatchObject({code:'ROOM_NOT_READY'});
+  const overdue=await findAvailableRooms(db.prisma,{checkInDate:day(6),checkOutDate:day(7),guestCount:2,now:new Date(day(3)+'T05:00:00Z')});
+  expect(overdue.map(r=>r.roomId)).not.toContain(input.roomId);
+});
