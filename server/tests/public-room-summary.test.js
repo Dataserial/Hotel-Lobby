@@ -7,6 +7,13 @@ let db;
 beforeAll(async () => { db = await startDatabase('hotel_lobby_task5_test'); }, 180000);
 afterAll(async () => { if (db) await db.stop(); }, 30000);
 
+test('empty and end-of-calendar searches never invent rooms or invalid alternative dates', async () => {
+  const app = createApp(db.prisma);
+  const response = await request(app).get('/api/public/rooms/summary').query({ checkInDate: '9999-12-30', checkOutDate: '9999-12-31', guestCount: 1 }).expect(200);
+  expect(response.body).toMatchObject({ totalAvailableRooms: 0, roomTypes: [], previewDays: 1 });
+  await request(app).get('/api/public/rooms/summary').query({ checkInDate: '2026-11-01', checkOutDate: '2026-11-02', guestCount: 0 }).expect(400);
+});
+
 test('public room summary counts types across the whole stay and offers real alternative start dates', async () => {
   const actor = await db.prisma.user.create({ data: { name: 'Private Actor', email: 'summary@example.test', passwordHash: 'unused', role: 'admin' } });
   const guest = await db.prisma.guest.create({ data: { fullName: 'Private Guest', phone: '0812345678', documentNo: 'PRIVATE-SUMMARY', documentNoKey: 'private-summary' } });
@@ -35,4 +42,14 @@ test('public room summary counts types across the whole stay and offers real alt
   expect(larger.body.totalAvailableRooms).toBe(1);
   await request(app).get('/api/public/rooms/summary').query({ ...stay, excludeBookingId: rooms[0].id }).expect(400);
   await request(app).get('/api/public/rooms/summary').query({ ...stay, checkOutDate: '2026-02-30' }).expect(400);
+  const occupiedBooking = await db.prisma.booking.findFirst({ where: { roomId: rooms[0].id } });
+  await db.prisma.booking.update({ where: { id: occupiedBooking.id }, data: { status: 'checked_in' } });
+  await db.prisma.room.update({ where: { id: rooms[0].id }, data: { status: 'occupied' } });
+  const { publicRoomSummary } = require('../services/public-room-summary');
+  for (const now of [new Date('2026-11-10T05:00:00Z'), new Date('2026-11-15T05:00:00Z')]) {
+    const futureStay = { checkInDate: '2026-11-13', checkOutDate: '2026-11-15', guestCount: 2 };
+    const summary = await publicRoomSummary(db.prisma, futureStay, now);
+    const found = await findAvailableRooms(db.prisma, { ...futureStay, now });
+    expect(summary.roomTypes.find(t => t.id === type.id).availableRooms).toBe(found.filter(room => room.roomType === 'Standard').length);
+  }
 });

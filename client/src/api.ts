@@ -115,6 +115,7 @@ const messages: Record<string, string> = {
 }
 export function errorText(error: unknown) {
   const e = error as ApiError
+  if (e.code === 'INVALID_CREDENTIALS') return messages.INVALID_CREDENTIALS
   const detail = messages[e.code || ''] || e.message || 'เกิดข้อผิดพลาด'
   return `${detail}${e.requestId ? ` · รหัสคำขอ ${e.requestId}` : ''}`
 }

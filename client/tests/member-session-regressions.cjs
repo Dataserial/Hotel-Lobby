@@ -24,7 +24,7 @@ for(const replacement of [false,true]) test('deferred profile save cannot '+(rep
     await h.input(h.dom.window.document.querySelector('input[autocomplete="name"]'),'Stale Profile');
     await h.React.act(async()=>h.dom.window.document.querySelector('.member-card form').dispatchEvent(new h.dom.window.Event('submit',{bubbles:true,cancelable:true})));
     assert.ok(completeProfile);assert.equal(profileSignal.aborted,false);
-    await h.React.act(async()=>h.button('ออกจากระบบ').click());await h.waitFor(()=>h.dom.window.document.querySelector('.login-card'));
+    await h.openAccount();await h.React.act(async()=>h.button('ออกจากระบบ').click());await h.waitFor(()=>h.dom.window.document.querySelector('.login-card'));
     if(replacement)await login(h);
     await h.React.act(async()=>{completeProfile();await new Promise(resolve=>setImmediate(resolve))});
     if(replacement){assert.ok(h.dom.window.document.querySelector('.member-card').textContent.includes('Second Member'));assert.ok(!h.dom.window.document.body.textContent.includes('Stale Profile'))}
@@ -44,7 +44,7 @@ test('stale member update callback cannot overwrite the replacement session',asy
     const module=h.loadSource('MemberAccount.tsx');const MemberAccount=module.default;
     module.default=props=>{if(!staleUpdated)staleUpdated=props.updated;return h.React.createElement(MemberAccount,props)};
     const App=h.loadSource('App.tsx').default;await h.React.act(async()=>h.root.render(h.React.createElement(App)));await login(h);
-    await h.React.act(async()=>h.button('ออกจากระบบ').click());await h.waitFor(()=>h.dom.window.document.querySelector('.login-card'));await login(h);
+    await h.openAccount();await h.React.act(async()=>h.button('ออกจากระบบ').click());await h.waitFor(()=>h.dom.window.document.querySelector('.login-card'));await login(h);
     await h.React.act(async()=>staleUpdated(member('Stale Profile')));
     assert.ok(h.dom.window.document.querySelector('.member-card').textContent.includes('Second Member'));
     assert.ok(!h.dom.window.document.body.textContent.includes('Stale Profile'));

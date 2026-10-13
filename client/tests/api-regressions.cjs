@@ -8,6 +8,9 @@ function api(fetch) {
   const code=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;
   const exports={};vm.runInNewContext(code,{exports,fetch,AbortController,DOMException,URLSearchParams,setTimeout,clearTimeout});return exports;
 }
+test('incorrect credentials show only the friendly Thai message without a request ID',()=>{
+  assert.equal(api(()=>{}).errorText({code:'INVALID_CREDENTIALS',message:'Invalid credentials',requestId:'trace-fixture'}),'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+});
 test('API rejects successful HTML, null JSON and malformed page items',async()=>{
   for(const response of [new Response('<html>oops</html>',{headers:{'Content-Type':'text/html'}}),Response.json(null),Response.json({items:[{id:5}],total:1,page:1,limit:20})]) {
     await assert.rejects(api(async()=>response).request('/guests',null),e=>e.code==='PROTOCOL_ERROR');
