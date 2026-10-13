@@ -38,7 +38,7 @@ export default function PublicHotel({ staff, member, user = null, logout }: { st
     if (root.current) return setupReveal(root.current)
   }, [])
   useEffect(() => {
-    if (window.location.hash === '#discover') discover.current?.scrollIntoView({ behavior: 'instant' })
+    if (window.location.pathname === '/discover') discover.current?.scrollIntoView({ behavior: 'instant' })
   }, [])
   useEffect(() => {
     const searches = searchVersion.current
@@ -70,7 +70,7 @@ export default function PublicHotel({ staff, member, user = null, logout }: { st
   const summaryStay = stay || initialStay
   const nights = stay ? (Date.parse(stay.checkOutDate) - Date.parse(stay.checkInDate)) / 86400000 : 0
   return <main ref={root} className="public-hotel">
-<header className="hotel-header floating-navbar"><a className="home-link" href="#home" aria-label="Lub d หน้าแรก"><Brand publicLogo /></a><div className="hotel-account-actions">{user ? <AccountMenu user={user} account={member} logout={logout} /> : <>{member && <button onClick={member}>สมัครสมาชิก / เข้าสู่ระบบ</button>}<button className="staff-profile" onClick={staff} aria-label="เข้าสู่ระบบพนักงาน"><img src="/figma/profile.svg" alt="" /><span>พนักงาน</span></button></>}</div></header>
+<header className="hotel-header floating-navbar"><a className="home-link" href="/" aria-label="Lub d หน้าแรก"><Brand publicLogo /></a><div className="hotel-account-actions">{user ? <AccountMenu user={user} account={member} logout={logout} /> : <>{member && <button onClick={member}>สมัครสมาชิก / เข้าสู่ระบบ</button>}<button className="staff-profile" onClick={staff} aria-label="เข้าสู่ระบบพนักงาน"><img src="/figma/profile.svg" alt="" /><span>พนักงาน</span></button></>}</div></header>
     <section ref={intro} className="moon-journey" aria-label="ยินดีต้อนรับสู่ Lub d">
       <div className="moon-night" style={{ '--journey': progress } as CSSProperties}>
         <img className="intro-moon" src="/figma/moon.svg" alt="พระจันทร์" />
