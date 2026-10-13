@@ -1,0 +1,38 @@
+header.floating-navbar {
+  position: sticky; top: 12px; z-index: 30; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  width: calc(100% - 32px); height: auto; min-height: 76px; margin: 16px auto 24px; padding: 16px 24px; gap: 16px;
+  background: #043d55; color: white; border: 1px solid #467288; border-radius: 24px; box-shadow: 0 10px 30px #043d5530;
+}
+.floating-navbar .home-link, .floating-navbar .login-brand, .floating-navbar .auth-home { color: white; text-decoration: none; }
+.floating-navbar .home-link:focus-visible, .floating-navbar .login-brand:focus-visible, .floating-navbar .auth-home:focus-visible { outline: 3px solid var(--yellow); outline-offset: 5px; }
+.floating-navbar .auth-home { text-decoration: underline; text-underline-offset: 5px; }
+.auth-page header.floating-navbar { max-width: 1160px; width: 100%; margin: 0 auto 28px; }
+.auth-page .floating-navbar .login-brand { color: white; }
+.member-page header.floating-navbar { width: 100%; }
+.account-menu { position: relative; flex: 0 0 auto; }
+.account-menu button.account-trigger { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; min-height: 48px; padding: 0; border-radius: 50%; border: 2px solid #ffe699; background: var(--yellow); color: var(--navy); font-size: 18px; font-weight: 700; }
+.account-menu .account-trigger[aria-expanded=true] { outline: 3px solid #ffd45c55; outline-offset: 3px; }
+.account-dropdown { position: absolute; top: calc(100% + 12px); right: 0; width: min(280px,calc(100vw - 48px)); padding: 10px; border: 1px solid var(--line); border-radius: 20px; background: white; color: var(--navy); box-shadow: 0 14px 40px #043d5533; z-index: 40; animation: content-enter 180ms ease; }
+.account-dropdown .account-details { padding: 12px; border-bottom: 1px solid var(--line); margin-bottom: 8px; overflow-wrap: anywhere; }
+.account-details strong, .account-details small, .account-details span { display: block; }
+.account-details strong { font-size: 16px; }.account-details small, .account-details span { color: var(--muted); font-size: 12px; margin-top: 4px; }
+.account-dropdown button { display: block; width: 100%; border: 0; border-radius: 12px; text-align: left; padding: 12px; min-height: 44px; font-size: 14px; background: white; color: var(--navy); }
+.account-dropdown button:hover:not(:disabled), .account-dropdown button:focus-visible { background: #edf4f7; translate: none; }
+.account-dropdown button.account-logout { color: #a12f2f; }
+.floating-navbar .nav-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-left: auto; color: #d0dfe7; font-size: 12px; }
+.shell { padding: 12px; gap: 16px; }
+.shell .sidebar { position: sticky; top: 12px; align-self: start; height: calc(100dvh - 24px); min-height: 0; overflow-y: auto; border-radius: 24px; box-shadow: 0 10px 30px #043d5520; }
+.shell .content { padding: 0 12px 48px; }
+.shell header.floating-navbar { width: 100%; margin: 0 0 24px; }
+.shell .sidebar-foot { margin-top: auto; }
+#discover, #home-rooms, #home-guide, .public-results { scroll-margin-top: 116px; }
+@media (prefers-reduced-motion: reduce) { .account-dropdown { animation: none; } }
+@media (max-width: 680px) {
+  header.floating-navbar { top: 8px; width: calc(100% - 20px); margin: 10px auto 20px; padding: 12px 16px; border-radius: 20px; gap: 12px; }
+  .floating-navbar .lub-brand { font-size: 28px; }.floating-navbar .home-account { margin-left: auto; }.floating-navbar .hotel-account-actions { margin-left: auto; width: auto; }
+  .account-menu button.account-trigger { width: 44px; height: 44px; min-height: 44px; }
+  .home-header.floating-navbar nav { gap: 12px; justify-content: space-between; }
+  .shell { padding: 8px; }.shell .sidebar { position: static; height: auto; overflow: visible; margin-bottom: 16px; border-radius: 20px; }.shell .content { padding: 0 4px 32px; }
+  .shell .floating-navbar .nav-meta { display: none; }
+  #discover, #home-rooms, #home-guide, .public-results { scroll-margin-top: 160px; }
+}

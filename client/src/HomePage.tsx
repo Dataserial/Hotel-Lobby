@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Brand } from './Brand'
 import { errorText, request, type PublicOverview, type User } from './api'
 import { setupReveal } from './reveal'
+import AccountMenu from './AccountMenu'
 import './HomePage.css'
 
 const money = (value: number) => new Intl.NumberFormat('th-TH').format(value)
@@ -26,10 +27,10 @@ export default function HomePage({ user, hotel, member, register, staff, logout 
   const reload = () => { setBusy(true); setRefresh(value => value + 1) }
   const minimum = overview?.roomTypes.length ? Math.min(...overview.roomTypes.map(type => type.pricePerNight)) : null
   return <main id="home" ref={root} className="home-page">
-    <header className="home-header">
+    <header className="home-header floating-navbar">
       <a className="home-link" href="#home" aria-label="Lub d หน้าแรก"><Brand publicLogo /></a>
       <nav aria-label="เมนูหน้าแรก"><a href="#home-rooms">ห้องพักและราคา</a><a href="#home-guide">วิธีใช้งาน</a><button onClick={hotel}>ค้นหาห้องพัก</button></nav>
-      <div className="home-account">{user ? <><span><strong>{user.name}</strong><small>เข้าสู่ระบบแล้ว</small></span><button onClick={user.role === 'customer' ? member : staff}>{user.role === 'customer' ? 'บัญชีสมาชิก' : 'ระบบพนักงาน'}</button><button onClick={logout}>ออกจากระบบ</button></> : <><button onClick={member}>เข้าสู่ระบบ</button><button className="primary" onClick={register}>สมัครสมาชิก</button></>}</div>
+      <div className="home-account">{user ? <AccountMenu user={user} account={user.role === 'customer' ? member : staff} logout={logout} /> : <><button onClick={member}>เข้าสู่ระบบ</button><button className="primary" onClick={register}>สมัครสมาชิก</button></>}</div>
     </header>
     <section className="home-hero">
       <div className="home-hero-copy"><span className="eyebrow">LUB D · BANGKOK SIAM</span><h1>เริ่มต้นวันดี ๆ<br />ด้วยห้องพักที่ใช่<span className="home-moon" aria-hidden="true">☾</span></h1><p>ค้นหาห้องว่าง เปรียบเทียบราคา และเตรียมการเข้าพักของคุณในที่เดียว ตั้งแต่เลือกวันพักไปจนถึงติดต่อพนักงานเพื่อยืนยันการจอง</p><div className="home-hero-actions"><button className="primary" onClick={hotel}>ค้นหาห้องพัก</button><a href="#home-guide">ดูวิธีใช้งาน ↓</a></div><small>Wi-Fi · ใกล้ BTS สนามกีฬาแห่งชาติ · พื้นที่ส่วนกลาง</small></div>
