@@ -7,7 +7,7 @@ import './RoomAvailability.css'
 const money = (value: number) => new Intl.NumberFormat('th-TH').format(value)
 const dateLabel = (value: string) => new Intl.DateTimeFormat('th-TH-u-ca-gregory', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(value + 'T00:00:00Z'))
 
-export default function RoomAvailability({ stay, roomTypeId, selectRoomType, choose, user, token, login }: { stay: AvailabilityStay; roomTypeId: string; selectRoomType: (id: string) => void; choose: (stay: RoomAvailabilitySearch) => void; user?: User | null; token?: string | null; login: () => void }) {
+export default function RoomAvailability({ stay, roomTypeId, selectRoomType, choose, user, token, login, reauthenticate }: { stay: AvailabilityStay; roomTypeId: string; selectRoomType: (id: string) => void; choose: (stay: RoomAvailabilitySearch) => void; user?: User | null; token?: string | null; login: () => void; reauthenticate: () => void }) {
   const [result, setResult] = useState<{ key: string; data?: RoomAvailabilitySummary; error?: string } | null>(null)
   const [refresh, setRefresh] = useState(0)
   const parameters = query({ checkInDate: stay.checkInDate, checkOutDate: stay.checkOutDate, guestCount: stay.guestCount })
@@ -36,7 +36,7 @@ export default function RoomAvailability({ stay, roomTypeId, selectRoomType, cho
       {data.roomTypes.length ? <>
         <div className="room-type-browser">
         <div className="room-type-selector" role="group" aria-label="เลือกประเภทห้องพัก"><h3>เลือกประเภทห้องพักของคุณ</h3>{data.roomTypes.map(type => <button key={type.id} type="button" aria-pressed={type.id === selectedType?.id} aria-controls="selected-room-type" onClick={() => selectRoomType(type.id)}>{type.name}</button>)}</div>
-        {selectedType && <StayRequestForm stay={stay} roomType={selectedType} user={user} token={token} login={login} />}
+        {selectedType && <StayRequestForm stay={stay} roomType={selectedType} user={user} token={token} login={login} reauthenticate={reauthenticate} />}
         <div className="room-type-summary-grid" id="selected-room-type" aria-live="polite">{(selectedType ? [selectedType] : []).map(type => {
           const fits = data.guestCount <= type.capacity
           const next = type.dates.find(date => date.availableRooms > 0)

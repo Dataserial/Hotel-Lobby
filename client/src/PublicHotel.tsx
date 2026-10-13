@@ -14,7 +14,7 @@ const money = (amount: number) => new Intl.NumberFormat('th-TH').format(amount)
 const dateLabel = (date: string) => new Intl.DateTimeFormat('th-TH-u-ca-gregory', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(date + 'T00:00:00Z'))
 type Stay = RoomAvailabilitySearch
 
-export default function PublicHotel({ staff, member, user = null, token = null, logout }: { staff: () => void; member?: () => void; user?: User | null; token?: string | null; logout?: () => void }) {
+export default function PublicHotel({ staff, member, user = null, token = null, logout, reauthenticate }: { staff: () => void; member?: () => void; user?: User | null; token?: string | null; logout?: () => void; reauthenticate: () => void }) {
   const root = useRef<HTMLElement>(null)
   const discover = useRef<HTMLElement>(null)
   const results = useRef<HTMLElement>(null)
@@ -36,7 +36,7 @@ export default function PublicHotel({ staff, member, user = null, token = null, 
     if (root.current) return setupReveal(root.current)
   }, [])
   useEffect(() => {
-    if (window.location.hash === '#discover') discover.current?.scrollIntoView({ behavior: 'instant' })
+    if (window.location.pathname === '/discover') discover.current?.scrollIntoView({ behavior: 'instant' })
   }, [])
   useEffect(() => () => { searchVersion.current.version++ }, [])
   useEffect(() => {
@@ -60,7 +60,8 @@ export default function PublicHotel({ staff, member, user = null, token = null, 
   const summaryStay = stay || initialStay
   const nights = stay ? (Date.parse(stay.checkOutDate) - Date.parse(stay.checkInDate)) / 86400000 : 0
   return <main ref={root} className="public-hotel">
-<header className="hotel-header floating-navbar"><a className="home-link" href="#home" aria-label="Lub d หน้าแรก"><Brand publicLogo /></a><div className="hotel-account-actions">{user ? <AccountMenu user={user} account={member} logout={logout} /> : <>{member && <button onClick={member}>สมัครสมาชิก / เข้าสู่ระบบ</button>}<button className="staff-profile" onClick={staff} aria-label="เข้าสู่ระบบพนักงาน"><img src="/figma/profile.svg" alt="" /><span>พนักงาน</span></button></>}</div></header>
+<header className="hotel-header floating-navbar"><a className="home-link" href="/" aria-label="Lub d หน้าแรก"><Brand publicLogo /></a><div className="hotel-account-actions">{user ? <AccountMenu user={user} account={member} logout={logout} /> : <>{member && <button onClick={member}>สมัครสมาชิก / เข้าสู่ระบบ</button>}<button className="staff-profile" onClick={staff} aria-label="เข้าสู่ระบบพนักงาน"><img src="/figma/profile.svg" alt="" /><span>พนักงาน</span></button></>}</div></header>
+
     <section ref={discover} id="discover" className="discover-section">
 
       <div className="discover-heading" data-reveal><h1>A GOOD STAY. <br className="mobile-break" />A GREAT DAY.</h1><p className="desktop-copy">พักใจกลางเมือง แล้วออกไปพบเรื่องราวใหม่</p><p className="mobile-copy">ค้นพบห้องพักที่ใช่ ใจกลางกรุงเทพฯ</p></div>
@@ -72,7 +73,7 @@ export default function PublicHotel({ staff, member, user = null, token = null, 
         <button className="primary" disabled={busy}>{busy ? 'กำลังค้นหา…' : <><span className="desktop-copy">ค้นหาโรงแรม</span><span className="mobile-copy">ค้นหาห้องว่าง →</span></>}</button>
       </form><p className="hotel-amenities">Wi-Fi ฟรี  •  ใกล้ BTS สนามกีฬาแห่งชาติ  •  พื้นที่ส่วนกลาง 24 ชั่วโมง</p></div>
     </section>
-    <RoomAvailability key={`${summaryStay.checkInDate}:${summaryStay.checkOutDate}:${summaryStay.guestCount}:${summaryRefresh}`} stay={summaryStay} roomTypeId={roomTypeId} selectRoomType={setRoomTypeId} choose={snapshot => { setForm(snapshot); void search(undefined, 1, snapshot) }} user={user} token={token} login={() => member?.()} />
+      <RoomAvailability key={`${summaryStay.checkInDate}:${summaryStay.checkOutDate}:${summaryStay.guestCount}:${summaryRefresh}`} stay={summaryStay} roomTypeId={roomTypeId} selectRoomType={setRoomTypeId} choose={snapshot => { setForm(snapshot); void search(undefined, 1, snapshot) }} user={user} token={token} login={() => member?.()} reauthenticate={reauthenticate} />
     <section ref={results} className="public-results" aria-live="polite" aria-busy={busy} hidden={!stay && !error}>
       <h2>ห้องพักสำหรับคืนที่ดีของคุณ</h2>
       {stay && <p className="stay-summary">{dateLabel(stay.checkInDate)} – {dateLabel(stay.checkOutDate)} · {nights} คืน · {stay.guestCount} คน</p>}
