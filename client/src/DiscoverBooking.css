@@ -4,12 +4,14 @@
 .public-hotel .discover-heading { margin: 0; }
 .discover-heading .eyebrow { color: var(--yellow); letter-spacing: .16em; }
 .public-hotel .discover-heading h1 { font-size: clamp(32px, 3.5vw, 58px); line-height: 1.45; margin: 22px 0; }
-.discover-moon { color: var(--yellow); margin-left: 12px; }
+.discover-heading-highlight { display: block; color: var(--yellow); }
 .public-hotel .discover-heading p { color: #d0dfe7; font-size: 17px; line-height: 1.9; }
 .discover-heading small { display: block; margin-top: 28px; color: #bcd0da; }
-.public-hotel .hotel-gallery { display: block; padding: 0; overflow: hidden; border-radius: 32px; height: 340px; }
+.public-hotel .hotel-gallery { position: relative; display: block; padding: 0; overflow: hidden; border-radius: 32px; height: 340px; }
 .public-hotel .hotel-gallery > img:first-child { display: block; width: 100%; height: 100%; border-radius: 0; object-fit: cover; }
 .public-hotel .hotel-gallery > img + img { display: none; }
+.discover-photo-caption { position: absolute; bottom: 0; left: 0; width: 100%; padding: 44px 24px 20px; background: linear-gradient(transparent, #043d55e6); color: white; font-size: 16px; }
+.discover-photo-caption small { display: block; color: #d0dfe7; font-size: 11px; margin-top: 6px; }
 
 .public-hotel .booking-steps { display: flex; flex-wrap: nowrap; justify-content: center; max-width: 800px; margin: 44px auto 34px; padding: 0 20px; gap: 0; }
 .public-hotel .booking-steps li { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 0; border: 0; border-radius: 0; background: transparent; text-align: center; min-width: 0; }
