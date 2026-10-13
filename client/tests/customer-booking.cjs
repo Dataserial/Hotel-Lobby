@@ -8,12 +8,14 @@ async function setup(handler) {
   const original = globalThis.fetch;
   globalThis.fetch = handler;
   const h = domApp('http://localhost:5173/discover');
+  const scrollCalls = [];
+  h.dom.window.HTMLElement.prototype.scrollIntoView = function(options) { scrollCalls.push({ id: this.id, options }); };
   const Component = h.loadSource('PublicHotel.tsx').default;
   await h.React.act(async () => h.root.render(h.React.createElement(Component, { staff() {}, member() {}, user: customer, token: 'customer-token' })));
   const doc = h.dom.window.document;
   const submit = selector => h.React.act(async () => doc.querySelector(selector).dispatchEvent(new h.dom.window.Event('submit', { bubbles: true, cancelable: true })));
   const close = async () => { await h.close(); globalThis.fetch = original; };
-  return { h, doc, submit, close };
+  return { h, doc, submit, close, scrollCalls };
 }
 async function choose(fixture) {
   const { h, doc, submit } = fixture;
@@ -29,6 +31,55 @@ function publicResponse(url, price = 1200) {
   if (url.includes('/grid/types?')) { assert.ok(!url.includes('guestCount')); return Response.json({ items: types.map(type => ({ ...type, pricePerNight: type.id === 'standard' ? price : type.pricePerNight })) }); }
   return Response.json(grid({ ...types[0], pricePerNight: price }));
 }
+
+test('discover scrolls after each loaded step, supports step navigation, and respects reduced motion', async () => {
+  let finishTypes, finishGrid;
+  const fixture = await setup(url => {
+    if (url.includes('/grid/types?')) return new Promise(resolve => { finishTypes = resolve; });
+    if (url.includes('/grid?')) return new Promise(resolve => { finishGrid = resolve; });
+    return Promise.resolve(Response.json({ id: 'booking-scroll', roomNumber: '101', roomType: 'Standard',
+      checkInDate: '2026-10-14', checkOutDate: '2026-10-15', guestCount: 2, pricePerNight: 1200,
+      totalPrice: 1200, status: 'confirmed', paymentStatus: 'pending' }));
+  });
+  const { h, doc, scrollCalls } = fixture;
+  const step = index => doc.querySelectorAll('.booking-step-link')[index];
+  const lastTarget = () => scrollCalls.at(-1)?.id;
+  try {
+    h.dom.window.matchMedia = () => ({ matches: false });
+    assert.equal(scrollCalls.length, 0, 'first visit stays at the intro');
+    assert.equal(step(1).disabled, true);
+    assert.equal(step(3).disabled, true);
+    await fixture.submit('.availability-search');
+    assert.equal(scrollCalls.length, 0, 'wait for the type cards to load');
+    await h.React.act(async () => finishTypes(Response.json({ items: types })));
+    assert.equal(lastTarget(), 'booking-types-section');
+    assert.equal(scrollCalls.at(-1).options.behavior, 'smooth');
+    await h.React.act(async () => h.button('เลือก Standard').click());
+    assert.equal(lastTarget(), 'booking-types-section', 'wait for the room grid to load');
+    await h.React.act(async () => finishGrid(Response.json(grid())));
+    assert.equal(lastTarget(), 'booking-room-grid');
+    await h.React.act(async () => doc.querySelector('.room-number:not(:disabled)').click());
+    assert.equal(lastTarget(), 'booking-confirmation');
+    assert.equal(step(3).disabled, false);
+    const beforeTyping = scrollCalls.length;
+    await h.input(doc.querySelector('input[type="tel"]'), '0812345678');
+    await h.input(doc.querySelector('input[autocomplete="off"]'), 'PASSPORT-12345');
+    assert.equal(scrollCalls.length, beforeTyping, 'typing does not move the viewport');
+    for (const [index, id] of [[0, 'booking-dates'], [1, 'booking-types-section'], [2, 'booking-room-grid'], [3, 'booking-confirmation']]) {
+      await h.React.act(async () => step(index).click());
+      assert.equal(lastTarget(), id);
+    }
+    h.dom.window.matchMedia = () => ({ matches: true });
+    await h.React.act(async () => step(0).click());
+    assert.equal(scrollCalls.at(-1).options.behavior, 'instant');
+    await fixture.submit('.booking-confirm form');
+    assert.equal(lastTarget(), 'booking-success');
+    assert.equal(step(3).getAttribute('aria-controls'), 'booking-success');
+    await h.input(doc.querySelector('input[type="date"]'), '2027-06-01');
+    assert.equal(step(2).disabled, true);
+    assert.equal(doc.querySelector('.booking-confirm'), null);
+  } finally { await fixture.close(); }
+});
 
 test('price change refreshes the summary, preserves inputs, and requires explicit confirmation', async () => {
   let price = 1200; const posts = [];
