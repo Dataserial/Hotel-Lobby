@@ -1,0 +1,195 @@
+"""
+TransformersUD: dependency parser using transformer models.
+
+Author: Prof. Koichi Yasuoka
+
+This tagger is provided under the terms of the Apache-2.0 License.
+
+The source: https://huggingface.co/KoichiYasuoka/deberta-base-thai-ud-head
+
+GitHub: https://github.com/KoichiYasuoka
+"""
+
+from __future__ import annotations
+
+import os
+from typing import TYPE_CHECKING, Optional, Union
+
+if TYPE_CHECKING:
+    from transformers import (
+        AutoModelForQuestionAnswering,
+        AutoTokenizer,
+        TokenClassificationPipeline,
+    )
+
+from pythainlp.tools.path import safe_path_join
+
+
+class Parse:
+    """Dependency parser using TransformersUD."""
+
+    def __init__(
+        self,
+        model: Optional[str] = "KoichiYasuoka/deberta-base-thai-ud-head",
+        revision: Optional[str] = None,
+    ) -> None:
+        """
+        Initialize the TransformersUD models.
+
+        :param Optional[str] model: model name or path; the default model
+            is used if ``None``
+        :param Optional[str] revision: git revision id (branch, tag, or
+            commit hash)
+        """
+        from transformers import (
+            AutoConfig,
+            AutoModelForQuestionAnswering,
+            AutoModelForTokenClassification,
+            AutoTokenizer,
+            TokenClassificationPipeline,
+        )
+        from transformers.utils import cached_file
+
+        if model is None:
+            model = "KoichiYasuoka/deberta-base-thai-ud-head"
+        self.tokenizer: AutoTokenizer = AutoTokenizer.from_pretrained(
+            model, revision=revision
+        )
+        self.model: AutoModelForQuestionAnswering = (
+            AutoModelForQuestionAnswering.from_pretrained(
+                model, revision=revision
+            )
+        )
+        x = AutoModelForTokenClassification.from_pretrained
+        if os.path.isdir(model):
+            d, t = (
+                x(safe_path_join(model, "deprel")),
+                x(safe_path_join(model, "tagger")),
+            )
+        else:
+            c = AutoConfig.from_pretrained(  # nosec B615
+                cached_file(model, "deprel/config.json", revision=revision),
+            )
+            d = x(
+                cached_file(
+                    model, "deprel/pytorch_model.bin", revision=revision
+                ),
+                config=c,
+            )
+            s = AutoConfig.from_pretrained(  # nosec B615
+                cached_file(model, "tagger/config.json", revision=revision),
+            )
+            t = x(
+                cached_file(
+                    model, "tagger/pytorch_model.bin", revision=revision
+                ),
+                config=s,
+            )
+        self.deprel: TokenClassificationPipeline = TokenClassificationPipeline(
+            model=d, tokenizer=self.tokenizer, aggregation_strategy="simple"
+        )
+        self.tagger: TokenClassificationPipeline = TokenClassificationPipeline(
+            model=t, tokenizer=self.tokenizer
+        )
+
+    def __call__(  # noqa: CCR001  # phase2-todo
+        self, text: str, tag: str = "str"
+    ) -> Union[list[list[str]], str]:
+        """
+        Parse the dependency structure of a text.
+
+        :param str text: text to be parsed
+        :param str tag: output type, ``"str"`` (CoNLL-U text, default)
+            or ``"list"``
+        :return: CoNLL-U text if ``tag`` is ``"str"``, otherwise a list of
+            lists of fields
+        :rtype: Union[list[list[str]], str]
+        """
+        import numpy as np
+        import torch
+        import ufal.chu_liu_edmonds
+
+        w = [
+            (t["start"], t["end"], t["entity_group"])
+            for t in self.deprel(text)
+        ]
+        z, n = (
+            {t["start"]: t["entity"].split("|") for t in self.tagger(text)},
+            len(w),
+        )
+        r, m = (
+            [text[s:e] for s, e, p in w],
+            np.full((n + 1, n + 1), np.nan),
+        )
+        v, c = self.tokenizer(r, add_special_tokens=False)["input_ids"], []
+        for i, t in enumerate(v):
+            q = [self.tokenizer.cls_token_id, *t, self.tokenizer.sep_token_id]
+            c.append(
+                [
+                    q,
+                    *v[0:i],
+                    [self.tokenizer.mask_token_id],
+                    *v[i + 1 :],
+                    [q[-1]],
+                ]
+            )
+        b = [[len(sum(x[0 : j + 1], [])) for j in range(len(x))] for x in c]
+        with torch.no_grad():
+            d = self.model(
+                input_ids=torch.tensor([sum(x, []) for x in c]),
+                token_type_ids=torch.tensor(
+                    [[0] * x[0] + [1] * (x[-1] - x[0]) for x in b]
+                ),
+            )
+        s, e = d.start_logits.tolist(), d.end_logits.tolist()
+        for i in range(n):
+            for j in range(n):
+                m[i + 1, 0 if i == j else j + 1] = (
+                    s[i][b[i][j]] + e[i][b[i][j + 1] - 1]
+                )
+        h = ufal.chu_liu_edmonds.chu_liu_edmonds(m)[0]
+        if [0 for i in h if i == 0] != [0]:
+            i = ([p for s, e, p in w] + ["root"]).index("root")
+            j = i + 1 if i < n else int(np.nanargmax(m[:, 0]))
+            m[0:j, 0] = m[j + 1 :, 0] = np.nan
+            h = ufal.chu_liu_edmonds.chu_liu_edmonds(m)[0]
+        u = ""
+        if tag == "list":
+            _tag_data = []
+            for i, (s, e, p) in enumerate(w, 1):
+                rel = "root" if h[i] == 0 else "dep" if p == "root" else p
+                _tag_data.append(
+                    [
+                        str(i),
+                        r[i - 1],
+                        "_",
+                        z[s][0][2:],
+                        "_",
+                        "|".join(z[s][1:]),
+                        str(h[i]),
+                        rel,
+                        "_",
+                        "_" if i < n and e < w[i][0] else "SpaceAfter=No",
+                    ]
+                )
+            return _tag_data
+        for i, (s, e, p) in enumerate(w, 1):
+            rel = "root" if h[i] == 0 else "dep" if p == "root" else p
+            u += (
+                "\t".join(
+                    [
+                        str(i),
+                        r[i - 1],
+                        "_",
+                        z[s][0][2:],
+                        "_",
+                        "|".join(z[s][1:]),
+                        str(h[i]),
+                        rel,
+                        "_",
+                        "_" if i < n and e < w[i][0] else "SpaceAfter=No",
+                    ]
+                )
+                + "\n"
+            )
+        return u + "\n"
