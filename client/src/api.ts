@@ -28,9 +28,9 @@ function validItem(resource: string, item: unknown): boolean {
   if (resource.includes('availability')) return strings(item, 'roomId', 'roomNumber', 'roomType') && numbers(item, 'capacity', 'pricePerNight')
   if (!strings(item, 'id')) return false
   if (resource.includes('transactions') || /\/(receipts|refunds)$/.test(resource)) return strings(item, 'kind', 'method', 'reference', 'occurredAt') && numbers(item, 'amount')
-  if (resource.startsWith('/guests')) return strings(item, 'fullName', 'phone')
+  if (resource.startsWith('/guests')) return strings(item, 'fullName', 'phone') && ['email', 'documentNoMasked'].every(key => item[key] == null || typeof item[key] === 'string')
   if (resource.startsWith('/room-types')) return strings(item, 'name') && numbers(item, 'capacity', 'basePrice') && Array.isArray(item.amenities) && item.amenities.every(a => typeof a === 'string')
-  if (resource.startsWith('/rooms')) return strings(item, 'roomNumber')
+  if (resource.startsWith('/rooms')) return strings(item, 'roomNumber') && ['roomTypeId', 'status'].every(key => item[key] == null || typeof item[key] === 'string') && (item.floor == null || numbers(item, 'floor')) && (item.active == null || typeof item.active === 'boolean')
   if (resource.startsWith('/users')) return strings(item, 'name', 'email', 'role') && ['admin', 'receptionist', 'customer'].includes(String(item.role)) && typeof item.active === 'boolean'
   if (resource.startsWith('/bookings')) return strings(item, 'guestId', 'roomId', 'checkInDate', 'checkOutDate', 'status') && numbers(item, 'guestCount', 'pricePerNight', 'totalPrice')
   return true
@@ -38,13 +38,13 @@ function validItem(resource: string, item: unknown): boolean {
 function validPayload(path: string, data: unknown, method: string): boolean {
   if (!record(data)) return false
   const resource = path.split('?')[0]
-  if ('items' in data) return Array.isArray(data.items) && numbers(data, 'page', 'limit', 'total') && Number(data.page) >= 1 && Number(data.limit) >= 1 && Number(data.total) >= 0 && data.items.every(item => validItem(resource, item))
   if (resource === '/auth/login') return strings(data, 'token') && numbers(data, 'expiresIn') && Number(data.expiresIn) > 0 && validItem('/users', data.user)
   if (['/auth/me', '/auth/register', '/auth/profile'].includes(resource)) return validItem('/users', data.user)
   if (resource === '/dashboard/report') return numbers(data, 'receivedBaht', 'refundedBaht', 'netBaht', 'unreconciledPayments')
   if (resource === '/dashboard') return strings(data, 'date') && numbers(data, 'availableRooms', 'occupiedRooms', 'arrivalsToday', 'departuresToday')
   if (/\/payment$/.test(resource)) return numbers(data, 'amount', 'paidAmount', 'refundedAmount', 'net', 'remaining') && strings(data, 'status') && typeof data.ledgerReady === 'boolean'
-  if (method === 'GET' && (/^\/(guests|rooms|room-types|users|bookings)$/.test(resource) || /\/transactions$/.test(resource) || resource.includes('availability'))) return false
+  if (method === 'GET' && (/^\/(guests|rooms|room-types|users|bookings)$/.test(resource) || ['/rooms/availability', '/public/rooms/availability'].includes(resource) || /^\/bookings\/[^/]+\/payment\/transactions$/.test(resource))) return Array.isArray(data.items) && numbers(data, 'page', 'limit', 'total') && Number(data.page) >= 1 && Number(data.limit) >= 1 && Number(data.total) >= 0 && data.items.every(item => validItem(resource, item))
+  if ('items' in data) return false
   return validItem(resource, data)
 }
 

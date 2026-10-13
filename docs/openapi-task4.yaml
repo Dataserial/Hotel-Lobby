@@ -32,6 +32,8 @@ paths:
     get:
       summary: Read immutable transaction history
       parameters:
+        - { name: kind, in: query, schema: { type: string, enum: [receive, refund] } }
+        - { name: q, in: query, description: Case-insensitive reference search scoped to this booking payment, schema: { type: string, maxLength: 120 } }
         - { name: page, in: query, schema: { type: integer, minimum: 1, maximum: 1000000, default: 1 } }
         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
       responses:

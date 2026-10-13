@@ -16,7 +16,7 @@ paths:
     get:
       operationId: findStaffAvailability
       summary: Find available rooms using the existing availability service
-      description: Excludes occupied/maintenance rooms even for future stays. Filters before pagination; no guest/user/payment data.
+      description: Maintenance/inactive rooms are excluded. Occupied rooms may be booked after one occupant's future scheduled checkout; due/overdue or ambiguous stays are blocked. Filters before pagination; no guest/user/payment data.
       parameters:
         - name: checkInDate
           in: query
@@ -32,6 +32,10 @@ paths:
           schema: { type: integer, minimum: 1, maximum: 20 }
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Limit'
+        - name: excludeBookingId
+          in: query
+          description: Staff edit only; confirmed booking ID whose own night claims may be ignored. Public availability rejects this field.
+          schema: { $ref: '#/components/schemas/ObjectId' }
       responses:
         '200':
           description: Available rooms ordered by room number

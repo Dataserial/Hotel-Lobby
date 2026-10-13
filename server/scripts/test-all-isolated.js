@@ -49,7 +49,7 @@ async function main() {
     'tests/task4-atomic.test.js'], process.env);
   await run(jest, ['--runInBand', '--testTimeout=30000', '--runTestsByPath', 'tests/task5.test.js', 'tests/seed-demo.test.js',
     'tests/audit-auth.test.js', 'tests/audit-availability.test.js', 'tests/registration.test.js',
-    'tests/proxy-security.test.js', 'tests/receipt-pagination.test.js'], process.env);
+    'tests/proxy-security.test.js', 'tests/receipt-pagination.test.js', 'tests/bootstrap-admin.test.js'], process.env);
 }
 
 main().catch((error) => { console.error(error.message); process.exitCode = 1; });

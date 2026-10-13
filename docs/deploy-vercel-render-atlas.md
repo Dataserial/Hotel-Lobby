@@ -20,9 +20,20 @@ For local administration, temporarily allow your own IP as well.
 
 An empty staging database needs Prisma indexes and an initial administrator.
 From `server`, after setting `DATABASE_URL` privately to the verified **empty
-staging** database, run `npm run db:push`. If demo data is desired, set
-`DEMO_ADMIN_EMAIL` and `DEMO_ADMIN_PASSWORD` (at least 12 characters), then run
-`npm run db:seed:demo`. This creates demo rooms as well as an administrator.
+staging** database, run `npm run db:push`. Set `BOOTSTRAP_ADMIN_EMAIL`,
+`BOOTSTRAP_ADMIN_PASSWORD` and optionally `BOOTSTRAP_ADMIN_NAME` privately, then run:
+
+```powershell
+npm run db:bootstrap:admin -- --database hotel_lobby_staging --initial-admin
+```
+
+The database argument must exactly match `DATABASE_URL`. This creates only the
+first administrator, never demo rooms. It refuses to reset an existing account
+or create another initial admin when users already exist; rerunning with the
+same active admin and credentials only verifies it. New passwords need at least
+12 characters and at most 72 UTF-8 bytes. The command never prints credentials.
+`db:seed:demo` remains restricted to a separate **local** demo database and must
+not be used on Atlas. Neither command is part of the deployment build.
 For an existing database, follow `implementation-audit.md`, the booking claims
 audit and payment reconciliation runbooks before enabling writes. Never seed
 or push automatically as part of deploy.
@@ -54,11 +65,13 @@ preview deployments need their exact URLs added explicitly. Do not use `*`.
 Check `https://YOUR-RENDER-SERVICE.onrender.com/health` returns 200 and `/ready`
 returns 200 after Atlas network access is configured.
 
-The current limiter keys requests by `req.ip` and Express does not trust proxy
-headers. Before opening to real traffic, verify Render's forwarding behavior
-and configure a verified proxy allowlist or edge rate limiting. Otherwise users
-behind a shared proxy may share the login/public API rate limit. Do not enable
-`trust proxy = true` indiscriminately.
+The limiter keys requests by `req.ip`. Set `TRUSTED_PROXY_CIDRS` only to explicit
+IP addresses/CIDRs verified for the actual ingress topology; empty means no
+proxy headers are trusted. Boolean/hop-count settings and global `/0` ranges
+are rejected. Verify forwarded IPs, bypass attempts and rate-limit isolation
+on staging before opening traffic. A provider's outbound ranges are **not**
+automatically its ingress proxy ranges. If those ranges cannot be established,
+use verified edge rate limiting. Do not enable `trust proxy = true`.
 
 ## 3. Vercel web
 

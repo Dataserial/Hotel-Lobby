@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 
 import { errorText, query, request, type AvailableRoom, type Paged, type User } from './api'
 import { Brand } from './Brand'
 import { contactChannels } from './contact'
+import { setupReveal } from './reveal'
 import './PublicHotel.css'
 
 const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
@@ -11,6 +12,7 @@ const dateLabel = (date: string) => new Intl.DateTimeFormat('th-TH-u-ca-gregory'
 type Stay = { checkInDate: string; checkOutDate: string; guestCount: number }
 
 export default function PublicHotel({ staff, member, user = null, logout }: { staff: () => void; member?: () => void; user?: User | null; logout?: () => void }) {
+  const root = useRef<HTMLElement>(null)
   const intro = useRef<HTMLElement>(null)
   const discover = useRef<HTMLElement>(null)
   const results = useRef<HTMLElement>(null)
@@ -26,6 +28,9 @@ export default function PublicHotel({ staff, member, user = null, logout }: { st
   const [contactStay, setContactStay] = useState<Stay | null>(null)
   const channels = contactChannels(import.meta.env)
   const searchVersion = useRef({ version: 0 })
+  useEffect(() => {
+    if (root.current) return setupReveal(root.current)
+  }, [])
   useEffect(() => {
     const searches = searchVersion.current
     let frame = 0
@@ -53,7 +58,7 @@ export default function PublicHotel({ staff, member, user = null, logout }: { st
   }
   function showContact(room: AvailableRoom) { setSelected(room); setContactStay(stay ? { ...stay } : null); contact.current?.showModal() }
   const nights = stay ? (Date.parse(stay.checkOutDate) - Date.parse(stay.checkInDate)) / 86400000 : 0
-  return <main className="public-hotel">
+  return <main ref={root} className="public-hotel">
     <section ref={intro} className="moon-journey" aria-label="ยินดีต้อนรับสู่ Lub d">
       <div className="moon-night" style={{ '--journey': progress } as CSSProperties}>
         <img className="intro-moon" src="/figma/moon.svg" alt="พระจันทร์" />
@@ -63,9 +68,9 @@ export default function PublicHotel({ staff, member, user = null, logout }: { st
     </section>
     <section ref={discover} id="discover" className="discover-section">
       <header className="hotel-header"><a href="#discover" aria-label="Lub d หน้าแรก"><Brand publicLogo /></a><div className="hotel-account-actions">{user ? <><button className="member-profile" onClick={member} aria-label={'บัญชีสมาชิก ' + user.name}><img src="/figma/profile.svg" alt="" /><span><strong>{user.name}</strong><small>เข้าสู่ระบบแล้ว</small></span></button><button onClick={logout}>ออกจากระบบ</button></> : <>{member && <button onClick={member}>สมัครสมาชิก / เข้าสู่ระบบ</button>}<button className="staff-profile" onClick={staff} aria-label="เข้าสู่ระบบพนักงาน"><img src="/figma/profile.svg" alt="" /><span>พนักงาน</span></button></>}</div></header>
-      <div className="discover-heading"><h1>A GOOD STAY. <br className="mobile-break" />A GREAT DAY.</h1><p className="desktop-copy">พักใจกลางเมือง แล้วออกไปพบเรื่องราวใหม่</p><p className="mobile-copy">ค้นพบห้องพักที่ใช่ ใจกลางกรุงเทพฯ</p></div>
-      <div className="hotel-gallery" aria-label="ภาพโรงแรม"><picture><source media="(max-width: 680px)" srcSet="/figma/hotel-mobile.png" /><img src="/figma/hotel.png" alt="อาคาร Lub d Bangkok Siam ในยามค่ำคืน" /></picture><img src="/figma/pool.png" alt="สระว่ายน้ำและพื้นที่พักผ่อนของโรงแรม" /><div className="lobby-photo"><img src="/figma/lobby.png" alt="ล็อบบี้และพื้นที่ส่วนกลาง" /></div></div>
-      <div className="discover-search"><form className="availability-search" onSubmit={e => void search(e)}>
+      <div className="discover-heading" data-reveal><h1>A GOOD STAY. <br className="mobile-break" />A GREAT DAY.</h1><p className="desktop-copy">พักใจกลางเมือง แล้วออกไปพบเรื่องราวใหม่</p><p className="mobile-copy">ค้นพบห้องพักที่ใช่ ใจกลางกรุงเทพฯ</p></div>
+      <div className="hotel-gallery" data-reveal aria-label="ภาพโรงแรม"><picture><source media="(max-width: 680px)" srcSet="/figma/hotel-mobile.png" /><img src="/figma/hotel.png" alt="อาคาร Lub d Bangkok Siam ในยามค่ำคืน" /></picture><img src="/figma/pool.png" alt="สระว่ายน้ำและพื้นที่พักผ่อนของโรงแรม" /><div className="lobby-photo"><img src="/figma/lobby.png" alt="ล็อบบี้และพื้นที่ส่วนกลาง" /></div></div>
+      <div className="discover-search" data-reveal><form className="availability-search" onSubmit={e => void search(e)}>
         <label className="field"><span>วันเช็กอิน</span><input type="date" required value={form.checkInDate} onChange={e => { const value = e.target.value; setForm(f => ({ ...f, checkInDate: value, checkOutDate: value && value >= f.checkOutDate ? tomorrow(value) : f.checkOutDate })) }} /></label>
         <label className="field"><span>วันเช็กเอาต์</span><input type="date" required min={form.checkInDate ? tomorrow(form.checkInDate) : undefined} value={form.checkOutDate} onChange={e => setForm({ ...form, checkOutDate: e.target.value })} /></label>
         <label className="field"><span>จำนวนผู้เข้าพัก</span><select value={form.guestCount} onChange={e => setForm({ ...form, guestCount: Number(e.target.value) })}>{Array.from({ length: 20 }, (_, i) => <option key={i} value={i + 1}>{i + 1} คน</option>)}</select></label>
@@ -77,7 +82,7 @@ export default function PublicHotel({ staff, member, user = null, logout }: { st
       {stay && <p className="stay-summary">{dateLabel(stay.checkInDate)} – {dateLabel(stay.checkOutDate)} · {nights} คืน · {stay.guestCount} คน</p>}
       {error && <div className="notice error" role="alert">{error}<button onClick={() => void search()}>ลองอีกครั้ง</button></div>}
       {busy && <p className="loading">กำลังค้นหาห้องพักสำหรับคุณ…</p>}
-      {rooms && <>{rooms.items.length ? <><div className="public-room-grid">{rooms.items.map(room => <article className="public-room-card" key={room.roomId}>
+      {rooms && <>{rooms.items.length ? <><div className="public-room-grid">{rooms.items.map(room => <article className="public-room-card" data-reveal key={room.roomId}>
         <span className="room-crescent" aria-hidden="true">☾</span><h3>{room.roomType}</h3><p>สูงสุด {room.capacity} คน · ห้อง {room.roomNumber}</p><span className="pill good">พร้อมจอง</span><strong>฿{money(room.pricePerNight)} / คืน</strong><p className="room-total">รวม {nights} คืน ฿{money(room.pricePerNight * nights)} · ติดต่อพนักงานเพื่อยืนยัน</p><button className="primary" onClick={() => showContact(room)}>ติดต่อพนักงาน</button>
       </article>)}</div><div className="pagination"><span>พบ {rooms.total} ห้อง · หน้า {page}</span><div><button disabled={busy || page === 1} onClick={() => void search(undefined, page - 1, stay!)}>ก่อนหน้า</button><button disabled={busy || page * rooms.limit >= rooms.total} onClick={() => void search(undefined, page + 1, stay!)}>ถัดไป</button></div></div></> : <div className="public-empty"><h3>ยังไม่มีห้องว่างในช่วงวันที่เลือก</h3><p>ลองเปลี่ยนวันที่หรือจำนวนผู้เข้าพัก แล้วค้นหาอีกครั้ง</p><button onClick={() => discover.current?.scrollIntoView()}>เปลี่ยนการค้นหา</button></div>}<p className="public-help">ต้องการความช่วยเหลือ? ติดต่อเคาน์เตอร์โรงแรมเพื่อยืนยันการจอง</p></>}
     </section>
