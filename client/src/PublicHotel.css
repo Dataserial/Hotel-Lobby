@@ -25,6 +25,15 @@
 .lobby-photo img { width: 120.08%; height: 100%; max-width: none; }
 .discover-search { margin: 64px 5% 50px; }
 .availability-search { display: grid; grid-template-columns: minmax(0,280fr) minmax(0,280fr) minmax(0,220fr) minmax(180px,400fr); align-items: center; gap: 20px; background: white; padding: 20px; border-radius: 24px; min-height: 134px; }
+.public-hotel .availability-search { grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(180px, .8fr); }
+.room-number-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; margin: 24px 0 40px; }
+.room-number { display: grid; gap: 6px; min-height: 86px; border: 2px solid #d7e3e9; background: white; border-radius: 16px; color: var(--ink); font-weight: 700; cursor: pointer; }
+.room-number small { font-weight: 400; }
+.room-number[aria-pressed="true"] { border-color: var(--navy); background: #eaf5f8; }
+.room-number:disabled { opacity: .55; cursor: not-allowed; }
+.room-number.maintenance { background: #fff4e4; }
+.booking-confirm, .my-bookings article { background: white; border-radius: 20px; padding: 24px; margin: 18px 0; }
+.booking-confirm .form-grid { max-width: 640px; }
 .availability-search .field { align-self: start; font-size: 13px; font-weight: 400; }
 .availability-search input, .availability-search select { height: 56px; }
 .availability-search > button { width: 236px; max-width: 100%; justify-self: center; margin-top: 15px; }

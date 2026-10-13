@@ -11,6 +11,8 @@ export type PublicOverview = { date: string; checkOutDate: string; timezone: str
 export type AvailabilityStay = { checkInDate: string; checkOutDate: string; guestCount: number }
 export type RoomAvailabilitySearch = AvailabilityStay & { roomTypeId?: string }
 export type RoomAvailabilitySummary = AvailabilityStay & { nights: number; previewDays: number; timezone: string; updatedAt: string; totalAvailableRooms: number; roomTypes: (PublicOverview['roomTypes'][number] & { dates: { checkInDate: string; checkOutDate: string; availableRooms: number }[] })[] }
+export type RoomGrid = { roomType: { id: string; name: string; capacity: number; pricePerNight: number; amenities: string[] }; items: { roomId: string; roomNumber: string; status: 'available' | 'unavailable' | 'maintenance' }[] }
+export type CustomerBooking = { id: string; roomNumber: string; roomType: string; checkInDate: string; checkOutDate: string; guestCount: number; pricePerNight: number; totalPrice: number; status: string; paymentStatus: string }
 export type Booking = { id: string; guestId: string; roomId: string; guestCount: number; checkInDate: string; checkOutDate: string; status: string; pricePerNight: number; totalPrice: number }
 export type Payment = { amount: number; paidAmount: number; refundedAmount: number; net: number; remaining: number; status: string; ledgerReady: boolean }
 export type Transaction = { id: string; kind: string; amount: number; method: string; reference: string; receiptId?: string; occurredAt: string }
@@ -54,6 +56,11 @@ function validItem(resource: string, item: unknown): boolean {
 function validPayload(path: string, data: unknown, method: string): boolean {
   if (!record(data)) return false
   const resource = path.split('?')[0]
+  if (resource === '/public/rooms/grid') return record(data.roomType) && strings(data.roomType, 'id', 'name') && numbers(data.roomType, 'capacity', 'pricePerNight') && Array.isArray(data.roomType.amenities) && Array.isArray(data.items) && data.items.every(item => record(item) && strings(item, 'roomId', 'roomNumber', 'status') && ['available', 'unavailable', 'maintenance'].includes(String(item.status)))
+  if (resource === '/customer/bookings') {
+    const validBooking = (item: unknown) => record(item) && strings(item, 'id', 'roomNumber', 'roomType', 'checkInDate', 'checkOutDate', 'status', 'paymentStatus') && numbers(item, 'guestCount', 'pricePerNight', 'totalPrice')
+    return method === 'GET' ? Array.isArray(data.items) && data.items.every(validBooking) : validBooking(data)
+  }
   if (resource === '/public/rooms/summary') return validRoomSummary(data)
   if (resource === '/public/overview') return calendarDate(data.date) && calendarDate(data.checkOutDate) && strings(data, 'timezone', 'updatedAt') && Number.isFinite(Date.parse(String(data.updatedAt))) && numbers(data, 'totalRooms', 'availableRooms', 'bookedRooms') && ['totalRooms', 'availableRooms', 'bookedRooms'].every(key => Number(data[key]) >= 0) && Array.isArray(data.roomTypes) && data.roomTypes.every(type => record(type) && strings(type, 'id', 'name') && numbers(type, 'capacity', 'pricePerNight', 'totalRooms', 'availableRooms') && Number(type.capacity) > 0 && Number(type.pricePerNight) >= 0 && Number(type.totalRooms) >= 0 && Number(type.availableRooms) >= 0 && Array.isArray(type.amenities) && type.amenities.every(amenity => typeof amenity === 'string'))
   if (resource === '/auth/login') return strings(data, 'token') && numbers(data, 'expiresIn') && Number(data.expiresIn) > 0 && validItem('/users', data.user)
@@ -110,6 +117,7 @@ const messages: Record<string, string> = {
   CAPACITY_EXCEEDED: 'จำนวนผู้เข้าพักเกินความจุห้อง', ROOM_UNAVAILABLE: 'ห้องนี้ถูกจองแล้ว กรุณาเลือกห้องอื่น',
   PAYMENT_REQUIRED: 'ต้องชำระยอดคงเหลือก่อนเช็กเอาต์', PAYMENT_REFUND_REQUIRED: 'ต้องคืนเงินให้ครบก่อนยกเลิก',
   PAYMENT_ADJUSTMENT_REQUIRED: 'ต้องคืนเงินก่อนแก้ไขยอดจอง', PAYMENT_RECONCILIATION_REQUIRED: 'ต้องตรวจสอบหลักฐานรับเงินเดิมก่อนดำเนินการ',
+  PRICE_CHANGED: 'ราคาห้องเปลี่ยนแล้ว กรุณาตรวจราคาใหม่ก่อนยืนยัน', DOCUMENT_REVIEW_REQUIRED: 'เลขเอกสารนี้มีในระบบแล้ว กรุณาติดต่อพนักงานเพื่อตรวจสอบ',
   IDEMPOTENCY_CONFLICT: 'รายการเดิมมีข้อมูลต่างกัน กรุณาตรวจสอบหลักฐาน', DUPLICATE_REFERENCE: 'เลขอ้างอิงนี้ถูกใช้แล้ว',
   RATE_LIMITED: 'ส่งคำขอบ่อยเกินไป กรุณารอสักครู่',
   PASSWORD_POLICY: 'รหัสผ่านต้องมีอย่างน้อย 12 ตัวอักษร และไม่เกิน 72 ไบต์ UTF-8 (ภาษาไทยใช้หลายไบต์ต่อตัว)',

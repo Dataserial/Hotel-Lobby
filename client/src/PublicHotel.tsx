@@ -1,104 +1,52 @@
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react'
-import { errorText, query, request, type AvailableRoom, type Paged, type RoomAvailabilitySearch, type User } from './api'
-import { Brand } from './Brand'
-import { contactChannels } from './contact'
-import { setupReveal } from './reveal'
-import RoomAvailability from './RoomAvailability'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { errorText, query, request, type CustomerBooking, type RoomAvailabilitySummary, type RoomGrid, type User } from './api'
 import { roomPhoto } from './roomPhotos'
+import { Brand } from './Brand'
 import AccountMenu from './AccountMenu'
 import './PublicHotel.css'
 
 const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
-const tomorrow = (date: string) => new Date(Date.parse(date + 'T00:00:00Z') + 86400000).toISOString().slice(0, 10)
-const money = (amount: number) => new Intl.NumberFormat('th-TH').format(amount)
-const dateLabel = (date: string) => new Intl.DateTimeFormat('th-TH-u-ca-gregory', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(date + 'T00:00:00Z'))
-type Stay = RoomAvailabilitySearch
+const tomorrow = (day: string) => new Date(Date.parse(day + 'T00:00:00Z') + 86400000).toISOString().slice(0, 10)
+const money = (value: number) => new Intl.NumberFormat('th-TH').format(value)
+type Dates = { checkInDate: string; checkOutDate: string }
+type Draft = Dates & { roomTypeId: string; roomId: string }
+const draftKey = 'hotel-lobby-booking-draft'
+function readDraft(): Draft | null { try { const value = JSON.parse(sessionStorage.getItem(draftKey) || 'null'); return value && typeof value.roomId === 'string' ? value : null } catch { return null } }
 
-export default function PublicHotel({ staff, member, user = null, logout }: { staff: () => void; member?: () => void; user?: User | null; logout?: () => void }) {
-  const root = useRef<HTMLElement>(null)
-  const intro = useRef<HTMLElement>(null)
-  const discover = useRef<HTMLElement>(null)
-  const results = useRef<HTMLElement>(null)
-  const contact = useRef<HTMLDialogElement>(null)
-  const [progress, setProgress] = useState(0)
-  const [form, setForm] = useState<Stay>(() => ({ checkInDate: today(), checkOutDate: tomorrow(today()), guestCount: 2 }))
-  const [initialStay] = useState(form)
-  const [summaryRefresh, setSummaryRefresh] = useState(0)
-  const [roomTypeId, setRoomTypeId] = useState('')
-  const [stay, setStay] = useState<Stay | null>(null)
-  const [rooms, setRooms] = useState<Paged<AvailableRoom> | null>(null)
-  const [page, setPage] = useState(1)
-  const [busy, setBusy] = useState(false)
+export default function PublicHotel({ staff, member, user = null, token = null, logout }: { staff: () => void; member?: () => void; user?: User | null; token?: string | null; logout?: () => void }) {
+  const [saved] = useState(readDraft)
+  const [dates, setDates] = useState<Dates>(() => saved || { checkInDate: today(), checkOutDate: tomorrow(today()) })
+  const [searched, setSearched] = useState<Dates | null>(() => saved)
+  const [types, setTypes] = useState<RoomAvailabilitySummary['roomTypes']>([])
+  const [typeId, setTypeId] = useState(saved?.roomTypeId || '')
+  const [grid, setGrid] = useState<RoomGrid | null>(null)
+  const [gridRefresh, setGridRefresh] = useState(0)
+  const [roomId, setRoomId] = useState(saved?.roomId || '')
+  const [phone, setPhone] = useState('')
+  const [documentNo, setDocumentNo] = useState('')
+  const [booking, setBooking] = useState<CustomerBooking | null>(null)
   const [error, setError] = useState('')
-  const [selected, setSelected] = useState<AvailableRoom | null>(null)
-  const [contactStay, setContactStay] = useState<Stay | null>(null)
-  const channels = contactChannels(import.meta.env)
-  const searchVersion = useRef({ version: 0 })
-  useEffect(() => {
-    if (root.current) return setupReveal(root.current)
-  }, [])
-  useEffect(() => {
-    if (window.location.pathname === '/discover') discover.current?.scrollIntoView({ behavior: 'instant' })
-  }, [])
-  useEffect(() => {
-    const searches = searchVersion.current
-    let frame = 0
-    const update = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(() => setProgress(Math.min(1, Math.max(0, -(intro.current?.getBoundingClientRect().top || 0) / window.innerHeight)))) }
-    window.addEventListener('scroll', update, { passive: true })
-    window.addEventListener('resize', update)
-    update()
-    return () => { cancelAnimationFrame(frame); window.removeEventListener('scroll', update); window.removeEventListener('resize', update); searches.version++ }
-  }, [])
-  useEffect(() => {
-    if (stay) results.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
-  }, [stay])
-  async function search(event?: FormEvent, targetPage = 1, snapshot?: Stay) {
-    event?.preventDefault()
-    const searched = snapshot || (targetPage === 1 ? { ...form, roomTypeId: roomTypeId || undefined } : stay!)
-    const nights = (Date.parse(searched.checkOutDate) - Date.parse(searched.checkInDate)) / 86400000
-    if (!Number.isInteger(nights) || nights < 1 || nights > 365) { setError('กรุณาเลือกวันเช็กเอาต์หลังวันเช็กอิน โดยพักได้ 1–365 คืน'); return }
-    const version = ++searchVersion.current.version
-    if (targetPage === 1) setSummaryRefresh(value => value + 1)
-    setBusy(true); setError(''); setRooms(null); setStay(searched)
-    try {
-      const data = await request<Paged<AvailableRoom>>('/public/rooms/availability?' + query({ ...searched, page: targetPage, limit: 12 }), null)
-      if (version === searchVersion.current.version) { setRooms(data); setPage(targetPage) }
-    } catch (err) { if (version === searchVersion.current.version) setError(errorText(err)) }
-    finally { if (version === searchVersion.current.version) setBusy(false) }
-  }
-  function showContact(room: AvailableRoom) { setSelected(room); setContactStay(stay ? { ...stay } : null); contact.current?.showModal() }
-  const summaryStay = stay || initialStay
-  const nights = stay ? (Date.parse(stay.checkOutDate) - Date.parse(stay.checkInDate)) / 86400000 : 0
-  return <main ref={root} className="public-hotel">
-<header className="hotel-header floating-navbar"><a className="home-link" href="/" aria-label="Lub d หน้าแรก"><Brand publicLogo /></a><div className="hotel-account-actions">{user ? <AccountMenu user={user} account={member} logout={logout} /> : <>{member && <button onClick={member}>สมัครสมาชิก / เข้าสู่ระบบ</button>}<button className="staff-profile" onClick={staff} aria-label="เข้าสู่ระบบพนักงาน"><img src="/figma/profile.svg" alt="" /><span>พนักงาน</span></button></>}</div></header>
-    <section ref={intro} className="moon-journey" aria-label="ยินดีต้อนรับสู่ Lub d">
-      <div className="moon-night" style={{ '--journey': progress } as CSSProperties}>
-        <img className="intro-moon" src="/figma/moon.svg" alt="พระจันทร์" />
-        <p className="moon-quote">“พักให้เต็มที่ แล้วเริ่มวันใหม่”</p>
-        <button className="scroll-start" onClick={() => discover.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })}>เลื่อนลงเพื่อเริ่มต้น ↓</button>
-      </div>
-    </section>
-    <section ref={discover} id="discover" className="discover-section">
-
-      <div className="discover-heading" data-reveal><h1>A GOOD STAY. <br className="mobile-break" />A GREAT DAY.</h1><p className="desktop-copy">พักใจกลางเมือง แล้วออกไปพบเรื่องราวใหม่</p><p className="mobile-copy">ค้นพบห้องพักที่ใช่ ใจกลางกรุงเทพฯ</p></div>
-      <div className="hotel-gallery" data-reveal aria-label="ภาพโรงแรม"><picture><source media="(max-width: 680px)" srcSet="/figma/hotel-mobile.png" /><img src="/figma/hotel.png" alt="อาคาร Lub d Bangkok Siam ในยามค่ำคืน" /></picture><img src="/figma/pool.png" alt="สระว่ายน้ำและพื้นที่พักผ่อนของโรงแรม" /><div className="lobby-photo"><img src="/figma/lobby.png" alt="ล็อบบี้และพื้นที่ส่วนกลาง" /></div></div>
-      <div className="discover-search" data-reveal><form className="availability-search" onSubmit={e => void search(e)}>
-        <label className="field"><span>วันเช็กอิน</span><input type="date" required value={form.checkInDate} onChange={e => { const value = e.target.value; setForm(f => ({ ...f, checkInDate: value, checkOutDate: value && value >= f.checkOutDate ? tomorrow(value) : f.checkOutDate })) }} /></label>
-        <label className="field"><span>วันเช็กเอาต์</span><input type="date" required min={form.checkInDate ? tomorrow(form.checkInDate) : undefined} value={form.checkOutDate} onChange={e => setForm({ ...form, checkOutDate: e.target.value })} /></label>
-        <label className="field"><span>จำนวนผู้เข้าพัก</span><select value={form.guestCount} onChange={e => setForm({ ...form, guestCount: Number(e.target.value) })}>{Array.from({ length: 20 }, (_, i) => <option key={i} value={i + 1}>{i + 1} คน</option>)}</select></label>
-        <button className="primary" disabled={busy}>{busy ? 'กำลังค้นหา…' : <><span className="desktop-copy">ค้นหาโรงแรม</span><span className="mobile-copy">ค้นหาห้องว่าง →</span></>}</button>
-      </form><p className="hotel-amenities">Wi-Fi ฟรี  •  ใกล้ BTS สนามกีฬาแห่งชาติ  •  พื้นที่ส่วนกลาง 24 ชั่วโมง</p></div>
-    </section>
-    <RoomAvailability key={`${summaryStay.checkInDate}:${summaryStay.checkOutDate}:${summaryStay.guestCount}:${summaryRefresh}`} stay={summaryStay} roomTypeId={roomTypeId} selectRoomType={setRoomTypeId} choose={snapshot => { setForm(snapshot); void search(undefined, 1, snapshot) }} />
-    <section ref={results} className="public-results" aria-live="polite" aria-busy={busy} hidden={!stay && !error}>
-      <h2>ห้องพักสำหรับคืนที่ดีของคุณ</h2>
-      {stay && <p className="stay-summary">{dateLabel(stay.checkInDate)} – {dateLabel(stay.checkOutDate)} · {nights} คืน · {stay.guestCount} คน</p>}
-      {error && <div className="notice error" role="alert">{error}<button onClick={() => void search(undefined, 1, stay || undefined)}>ลองอีกครั้ง</button></div>}
-      {busy && <p className="loading">กำลังค้นหาห้องพักสำหรับคุณ…</p>}
-      {rooms && <>{rooms.items.length ? <><div className="public-room-grid">{rooms.items.map(room => <article className="public-room-card" data-reveal key={room.roomId}>
-        <img className="result-room-photo" src={roomPhoto(room.roomType)} alt={'ภาพประกอบห้องพัก ' + room.roomType} loading="lazy" /><h3>{room.roomType}</h3><p>สูงสุด {room.capacity} คน · ห้อง {room.roomNumber}</p><span className="pill good">พร้อมจอง</span><strong>฿{money(room.pricePerNight)} / คืน</strong><p className="room-total">รวม {nights} คืน ฿{money(room.pricePerNight * nights)} · ติดต่อพนักงานเพื่อยืนยัน</p><button className="primary" onClick={() => showContact(room)}>ติดต่อพนักงาน</button>
-      </article>)}</div><div className="pagination"><span>พบ {rooms.total} ห้อง · หน้า {page}</span><div><button disabled={busy || page === 1} onClick={() => void search(undefined, page - 1, stay!)}>ก่อนหน้า</button><button disabled={busy || page * rooms.limit >= rooms.total} onClick={() => void search(undefined, page + 1, stay!)}>ถัดไป</button></div></div></> : <div className="public-empty"><h3>ยังไม่มีห้องว่างในช่วงวันที่เลือก</h3><p>ลองเปลี่ยนวันที่หรือจำนวนผู้เข้าพัก แล้วค้นหาอีกครั้ง</p><button onClick={() => discover.current?.scrollIntoView()}>เปลี่ยนการค้นหา</button></div>}<p className="public-help">ต้องการความช่วยเหลือ? ติดต่อเคาน์เตอร์โรงแรมเพื่อยืนยันการจอง</p></>}
-    </section>
-    <dialog ref={contact} className="contact-dialog" aria-labelledby="contact-title"><div><button className="dialog-close" onClick={() => contact.current?.close()} aria-label="ปิด">×</button><span className="eyebrow">LUB D · BANGKOK SIAM</span><h2 id="contact-title">ติดต่อเคาน์เตอร์โรงแรม</h2>{user && <div className="contact-member" role="status"><img src="/figma/profile.svg" alt="" /><div><strong>{user.name}</strong><small>เข้าสู่ระบบแล้ว · ติดต่อในชื่อบัญชีสมาชิกของคุณ</small></div></div>}<p>แจ้งรายละเอียดนี้กับพนักงาน เพื่อให้ตรวจห้องว่างและยืนยันการจอง</p>{selected && contactStay && <dl><dt>ห้องพัก</dt><dd>{selected.roomType} · ห้อง {selected.roomNumber}</dd><dt>วันเข้าพัก</dt><dd>{dateLabel(contactStay.checkInDate)} – {dateLabel(contactStay.checkOutDate)}</dd><dt>ผู้เข้าพัก</dt><dd>{contactStay.guestCount} คน · {(Date.parse(contactStay.checkOutDate) - Date.parse(contactStay.checkInDate)) / 86400000} คืน</dd><dt>ราคารวม</dt><dd>฿{money(selected.pricePerNight * ((Date.parse(contactStay.checkOutDate) - Date.parse(contactStay.checkInDate)) / 86400000))}</dd></dl>}{channels.length ? <div className="contact-links">{channels.map(channel => <a key={channel.href} href={channel.href} rel="noopener noreferrer">{channel.label}</a>)}</div> : <p role="status">ยังไม่ได้ตั้งค่าช่องทางติดต่อ กรุณาติดต่อเคาน์เตอร์โรงแรมโดยตรง</p>}<p>ผลค้นหานี้ยังไม่ได้สำรองห้อง กรุณาติดต่อพนักงานก่อนยืนยัน</p><button className="primary" onClick={() => contact.current?.close()}>เข้าใจแล้ว</button></div></dialog>
-  </main>
+  const [busy, setBusy] = useState(false)
+  const key = useRef(crypto.randomUUID())
+  const requestVersion = useRef(0)
+  const section = useRef<HTMLElement>(null)
+  const nights = searched ? (Date.parse(searched.checkOutDate) - Date.parse(searched.checkInDate)) / 86400000 : 0
+  const selectedRoom = grid?.items.find(room => room.roomId === roomId)
+  const selectedType = types.find(type => type.id === typeId)
+  function clearSelection(next: Dates) { requestVersion.current++; setDates(next); setBusy(false); setSearched(null); setTypes([]); setTypeId(''); setGrid(null); setRoomId(''); setBooking(null); setError(''); sessionStorage.removeItem(draftKey); key.current = crypto.randomUUID() }
+  useEffect(() => { if (searched) section.current?.scrollIntoView({ behavior: 'smooth' }) }, [searched])
+  useEffect(() => { if (!searched || !typeId) return; const controller = new AbortController(); void request<RoomGrid>('/public/rooms/grid?' + query({ ...searched, roomTypeId: typeId }), null, { signal: controller.signal }).then(value => { if (!controller.signal.aborted) { setGrid(value); setRoomId(current => value.items.some(room => room.roomId === current && room.status === 'available') ? current : '') } }).catch(err => { if (!controller.signal.aborted) setError(errorText(err)) }); return () => controller.abort() }, [searched, typeId, gridRefresh])
+  async function findTypes(event?: FormEvent) { event?.preventDefault(); const version = ++requestVersion.current; const count = (Date.parse(dates.checkOutDate) - Date.parse(dates.checkInDate)) / 86400000; if (!Number.isInteger(count) || count < 1 || count > 365) { setError('กรุณาเลือกวันพัก 1–365 คืน'); return } setBusy(true); setError(''); setSearched({ ...dates }); setTypeId(''); setGrid(null); setRoomId(''); try { const response = await request<RoomAvailabilitySummary>('/public/rooms/summary?' + query({ ...dates, guestCount: 1 }), null); if (version === requestVersion.current) setTypes(response.roomTypes) } catch (err) { if (version === requestVersion.current) setError(errorText(err)) } finally { if (version === requestVersion.current) setBusy(false) } }
+  function selectType(id: string) { setGrid(null); setError(''); setTypeId(id); setRoomId(''); setBooking(null); sessionStorage.removeItem(draftKey); key.current = crypto.randomUUID() }
+  function selectRoom(id: string) { setRoomId(id); setBooking(null); key.current = crypto.randomUUID(); if (searched) sessionStorage.setItem(draftKey, JSON.stringify({ ...searched, roomTypeId: typeId, roomId: id })) }
+  useEffect(() => { if (!saved) return; const controller = new AbortController(); void request<RoomAvailabilitySummary>('/public/rooms/summary?' + query({ checkInDate: saved.checkInDate, checkOutDate: saved.checkOutDate, guestCount: 1 }), null, { signal: controller.signal }).then(value => { if (!controller.signal.aborted) setTypes(value.roomTypes) }).catch(err => { if (!controller.signal.aborted) setError(errorText(err)) }); return () => controller.abort() }, [saved])
+  async function confirm(event: FormEvent) { event.preventDefault(); if (!searched || !selectedRoom || !grid || !user || user.role !== 'customer') return; setBusy(true); setError(''); try { if (!token) { setError('กรุณาเข้าสู่ระบบอีกครั้ง'); return } const result = await request<CustomerBooking>('/customer/bookings', token, { method: 'POST', idempotencyKey: key.current, body: { roomId, ...searched, phone, documentNo, expectedPricePerNight: grid.roomType.pricePerNight } }); setBooking(result); sessionStorage.removeItem(draftKey) } catch (err) { setError(errorText(err)); if ((err as { code?: string }).code === 'ROOM_UNAVAILABLE') { setRoomId(''); setGrid(null); setGridRefresh(value => value + 1) } if ((err as { code?: string }).code === 'PRICE_CHANGED') { setRoomId(''); setTypeId(''); setGrid(null) } } finally { setBusy(false) } }
+  return <main className="public-hotel"><header className="hotel-header floating-navbar"><a className="home-link" href="/" aria-label="Lub d หน้าแรก"><Brand publicLogo /></a><div className="hotel-account-actions">{user ? <AccountMenu user={user} account={member} logout={logout} /> : <><button onClick={member}>สมัครสมาชิก / เข้าสู่ระบบ</button><button onClick={staff}>พนักงาน</button></>}</div></header>
+    <section className="discover-section" id="discover"><div className="discover-heading"><h1>A GOOD STAY.<br />A GREAT DAY.</h1><p>เลือกวันพัก ประเภทห้อง แล้วเลือกห้องที่ใช่</p></div><div className="hotel-gallery"><img src="/figma/hotel.png" alt="โรงแรม Lub d Bangkok Siam" /><img src="/figma/pool.png" alt="พื้นที่พักผ่อน" /></div><div className="discover-search"><form className="availability-search" onSubmit={findTypes}><label className="field"><span>วันเช็กอิน</span><input type="date" required min={today()} value={dates.checkInDate} onChange={e => { const start = e.target.value; clearSelection({ checkInDate: start, checkOutDate: start >= dates.checkOutDate ? tomorrow(start) : dates.checkOutDate }) }} /></label><label className="field"><span>วันเช็กเอาต์</span><input type="date" required min={dates.checkInDate ? tomorrow(dates.checkInDate) : undefined} value={dates.checkOutDate} onChange={e => clearSelection({ ...dates, checkOutDate: e.target.value })} /></label><button className="primary" disabled={busy}>{busy ? 'กำลังค้นหา…' : 'เลือกประเภทห้อง'}</button></form></div></section>
+    <section ref={section} className="public-results" aria-live="polite"><h2>เลือกประเภทห้อง</h2>{searched && <p className="stay-summary">{searched.checkInDate} – {searched.checkOutDate} · {nights} คืน</p>}{error && <div className="notice error" role="alert">{error} <button onClick={() => { if (typeId) { setError(''); setGrid(null); setGridRefresh(value => value + 1) } else void findTypes() }}>ลองอีกครั้ง</button></div>}{searched && !types.length && !error && <p role="status">กำลังโหลดประเภทห้อง…</p>}
+      <div className="room-type-summary-grid">{types.map(type => <article key={type.id} className="room-type-card"><img src={roomPhoto(type.name)} alt={'ภาพประกอบ ' + type.name} /><h3>{type.name}</h3><p>สูงสุด {type.capacity} คน · ฿{money(type.pricePerNight)} / คืน</p><p>ว่าง {type.availableRooms} จาก {type.totalRooms} ห้อง</p><button type="button" aria-pressed={typeId === type.id} onClick={() => selectType(type.id)}>เลือก {type.name}</button></article>)}</div>
+      {typeId && <><h2>เลือกเลขห้อง {selectedType?.name}</h2>{!grid && !error && <p role="status">กำลังโหลดห้อง…</p>}{grid && <div className="room-number-grid" role="group" aria-label="เลือกเลขห้อง">{grid.items.map(room => <button key={room.roomId} type="button" disabled={room.status !== 'available'} aria-pressed={roomId === room.roomId} className={'room-number ' + room.status} onClick={() => selectRoom(room.roomId)}>ห้อง {room.roomNumber}<small>{room.status === 'available' ? 'ว่าง' : room.status === 'maintenance' ? 'ซ่อมบำรุง' : 'ไม่ว่าง'}</small></button>)}</div>}</>}
+      {selectedRoom && grid && searched && !booking && <section className="booking-confirm"><h2>ยืนยันการจอง</h2><p>{grid.roomType.name} · ห้อง {selectedRoom.roomNumber} · {searched.checkInDate} – {searched.checkOutDate}</p><p>{nights} คืน · ฿{money(grid.roomType.pricePerNight)} / คืน · รวม ฿{money(nights * grid.roomType.pricePerNight)}</p><p>จำนวนผู้พักตามความจุห้อง: {grid.roomType.capacity} คน · ชำระที่โรงแรม</p>{!user || user.role !== 'customer' ? <button className="primary" onClick={member}>เข้าสู่ระบบหรือสมัครสมาชิกเพื่อจอง</button> : <form className="form-grid" onSubmit={confirm}><p>ผู้จอง: {user.name} · {user.email}</p><label className="field"><span>เบอร์โทร</span><input required maxLength={30} value={phone} onChange={e => { setPhone(e.target.value); key.current = crypto.randomUUID() }} /></label><label className="field"><span>เลขบัตรประชาชนหรือพาสปอร์ต</span><input required minLength={5} maxLength={64} value={documentNo} onChange={e => { setDocumentNo(e.target.value); key.current = crypto.randomUUID() }} /></label><button className="primary" disabled={busy}>{busy ? 'กำลังจอง…' : 'ยืนยันจอง · ชำระที่โรงแรม'}</button></form>}</section>}
+      {booking && <div className="booking-confirm" role="status"><h2>จองสำเร็จ</h2><p>เลขอ้างอิง {booking.id} · ห้อง {booking.roomNumber} · รวม ฿{money(booking.totalPrice)}</p><p>สถานะ: ยืนยันแล้ว · ชำระที่โรงแรม</p><button onClick={member}>ดูการจองของฉัน</button></div>}
+    </section></main>
 }

@@ -57,6 +57,8 @@ model User {
   paymentsRecorded Payment[] @relation("PaymentRecordedBy")
   transactionsRecorded PaymentTransaction[]
   sessions         Session[]
+  customerGuests   Guest[] @relation("CustomerGuests")
+  customerBookings Booking[] @relation("CustomerBookings")
   createdById      String?   @db.ObjectId
   updatedById      String?   @db.ObjectId
 
@@ -110,6 +112,8 @@ model Guest {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   bookings      Booking[]
+  customerId    String? @db.ObjectId
+  customer      User? @relation("CustomerGuests", fields: [customerId], references: [id])
   active        Boolean? @default(true)
   createdById   String? @db.ObjectId
   updatedById   String? @db.ObjectId
@@ -124,6 +128,8 @@ model Booking {
   id               String        @id @default(auto()) @map("_id") @db.ObjectId
   guestId          String        @db.ObjectId
   guest            Guest         @relation(fields: [guestId], references: [id])
+  customerId       String?       @db.ObjectId
+  customer         User?         @relation("CustomerBookings", fields: [customerId], references: [id])
   roomId           String        @db.ObjectId
   room             Room          @relation(fields: [roomId], references: [id])
   guestCount       Int
@@ -146,6 +152,7 @@ model Booking {
 
   @@index([roomId, checkInDate, checkOutDate])
   @@index([guestId, createdAt])
+  @@index([customerId, createdAt])
   @@index([status, checkOutDate])
   @@map("bookings")
 }
@@ -170,6 +177,15 @@ model Payment {
 
   @@index([status])
   @@map("payments")
+}
+
+model CustomerBookingRequest {
+  key        String @id @map("_id")
+  hash       String
+  customerId String @db.ObjectId
+  bookingId  String @db.ObjectId
+
+  @@map("customerBookingRequests")
 }
 
 model PaymentTransaction {

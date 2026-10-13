@@ -70,6 +70,6 @@ test('customer hotel staff callback logs out, opens staff login and its logo ret
     await h.waitFor(()=>h.dom.window.document.querySelector('.login-card'),500);
     assert.equal(logouts,1);assert.ok(h.dom.window.document.querySelector('.login-card').textContent.includes('Admin และ Receptionist'));
     await h.React.act(async()=>h.dom.window.document.querySelector('.login-brand').click());await h.waitFor(()=>h.dom.window.document.querySelector('.home-page'));
-    assert.equal(h.dom.window.location.hash,'#home');assert.ok(!h.dom.window.document.querySelector('.home-header').textContent.includes('Customer Member'));
+    assert.equal(h.dom.window.location.pathname,'/');assert.ok(!h.dom.window.document.querySelector('.home-header').textContent.includes('Customer Member'));
   }finally{await h.close();globalThis.fetch=originalFetch}
 });

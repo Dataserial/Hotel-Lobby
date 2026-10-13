@@ -16,7 +16,7 @@ test('logged-in hotel header shows member identity and logout instead of guest l
     await h.React.act(async()=>account.click());assert.equal(accountOpened,1);
     await h.openAccount();
     await h.React.act(async()=>h.button('ออกจากระบบ').click());assert.equal(logouts,1);
-    assert.ok(h.dom.window.document.querySelector('.contact-dialog').textContent.includes('Member Fixture'));
+    assert.ok(h.dom.window.document.querySelector('.availability-search'));
   }finally{await h.close()}
 });
 
