@@ -6,6 +6,7 @@ import { setupReveal } from './reveal'
 import RoomAvailability from './RoomAvailability'
 import { roomPhoto } from './roomPhotos'
 import AccountMenu from './AccountMenu'
+import { scrollToTarget } from './navigation'
 import './PublicHotel.css'
 
 const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
@@ -40,7 +41,7 @@ export default function PublicHotel({ staff, member, user = null, token = null, 
   }, [])
   useEffect(() => () => { searchVersion.current.version++ }, [])
   useEffect(() => {
-    if (stay) results.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
+    if (stay) scrollToTarget(results.current)
   }, [stay])
   async function search(event?: FormEvent, targetPage = 1, snapshot?: Stay) {
     event?.preventDefault()
@@ -81,7 +82,7 @@ export default function PublicHotel({ staff, member, user = null, token = null, 
       {busy && <p className="loading">กำลังค้นหาห้องพักสำหรับคุณ…</p>}
       {rooms && <>{rooms.items.length ? <><div className="public-room-grid">{rooms.items.map(room => <article className="public-room-card" data-reveal key={room.roomId}>
         <img className="result-room-photo" src={roomPhoto(room.roomType)} alt={'ภาพประกอบห้องพัก ' + room.roomType} loading="lazy" /><h3>{room.roomType}</h3><p>สูงสุด {room.capacity} คน · ห้อง {room.roomNumber}</p><span className="pill good">พร้อมจอง</span><strong>฿{money(room.pricePerNight)} / คืน</strong><p className="room-total">รวม {nights} คืน ฿{money(room.pricePerNight * nights)} · ติดต่อพนักงานเพื่อยืนยัน</p><button className="primary" onClick={() => showContact(room)}>ติดต่อพนักงาน</button>
-      </article>)}</div><div className="pagination"><span>พบ {rooms.total} ห้อง · หน้า {page}</span><div><button disabled={busy || page === 1} onClick={() => void search(undefined, page - 1, stay!)}>ก่อนหน้า</button><button disabled={busy || page * rooms.limit >= rooms.total} onClick={() => void search(undefined, page + 1, stay!)}>ถัดไป</button></div></div></> : <div className="public-empty"><h3>ยังไม่มีห้องว่างในช่วงวันที่เลือก</h3><p>ลองเปลี่ยนวันที่หรือจำนวนผู้เข้าพัก แล้วค้นหาอีกครั้ง</p><button onClick={() => discover.current?.scrollIntoView()}>เปลี่ยนการค้นหา</button></div>}<p className="public-help">ต้องการความช่วยเหลือ? ติดต่อเคาน์เตอร์โรงแรมเพื่อยืนยันการจอง</p></>}
+      </article>)}</div><div className="pagination"><span>พบ {rooms.total} ห้อง · หน้า {page}</span><div><button disabled={busy || page === 1} onClick={() => void search(undefined, page - 1, stay!)}>ก่อนหน้า</button><button disabled={busy || page * rooms.limit >= rooms.total} onClick={() => void search(undefined, page + 1, stay!)}>ถัดไป</button></div></div></> : <div className="public-empty"><h3>ยังไม่มีห้องว่างในช่วงวันที่เลือก</h3><p>ลองเปลี่ยนวันที่หรือจำนวนผู้เข้าพัก แล้วค้นหาอีกครั้ง</p><button onClick={() => scrollToTarget(discover.current)}>เปลี่ยนการค้นหา</button></div>}<p className="public-help">ต้องการความช่วยเหลือ? ติดต่อเคาน์เตอร์โรงแรมเพื่อยืนยันการจอง</p></>}
     </section>
     <dialog ref={contact} className="contact-dialog" aria-labelledby="contact-title"><div><button className="dialog-close" onClick={() => contact.current?.close()} aria-label="ปิด">×</button><span className="eyebrow">LUB D · BANGKOK SIAM</span><h2 id="contact-title">ติดต่อเคาน์เตอร์โรงแรม</h2>{user && <div className="contact-member" role="status"><img src="/figma/profile.svg" alt="" /><div><strong>{user.name}</strong><small>เข้าสู่ระบบแล้ว · ติดต่อในชื่อบัญชีสมาชิกของคุณ</small></div></div>}<p>แจ้งรายละเอียดนี้กับพนักงาน เพื่อให้ตรวจห้องว่างและยืนยันการจอง</p>{selected && contactStay && <dl><dt>ห้องพัก</dt><dd>{selected.roomType} · ห้อง {selected.roomNumber}</dd><dt>วันเข้าพัก</dt><dd>{dateLabel(contactStay.checkInDate)} – {dateLabel(contactStay.checkOutDate)}</dd><dt>ผู้เข้าพัก</dt><dd>{contactStay.guestCount} คน · {(Date.parse(contactStay.checkOutDate) - Date.parse(contactStay.checkInDate)) / 86400000} คืน</dd><dt>ราคารวม</dt><dd>฿{money(selected.pricePerNight * ((Date.parse(contactStay.checkOutDate) - Date.parse(contactStay.checkInDate)) / 86400000))}</dd></dl>}{channels.length ? <div className="contact-links">{channels.map(channel => <a key={channel.href} href={channel.href} rel="noopener noreferrer">{channel.label}</a>)}</div> : <p role="status">ยังไม่ได้ตั้งค่าช่องทางติดต่อ กรุณาติดต่อเคาน์เตอร์โรงแรมโดยตรง</p>}<p>ผลค้นหานี้ยังไม่ได้สำรองห้อง กรุณาติดต่อพนักงานก่อนยืนยัน</p><button className="primary" onClick={() => contact.current?.close()}>เข้าใจแล้ว</button></div></dialog>
   </main>
