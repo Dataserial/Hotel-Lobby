@@ -2,9 +2,10 @@ const { validateStay, validateGuestCount } = require('./booking-validation');
 const { objectId, fail } = require('../lib/http');
 const { roomBookable } = require('./room-bookability');
 
-async function findAvailableRooms(prisma, { checkInDate, checkOutDate, guestCount, excludeBookingId, now = new Date() }) {
+async function findAvailableRooms(prisma, { checkInDate, checkOutDate, guestCount, roomTypeId, excludeBookingId, now = new Date() }) {
   const { nights } = validateStay(checkInDate, checkOutDate);
   validateGuestCount(guestCount);
+  if (roomTypeId !== undefined) roomTypeId = objectId(roomTypeId, 'roomTypeId').toLowerCase();
   if (excludeBookingId !== undefined) {
     excludeBookingId = objectId(excludeBookingId, 'excludeBookingId').toLowerCase();
     const booking = await prisma.booking.findUnique({ where: { id: excludeBookingId } });
@@ -13,7 +14,7 @@ async function findAvailableRooms(prisma, { checkInDate, checkOutDate, guestCoun
   }
 
   const rooms = await prisma.room.findMany({
-    where: { active: true, status: { in: ['available', 'occupied'] }, roomTypeId: { not: null } },
+    where: { active: true, status: { in: ['available', 'occupied'] }, roomTypeId: roomTypeId ?? { not: null } },
     include: { roomType: true },
     orderBy: { number: 'asc' },
   });

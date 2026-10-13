@@ -9,6 +9,7 @@ export type Room = { id: string; roomNumber: string; floor?: number; roomTypeId:
 export type AvailableRoom = { roomId: string; roomNumber: string; roomType: string; capacity: number; pricePerNight: number }
 export type PublicOverview = { date: string; checkOutDate: string; timezone: string; updatedAt: string; totalRooms: number; availableRooms: number; bookedRooms: number; roomTypes: { id: string; name: string; capacity: number; pricePerNight: number; amenities: string[]; totalRooms: number; availableRooms: number }[] }
 export type AvailabilityStay = { checkInDate: string; checkOutDate: string; guestCount: number }
+export type RoomAvailabilitySearch = AvailabilityStay & { roomTypeId?: string }
 export type RoomAvailabilitySummary = AvailabilityStay & { nights: number; previewDays: number; timezone: string; updatedAt: string; totalAvailableRooms: number; roomTypes: (PublicOverview['roomTypes'][number] & { dates: { checkInDate: string; checkOutDate: string; availableRooms: number }[] })[] }
 export type Booking = { id: string; guestId: string; roomId: string; guestCount: number; checkInDate: string; checkOutDate: string; status: string; pricePerNight: number; totalPrice: number }
 export type Payment = { amount: number; paidAmount: number; refundedAmount: number; net: number; remaining: number; status: string; ledgerReady: boolean }

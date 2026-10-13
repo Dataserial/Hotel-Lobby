@@ -8,9 +8,13 @@
 .availability-banner p { margin: 8px 0 0; color: #d0dfe7; font-size: 14px; line-height: 1.8; }
 .availability-banner-empty { background: #fff5d1; color: var(--navy); border: 1px solid #e8d58a; }
 .availability-banner-empty p, .availability-banner-empty .availability-banner-icon { color: var(--navy); }
-.room-type-summary-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 24px; }
-.room-type-card { background: white; border-radius: 24px; overflow: hidden; min-width: 0; display: flex; flex-direction: column; }
-.room-type-photo { aspect-ratio: 3/2; position: relative; overflow: hidden; background: #dfe8ed; }
+.room-type-browser { background: white; border-radius: 24px; overflow: hidden; }
+.room-type-selector { display: flex; flex-wrap: wrap; gap: 10px; padding: 20px 24px; border-bottom: 1px solid var(--line); }
+.room-type-selector button { flex: 1; min-width: 100px; font-weight: 600; }
+.room-type-selector button[aria-pressed="true"] { background: var(--yellow); border-color: var(--yellow); color: var(--navy); }
+.room-type-summary-grid { display: grid; grid-template-columns: minmax(0,1fr); }
+.room-type-summary-grid .room-type-card { background: white; overflow: hidden; min-width: 0; display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
+.room-type-photo { position: relative; overflow: hidden; background: #dfe8ed; }
 .room-type-photo img { width: 100%; height: 100%; object-fit: cover; }
 .room-type-photo > small { position: absolute; bottom: 12px; left: 16px; background: #043d55dd; color: white; padding: 5px 10px; border-radius: 999px; font-size: 11px; }
 .room-count-badge { position: absolute; right: 14px; top: 14px; padding: 9px 14px; border-radius: 999px; background: var(--yellow); color: var(--navy); font-weight: 600; font-size: 14px; }
@@ -35,5 +39,5 @@ button.date-chip { min-height: 58px; padding: 8px 3px; border-radius: 10px; font
 .availability-panel .notice button { display: block; margin-top: 12px; }
 .availability-feedback { padding: 24px; border-radius: 20px; background: white; color: var(--muted); }
 .public-room-card .result-room-photo { width: calc(100% + 64px); height: 200px; object-fit: cover; margin: -32px -32px 0; border-radius: 24px 24px 0 0; }
-@media (max-width: 1200px) { .room-type-summary-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
-@media (max-width: 680px) { .availability-panel { margin: 0 20px 32px; padding: 20px 16px; border-radius: 24px; }.room-type-summary-grid { grid-template-columns: 1fr; gap: 20px; }.availability-banner { align-items: start; padding: 18px; gap: 12px; }.availability-banner strong { font-size: 17px; }.availability-panel-head { gap: 16px; }.availability-panel-head > button { width: 100%; }.room-type-content { padding: 20px; }.room-type-content h3 { font-size: 24px; } }
+@media (max-width: 960px) { .room-type-summary-grid .room-type-card { grid-template-columns: 1fr; }.room-type-photo { aspect-ratio: 3/2; } }
+@media (max-width: 680px) { .availability-panel { margin: 0 20px 32px; padding: 20px 16px; border-radius: 24px; }.room-type-selector { padding: 16px; gap: 6px; }.room-type-selector button { min-width: 0; padding: 12px 8px; font-size: 13px; }.availability-banner { align-items: start; padding: 18px; gap: 12px; }.availability-banner strong { font-size: 17px; }.availability-panel-head { gap: 16px; }.availability-panel-head > button { width: 100%; }.room-type-content { padding: 20px; }.room-type-content h3 { font-size: 24px; } }
