@@ -100,3 +100,53 @@ test('an older response cannot overwrite a newer search or clear its loading sta
   assert.equal(nodes(tree, n => n.props.className === 'staff-room-card').length, 1)
   assert.ok(JSON.stringify(tree).includes('303'))
 })
+const walkInChoice = { room: { roomId: 'room107', roomNumber: '107', roomType: 'Standard', capacity: 2, pricePerNight: 1200 }, guestCount: 2, checkInDate: '2026-10-14', checkOutDate: '2026-10-15' }
+const bookingForm = tree => nodes(tree, n => n.type === 'form' && n.props.className === 'form-grid booking-form')[0]
+function fillWalkIn(h) {
+  for (const [title, value] of [['ชื่อ–นามสกุล', 'Walk In Guest'], ['โทรศัพท์', '0812345678'], ['เลขบัตรประชาชน / หนังสือเดินทาง', 'AB123456']]) {
+    const field = nodes(h.render(), n => n.props.title === title)[0]
+    nodes(field, n => n.type === 'input')[0].props.onChange({ target: { value } })
+  }
+}
+
+test('selected-room walk-in uses a fresh guest form and confirms the selected stay', async () => {
+  const calls = [], bookings = []
+  const h = harness('BookingsView', { choice: walkInChoice, clearChoice() {}, busy: false, setError() {}, call: async (url, options) => { calls.push([url, options]); return url === '/guests' ? { id: 'newGuest', ...options.body } : page([]) }, action: async (...args) => { bookings.push(args); return true } })
+  let tree = h.render()
+  assert.equal(button(tree, 'ค้นหาห้องว่าง'), undefined)
+  assert.equal(nodes(tree, n => n.type?.name === 'PagedPicker').length, 0)
+  assert.equal(nodes(bookingForm(tree), n => n.type === 'select' || n.props.type === 'date' || n.props.type === 'number').length, 0)
+  assert.ok(JSON.stringify(tree).includes('107'))
+  fillWalkIn(h)
+  await bookingForm(h.render()).props.onSubmit({ preventDefault() {} })
+  assert.equal(calls.length, 0, 'review must not create a guest yet')
+  assert.ok(JSON.stringify(h.render()).includes('Walk In Guest'))
+  await bookingForm(h.render()).props.onSubmit({ preventDefault() {} })
+  assert.equal(calls[0][0], '/guests')
+  assert.equal(calls[0][1].method, 'POST')
+  assert.deepEqual(JSON.parse(JSON.stringify(bookings[0])), ['/bookings', 'POST', { guestId: 'newGuest', roomId: 'room107', guestCount: 2, checkInDate: '2026-10-14', checkOutDate: '2026-10-15' }])
+})
+
+test('walk-in retry preserves the guest and selected room after booking fails', async () => {
+  const writes = []
+  const h = harness('BookingsView', { choice: walkInChoice, clearChoice() {}, busy: false, setError() {}, call: async (url, options) => { if (options?.method) writes.push(url); return { id: 'newGuest' } }, action: async () => false })
+  fillWalkIn(h)
+  for (let attempt = 0; attempt < 2; attempt++) {
+    await bookingForm(h.render()).props.onSubmit({ preventDefault() {} })
+    await bookingForm(h.render()).props.onSubmit({ preventDefault() {} })
+    assert.equal(button(h.render(), 'ค้นหาห้องว่าง'), undefined)
+    assert.ok(JSON.stringify(h.render()).includes('107'))
+  }
+  assert.deepEqual(writes, ['/guests'])
+})
+
+test('guest creation failure prevents a walk-in booking and keeps typed details', async () => {
+  const errors = []; let booked = false
+  const h = harness('BookingsView', { choice: walkInChoice, clearChoice() {}, busy: false, setError: value => errors.push(value), call: async () => { throw new Error('Invalid document') }, action: async () => { booked = true; return true } })
+  fillWalkIn(h)
+  await bookingForm(h.render()).props.onSubmit({ preventDefault() {} })
+  await bookingForm(h.render()).props.onSubmit({ preventDefault() {} })
+  assert.equal(booked, false)
+  assert.deepEqual(errors, ['Invalid document'])
+  assert.ok(JSON.stringify(h.render()).includes('AB123456'))
+})
