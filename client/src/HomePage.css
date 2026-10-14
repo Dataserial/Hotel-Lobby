@@ -6,7 +6,7 @@
 .home-faq .eyebrow { color: var(--yellow); }
 .home-page .home-faq p { color: #d0dfe7; }
 .home-page .home-faq details { border-color: #426779; }
-.home-guide li { background: #f3f7f9; border: 1px solid #e2ecf0; border-radius: 20px; padding: 24px; }
+.home-guide li { background: #f3f7f9; border: 1px solid #e2ecf0; border-radius: 20px; padding: 24px; color: var(--ink); }
 .home-header { background: var(--navy); color: white; display: flex; align-items: center; flex-wrap: wrap; gap: 24px; padding: 20px 5%; }
 .home-link { display: inline-flex; text-decoration: none; color: inherit; border-radius: 8px; }
 .home-link:focus-visible, .home-page a:focus-visible, .home-faq summary:focus-visible { outline: 3px solid var(--yellow); outline-offset: 5px; }
@@ -50,7 +50,11 @@
 .home-room-price strong { font-size: 30px; font-weight: 600; }
 .home-room-price span { color: var(--muted); }
 .home-room-card button { width: 100%; }
-.home-guide { background: white; }
+.home-guide { position: relative; isolation: isolate; overflow: hidden; background: #102c37; color: white; }
+.home-guide::before { content: ''; position: absolute; inset: -12px; z-index: -1; background: url('/figma/home-guide-reception.png') center 30% / cover no-repeat; filter: blur(5px); pointer-events: none; }
+.home-guide::after { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg,rgba(3,14,20,.62),rgba(3,14,20,.48) 50%,rgba(3,14,20,.68)); pointer-events: none; }
+.home-guide > .eyebrow { color: var(--yellow); }
+.home-guide > .home-guide-note { color: #e4edf2; border-top-color: #ffffff40; }
 .home-guide ol { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 24px; padding: 0; margin: 36px 0; list-style: none; }
 .home-guide li > span { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; background: var(--yellow); border-radius: 50%; font-weight: 600; }
 .home-guide h3 { font-size: 18px; margin: 20px 0 10px; }
