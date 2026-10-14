@@ -47,7 +47,7 @@ module.exports = (prisma) => {
     const user = await prisma.$transaction(async (tx) => {
       const current = await tx.user.findUnique({ where: { id } });
       if (!current) fail(404, 'NOT_FOUND', 'User not found');
-      if (current.role === 'admin' && current.active && (data.role === 'receptionist' || data.active === false)) {
+      if (current.role === 'admin' && current.active && ((data.role !== undefined && data.role !== 'admin') || data.active === false)) {
         if (id === req.actor.id) fail(409, 'SELF_ADMIN_CHANGE', 'Cannot deactivate or demote yourself');
         // A shared write makes concurrent admin changes conflict on MongoDB.
         await tx.adminGuard.upsert({ where: { id: 'active-admins' }, create: { id: 'active-admins', version: 1 }, update: { version: { increment: 1 } } });

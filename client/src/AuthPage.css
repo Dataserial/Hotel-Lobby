@@ -1,0 +1,36 @@
+@reference "./tailwind.css";
+
+.auth-page { background: #eef4f6; @apply tw:p-[28px_5%_48px]; }
+.auth-header { @apply tw:max-w-[1160px] tw:m-[0_auto_28px] tw:flex tw:items-center tw:justify-between tw:gap-[20px]; }
+.auth-page .login-brand { @apply tw:static tw:inline-flex; }
+.auth-home { @apply tw:text-navy; font-size: 14px; text-underline-offset: 5px; }
+.auth-layout { @apply tw:max-w-[1160px] tw:m-[auto] tw:grid tw:grid-cols-[1fr_1fr]; background: white; @apply tw:rounded-[32px] tw:overflow-hidden; box-shadow: 0 16px 48px #043d550c; }
+.auth-intro { background: var(--navy); @apply tw:text-white tw:min-w-0 tw:flex tw:flex-col tw:relative; }
+.auth-intro-copy { @apply tw:p-[42px_40px_32px] tw:relative; }
+.auth-intro .eyebrow { @apply tw:text-yellow; letter-spacing: .12em; font-size: 11px; }
+.auth-crescent { @apply tw:absolute tw:right-[36px] tw:top-[55px]; font-size: 74px; @apply tw:text-yellow; line-height: 1; }
+.auth-intro h1 { font-size: clamp(32px,3vw,46px); @apply tw:font-semibold; line-height: 1.5; @apply tw:m-[24px_0_20px] tw:pr-[30px]; }
+.auth-intro p { color: #d0dfe7; line-height: 1.9; @apply tw:mb-[20px]; }
+.auth-intro ul { list-style: none; @apply tw:p-[0] tw:m-[0]; font-size: 14px; line-height: 1.8; }
+.auth-intro li { @apply tw:relative tw:pl-[24px] tw:mt-[10px]; }
+.auth-intro li::before { content: '✓'; @apply tw:text-yellow tw:absolute tw:left-[0]; }
+.auth-photo { @apply tw:min-h-[220px]; flex: 1; @apply tw:relative tw:overflow-hidden; }
+.auth-photo img { @apply tw:w-full tw:h-full tw:object-cover tw:absolute; }
+.auth-photo span { @apply tw:absolute tw:bottom-[0] tw:left-[0] tw:p-[32px_36px_24px] tw:w-full; background: linear-gradient(transparent,#043d55); @apply tw:text-white; font-size: 12px; letter-spacing: .12em; }
+.auth-page .login-card { @apply tw:w-full tw:min-h-[0] tw:m-[0] tw:p-[42px_44px] tw:rounded-[0]; background: white; @apply tw:text-navy tw:gap-[16px]; }
+.auth-page .login-card h2 { font-size: 30px; @apply tw:m-[0]; }
+.auth-page .login-card > p { font-size: 14px; @apply tw:text-muted tw:mb-[8px]; }
+.auth-page .login-card .field { @apply tw:min-h-[0] tw:gap-[8px]; font-size: 14px; }
+.auth-page .login-card .field > span { @apply tw:text-navy; }
+.auth-page .login-card input { background: #f7fafb; @apply tw:min-h-[52px] tw:p-[14px_16px] tw:rounded-[12px]; }
+.auth-page .login-card input:focus { background: white; border-color: var(--navy); }
+.auth-page .login-card small { @apply tw:text-muted; font-size: 12px; line-height: 1.8; }
+.auth-page .login-card button.text-button { @apply tw:text-navy; font-size: 14px; }
+.auth-page .login-card .notice { font-size: 14px; }
+.auth-form-eyebrow { font-size: 11px; letter-spacing: .14em; @apply tw:text-muted; }
+.auth-page a:focus-visible { outline: 3px solid var(--navy); outline-offset: 5px; @apply tw:rounded-[6px]; }
+@media (max-width: 900px) { .auth-intro-copy { @apply tw:p-[32px_28px]; }.auth-crescent { @apply tw:right-[24px]; font-size: 58px; }.auth-page .login-card { @apply tw:p-[32px_28px]; } }
+@media (max-width: 680px) {
+  .auth-page { @apply tw:p-[20px_16px_32px]; }.auth-header { @apply tw:mb-[20px]; }.auth-page .login-brand .lub-brand { font-size: 30px; }.auth-home { font-size: 13px; }
+  .auth-layout { @apply tw:grid-cols-[1fr] tw:rounded-[24px]; }.auth-intro-copy { @apply tw:p-[24px]; }.auth-intro h1 { font-size: 30px; @apply tw:m-[14px_0_10px]; }.auth-intro h1 br { @apply tw:hidden; }.auth-intro p { font-size: 14px; @apply tw:m-[0]; }.auth-intro ul, .auth-photo { @apply tw:hidden; }.auth-crescent { font-size: 46px; @apply tw:top-[30px] tw:right-[22px]; }.auth-page .login-card { @apply tw:p-[28px_24px]; }.auth-page .login-card h2 { font-size: 26px; }
+}

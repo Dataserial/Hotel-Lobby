@@ -1,94 +1,163 @@
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react'
-import { errorText, query, request, type AvailableRoom, type Paged, type User } from './api'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { errorText, query, request, type ApiError, type BookingRoomType, type CustomerBooking, type RoomGrid, type User } from './api'
+import { roomPhoto } from './roomPhotos'
 import { Brand } from './Brand'
-import { contactChannels } from './contact'
-import { setupReveal } from './reveal'
+import AccountMenu from './AccountMenu'
+import HotelContact from './HotelContact'
+import ServiceCatalog from './ServiceCatalog'
+import { scrollToTarget } from './navigation'
 import './PublicHotel.css'
+import './RoomAvailability.css'
+import './DiscoverBooking.css'
 
 const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
-const tomorrow = (date: string) => new Date(Date.parse(date + 'T00:00:00Z') + 86400000).toISOString().slice(0, 10)
-const money = (amount: number) => new Intl.NumberFormat('th-TH').format(amount)
-const dateLabel = (date: string) => new Intl.DateTimeFormat('th-TH-u-ca-gregory', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(date + 'T00:00:00Z'))
-type Stay = { checkInDate: string; checkOutDate: string; guestCount: number }
+const tomorrow = (day: string) => day && Number.isFinite(Date.parse(day)) ? new Date(Date.parse(day + 'T00:00:00Z') + 86400000).toISOString().slice(0, 10) : ''
+const money = (value: number) => new Intl.NumberFormat('th-TH').format(value)
+type Dates = { checkInDate: string; checkOutDate: string }
+type Draft = Dates & { roomTypeId: string; roomId: string }
+const draftKey = 'hotel-lobby-booking-draft'
+function storeDraft(value: Draft | null) {
+  try { if (value) sessionStorage.setItem(draftKey, JSON.stringify(value)); else sessionStorage.removeItem(draftKey) } catch { /* Booking remains usable without browser storage. */ }
+}
+function readDraft(): Draft | null {
+  try {
+    const value = JSON.parse(sessionStorage.getItem(draftKey) || 'null')
+    if (!value || !['checkInDate', 'checkOutDate', 'roomTypeId', 'roomId'].every(field => typeof value[field] === 'string')) return null
+    const count = (Date.parse(value.checkOutDate) - Date.parse(value.checkInDate)) / 86400000
+    if (value.checkInDate < today() || !Number.isInteger(count) || count < 1 || count > 365) return null
+    return { checkInDate: value.checkInDate, checkOutDate: value.checkOutDate, roomTypeId: value.roomTypeId, roomId: value.roomId }
+  } catch { return null }
+}
 
-export default function PublicHotel({ staff, member, user = null, logout }: { staff: () => void; member?: () => void; user?: User | null; logout?: () => void }) {
-  const root = useRef<HTMLElement>(null)
-  const intro = useRef<HTMLElement>(null)
-  const discover = useRef<HTMLElement>(null)
-  const results = useRef<HTMLElement>(null)
-  const contact = useRef<HTMLDialogElement>(null)
-  const [progress, setProgress] = useState(0)
-  const [form, setForm] = useState<Stay>(() => ({ checkInDate: today(), checkOutDate: tomorrow(today()), guestCount: 2 }))
-  const [stay, setStay] = useState<Stay | null>(null)
-  const [rooms, setRooms] = useState<Paged<AvailableRoom> | null>(null)
-  const [page, setPage] = useState(1)
-  const [busy, setBusy] = useState(false)
+export default function PublicHotel({ staff, member, user = null, token = null, logout, reauthenticate, customerLogin }: { staff: () => void; member?: () => void; user?: User | null; token?: string | null; logout?: () => void; reauthenticate?: () => void; customerLogin?: () => void }) {
+  const [saved] = useState(readDraft)
+  const [dates, setDates] = useState<Dates>(() => saved ? { checkInDate: saved.checkInDate, checkOutDate: saved.checkOutDate } : { checkInDate: today(), checkOutDate: tomorrow(today()) })
+  const [searched, setSearched] = useState<Dates | null>(() => saved ? { checkInDate: saved.checkInDate, checkOutDate: saved.checkOutDate } : null)
+  const [typesResult, setTypesResult] = useState<{ key: string; items?: BookingRoomType[]; error?: string } | null>(null)
+  const [typeRefresh, setTypeRefresh] = useState(0)
+  const [typeId, setTypeId] = useState(saved?.roomTypeId || '')
+  const [gridResult, setGridResult] = useState<{ key: string; data?: RoomGrid; error?: string } | null>(null)
+  const [gridRefresh, setGridRefresh] = useState(0)
+  const [roomId, setRoomId] = useState(saved?.roomId || '')
+  const [phone, setPhone] = useState('')
+  const [documentNo, setDocumentNo] = useState('')
+  const [booking, setBooking] = useState<CustomerBooking | null>(null)
   const [error, setError] = useState('')
-  const [selected, setSelected] = useState<AvailableRoom | null>(null)
-  const [contactStay, setContactStay] = useState<Stay | null>(null)
-  const channels = contactChannels(import.meta.env)
-  const searchVersion = useRef({ version: 0 })
+  const [submitting, setSubmitting] = useState(false)
+  const [priceChanged, setPriceChanged] = useState(false)
+  const key = useRef(crypto.randomUUID())
+  const sending = useRef(false)
+  const section = useRef<HTMLElement>(null)
+  const dateSection = useRef<HTMLDivElement>(null)
+  const roomSection = useRef<HTMLElement>(null)
+  const confirmSection = useRef<HTMLDivElement>(null)
+  const successSection = useRef<HTMLDivElement>(null)
+  const [scrollRequest, setScrollRequest] = useState<{ step: number } | null>(() => saved ? { step: saved.roomId ? 3 : saved.roomTypeId ? 2 : 1 } : null)
+  const handledScroll = useRef<typeof scrollRequest>(null)
+  const parameters = searched ? query(searched) : ''
+  const typesKey = parameters + ':' + typeRefresh
+  const gridKey = parameters + ':' + typeId + ':' + gridRefresh
+  const types = typesResult?.key === typesKey ? typesResult.items : undefined
+  const typesError = typesResult?.key === typesKey ? typesResult.error : undefined
+  const grid = gridResult?.key === gridKey ? gridResult.data : undefined
+  const gridError = gridResult?.key === gridKey ? gridResult.error : undefined
+  const selectedRoom = grid?.items.find(room => room.roomId === roomId && room.status === 'available')
+  const selectedType = types?.find(type => type.id === typeId)
+  const nights = searched ? (Date.parse(searched.checkOutDate) - Date.parse(searched.checkInDate)) / 86400000 : 0
+  const currentStep = booking || selectedRoom ? 3 : typeId ? 2 : searched ? 1 : 0
   useEffect(() => {
-    if (root.current) return setupReveal(root.current)
-  }, [])
+    if (!parameters) return
+    const controller = new AbortController()
+    void request<{ items: BookingRoomType[] }>('/public/rooms/grid/types?' + parameters, null, { signal: controller.signal }).then(value => {
+      if (!controller.signal.aborted) setTypesResult({ key: typesKey, items: value.items })
+    }).catch(err => { if (!controller.signal.aborted) setTypesResult({ key: typesKey, error: errorText(err) }) })
+    return () => controller.abort()
+  }, [parameters, typesKey])
   useEffect(() => {
-    if (window.location.hash === '#discover') discover.current?.scrollIntoView({ behavior: 'instant' })
-  }, [])
+    if (!parameters || !typeId) return
+    const controller = new AbortController()
+    void request<RoomGrid>('/public/rooms/grid?' + parameters + '&' + query({ roomTypeId: typeId }), null, { signal: controller.signal }).then(value => {
+      if (!controller.signal.aborted) {
+        setGridResult({ key: gridKey, data: value })
+        setRoomId(current => value.items.some(room => room.roomId === current && room.status === 'available') ? current : '')
+      }
+    }).catch(err => { if (!controller.signal.aborted) setGridResult({ key: gridKey, error: errorText(err) }) })
+    return () => controller.abort()
+  }, [parameters, typeId, gridKey])
   useEffect(() => {
-    const searches = searchVersion.current
-    let frame = 0
-    const update = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(() => setProgress(Math.min(1, Math.max(0, -(intro.current?.getBoundingClientRect().top || 0) / window.innerHeight)))) }
-    window.addEventListener('scroll', update, { passive: true })
-    window.addEventListener('resize', update)
-    update()
-    return () => { cancelAnimationFrame(frame); window.removeEventListener('scroll', update); window.removeEventListener('resize', update); searches.version++ }
-  }, [])
-  useEffect(() => {
-    if (stay) results.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
-  }, [stay])
-  async function search(event?: FormEvent, targetPage = 1, snapshot?: Stay) {
-    event?.preventDefault()
-    const searched = snapshot || (targetPage === 1 ? { ...form } : stay!)
-    const nights = (Date.parse(searched.checkOutDate) - Date.parse(searched.checkInDate)) / 86400000
-    if (!Number.isInteger(nights) || nights < 1 || nights > 365) { setError('กรุณาเลือกวันเช็กเอาต์หลังวันเช็กอิน โดยพักได้ 1–365 คืน'); return }
-    const version = ++searchVersion.current.version
-    setBusy(true); setError(''); setRooms(null); setStay(searched)
-    try {
-      const data = await request<Paged<AvailableRoom>>('/public/rooms/availability?' + query({ ...searched, page: targetPage, limit: 12 }), null)
-      if (version === searchVersion.current.version) { setRooms(data); setPage(targetPage) }
-    } catch (err) { if (version === searchVersion.current.version) setError(errorText(err)) }
-    finally { if (version === searchVersion.current.version) setBusy(false) }
+    if (!scrollRequest || handledScroll.current === scrollRequest) return
+    // Wait for the next step's results so loading layouts do not move its destination.
+    const step = scrollRequest.step
+    if (step >= 1 && searched && !types && !typesError) return
+    if (step >= 2 && typeId && !grid && !gridError) return
+    const target = step === 0 ? dateSection.current : step === 1 ? section.current
+      : step === 2 ? roomSection.current
+      : booking ? successSection.current : selectedRoom ? confirmSection.current : roomSection.current
+    if (scrollToTarget(target)) handledScroll.current = scrollRequest
+  }, [scrollRequest, searched, types, typesError, typeId, grid, gridError, selectedRoom, booking])
+  function clearSelection(next: Dates) {
+    setScrollRequest(null)
+    setDates(next); setSearched(null); setTypeId(''); setRoomId(''); setBooking(null); setError(''); setPriceChanged(false)
+    storeDraft(null); key.current = crypto.randomUUID()
   }
-  function showContact(room: AvailableRoom) { setSelected(room); setContactStay(stay ? { ...stay } : null); contact.current?.showModal() }
-  const nights = stay ? (Date.parse(stay.checkOutDate) - Date.parse(stay.checkInDate)) / 86400000 : 0
-  return <main ref={root} className="public-hotel">
-    <section ref={intro} className="moon-journey" aria-label="ยินดีต้อนรับสู่ Lub d">
-      <div className="moon-night" style={{ '--journey': progress } as CSSProperties}>
-        <img className="intro-moon" src="/figma/moon.svg" alt="พระจันทร์" />
-        <p className="moon-quote">“พักให้เต็มที่ แล้วเริ่มวันใหม่”</p>
-        <button className="scroll-start" onClick={() => discover.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })}>เลื่อนลงเพื่อเริ่มต้น ↓</button>
-      </div>
+  function findTypes(event?: FormEvent) {
+    event?.preventDefault()
+    const count = (Date.parse(dates.checkOutDate) - Date.parse(dates.checkInDate)) / 86400000
+    if (dates.checkInDate < today() || !Number.isInteger(count) || count < 1 || count > 365) { setError('กรุณาเลือกวันพักตั้งแต่วันนี้ จำนวน 1–365 คืน'); setScrollRequest({ step: 1 }); return }
+    setError(''); setSearched({ ...dates }); setTypeRefresh(value => value + 1); setTypeId(''); setRoomId(''); setBooking(null); setPriceChanged(false)
+    storeDraft(null); key.current = crypto.randomUUID()
+    setScrollRequest({ step: 1 })
+  }
+  function selectType(id: string) {
+    setError(''); setTypeId(id); setRoomId(''); setBooking(null); setPriceChanged(false); setGridRefresh(value => value + 1)
+    storeDraft(null); key.current = crypto.randomUUID()
+    setScrollRequest({ step: 2 })
+  }
+  function selectRoom(id: string) {
+    setRoomId(id); setBooking(null); setError(''); setPriceChanged(false); key.current = crypto.randomUUID()
+    if (searched) storeDraft({ ...searched, roomTypeId: typeId, roomId: id })
+    setScrollRequest({ step: 3 })
+  }
+  async function confirm(event: FormEvent) {
+    event.preventDefault()
+    if (sending.current || !searched || !selectedRoom || !grid || user?.role !== 'customer') return
+    if (!token) { reauthenticate?.(); return }
+    sending.current = true; setSubmitting(true); setError('')
+    try {
+      const result = await request<CustomerBooking>('/customer/bookings', token, { method: 'POST', idempotencyKey: key.current, body: { roomId, ...searched, phone, documentNo, expectedPricePerNight: grid.roomType.pricePerNight } })
+      setBooking(result); setDocumentNo(''); storeDraft(null)
+      setScrollRequest({ step: 3 })
+    } catch (err) {
+      setError(errorText(err))
+      const failure = err as ApiError
+      if (failure.code === 'ROOM_UNAVAILABLE') { setRoomId(''); setGridRefresh(value => value + 1); storeDraft(null); key.current = crypto.randomUUID(); setScrollRequest({ step: 2 }) }
+      if (failure.code === 'PRICE_CHANGED') { setPriceChanged(true); setGridRefresh(value => value + 1); setTypeRefresh(value => value + 1); key.current = crypto.randomUUID(); setScrollRequest({ step: 3 }) }
+      if (failure.status === 401) reauthenticate?.()
+    } finally { sending.current = false; setSubmitting(false) }
+  }
+  return <main className="public-hotel">
+    <header className="hotel-header floating-navbar"><a className="home-link" href="/" aria-label="Lub d หน้าแรก"><Brand publicLogo /></a><div className="hotel-account-actions">{user ? <AccountMenu user={user} account={member} logout={logout} /> : <><button onClick={member}>สมัครสมาชิก / เข้าสู่ระบบ</button><button onClick={staff}>พนักงาน</button></>}</div></header>
+    <section className="discover-section" id="discover"><div className="discover-hero"><div className="discover-heading"><span className="eyebrow">BOOK YOUR ROOM</span><h1>ห้องที่ใช่<span className="discover-heading-highlight">ในวันที่คุณเลือก</span></h1><p>ดูห้องว่างตามวันพัก เลือกเลขห้องด้วยตัวเอง<br />แล้วเข้าบัญชีเพื่อยืนยันการจอง</p><small>หนึ่งห้องต่อการจอง · ชำระที่โรงแรม</small></div><div className="hotel-gallery"><img src="/rooms/deluxe.png" alt="ภาพประกอบบรรยากาศภายในห้องพัก" /><span className="discover-photo-caption">พักสบาย ในห้องที่คุณเลือก <small>ภาพประกอบห้องพัก</small></span></div></div>
+      <ol className="booking-steps" aria-label="ขั้นตอนการจอง">{['เลือกวัน', 'เลือกประเภทห้อง', 'เลือกเลขห้อง', 'ยืนยันจอง'].map((label, index) => <li key={label} className={index < currentStep ? 'step-complete' : ''} aria-current={currentStep === index ? 'step' : undefined}><button type="button" className="booking-step-link" aria-label={`ขั้นตอน ${index + 1}: ${label}`} aria-controls={['booking-dates', 'booking-types-section', 'booking-room-grid', booking ? 'booking-success' : 'booking-confirmation'][index]} disabled={submitting || (index === 1 && !searched) || (index === 2 && !typeId) || (index === 3 && !selectedRoom && !booking)} onClick={() => setScrollRequest({ step: index })}><span className="booking-step-number">{index + 1}</span><span className="booking-step-label">{label}</span></button></li>)}</ol>
+      <div ref={dateSection} id="booking-dates" className="discover-search"><form className="availability-search" onSubmit={findTypes}><label className="field"><span>วันเช็กอิน</span><input type="date" required disabled={submitting} min={today()} value={dates.checkInDate} onChange={e => { const start = e.target.value; clearSelection({ checkInDate: start, checkOutDate: start >= dates.checkOutDate ? tomorrow(start) : dates.checkOutDate }) }} /></label><label className="field"><span>วันเช็กเอาต์</span><input type="date" required disabled={submitting} min={tomorrow(dates.checkInDate) || undefined} value={dates.checkOutDate} onChange={e => clearSelection({ ...dates, checkOutDate: e.target.value })} /></label><button className="primary" disabled={submitting}>เลือกประเภทห้อง</button></form></div>
     </section>
-    <section ref={discover} id="discover" className="discover-section">
-      <header className="hotel-header"><a className="home-link" href="#home" aria-label="Lub d หน้าแรก"><Brand publicLogo /></a><div className="hotel-account-actions">{user ? <><button className="member-profile" onClick={member} aria-label={'บัญชีสมาชิก ' + user.name}><img src="/figma/profile.svg" alt="" /><span><strong>{user.name}</strong><small>เข้าสู่ระบบแล้ว</small></span></button><button onClick={logout}>ออกจากระบบ</button></> : <>{member && <button onClick={member}>สมัครสมาชิก / เข้าสู่ระบบ</button>}<button className="staff-profile" onClick={staff} aria-label="เข้าสู่ระบบพนักงาน"><img src="/figma/profile.svg" alt="" /><span>พนักงาน</span></button></>}</div></header>
-      <div className="discover-heading" data-reveal><h1>A GOOD STAY. <br className="mobile-break" />A GREAT DAY.</h1><p className="desktop-copy">พักใจกลางเมือง แล้วออกไปพบเรื่องราวใหม่</p><p className="mobile-copy">ค้นพบห้องพักที่ใช่ ใจกลางกรุงเทพฯ</p></div>
-      <div className="hotel-gallery" data-reveal aria-label="ภาพโรงแรม"><picture><source media="(max-width: 680px)" srcSet="/figma/hotel-mobile.png" /><img src="/figma/hotel.png" alt="อาคาร Lub d Bangkok Siam ในยามค่ำคืน" /></picture><img src="/figma/pool.png" alt="สระว่ายน้ำและพื้นที่พักผ่อนของโรงแรม" /><div className="lobby-photo"><img src="/figma/lobby.png" alt="ล็อบบี้และพื้นที่ส่วนกลาง" /></div></div>
-      <div className="discover-search" data-reveal><form className="availability-search" onSubmit={e => void search(e)}>
-        <label className="field"><span>วันเช็กอิน</span><input type="date" required value={form.checkInDate} onChange={e => { const value = e.target.value; setForm(f => ({ ...f, checkInDate: value, checkOutDate: value && value >= f.checkOutDate ? tomorrow(value) : f.checkOutDate })) }} /></label>
-        <label className="field"><span>วันเช็กเอาต์</span><input type="date" required min={form.checkInDate ? tomorrow(form.checkInDate) : undefined} value={form.checkOutDate} onChange={e => setForm({ ...form, checkOutDate: e.target.value })} /></label>
-        <label className="field"><span>จำนวนผู้เข้าพัก</span><select value={form.guestCount} onChange={e => setForm({ ...form, guestCount: Number(e.target.value) })}>{Array.from({ length: 20 }, (_, i) => <option key={i} value={i + 1}>{i + 1} คน</option>)}</select></label>
-        <button className="primary" disabled={busy}>{busy ? 'กำลังค้นหา…' : <><span className="desktop-copy">ค้นหาโรงแรม</span><span className="mobile-copy">ค้นหาห้องว่าง →</span></>}</button>
-      </form><p className="hotel-amenities">Wi-Fi ฟรี  •  ใกล้ BTS สนามกีฬาแห่งชาติ  •  พื้นที่ส่วนกลาง 24 ชั่วโมง</p></div>
+    <section ref={section} id="booking-types-section" className="public-results" aria-labelledby="booking-types">
+      <div className="discover-section-head"><span className="eyebrow">FIND YOUR STAY</span><h2 id="booking-types">เลือกประเภทห้อง</h2><p className="stay-summary">{searched ? `${searched.checkInDate} – ${searched.checkOutDate} · ${nights} คืน` : 'เลือกวันเข้าพักเพื่อดูราคาและห้องว่าง'}</p></div>
+      {error && <div className="notice error" role="alert">{error}</div>}
+      {typesError && <div className="notice error" role="alert">{typesError} <button onClick={() => setTypeRefresh(value => value + 1)}>ลองอีกครั้ง</button></div>}
+      {searched && !types && !typesError && <p role="status">กำลังโหลดประเภทห้อง…</p>}
+      {types?.length === 0 && <p role="status">ยังไม่มีประเภทห้องที่เปิดใช้งาน กรุณาติดต่อพนักงาน</p>}
+      <div className="room-type-summary-grid">{types?.map(type => <article key={type.id} className={'room-type-card' + (typeId === type.id ? ' room-type-selected' : '')}><div className="room-type-photo"><img src={roomPhoto(type.name)} alt={'ภาพประกอบ ' + type.name} /><small>ภาพประกอบ</small><span className="discover-room-badge">{type.availableRooms ? `ว่าง ${type.availableRooms} ห้อง` : 'ห้องเต็ม'}</span></div><div className="room-type-content"><div className="discover-room-title tw:flex tw:items-center tw:justify-between tw:gap-[12px]"><h3>{type.name}</h3><span aria-hidden="true">☾</span></div><p>สูงสุด {type.capacity} คน · {type.totalRooms} ห้องในระบบ</p><p className="room-type-amenities">{type.amenities.join(' · ')}</p><div className="discover-room-price"><strong>฿{money(type.pricePerNight)}</strong><span> / คืน</span></div><button className="primary" type="button" disabled={submitting} aria-pressed={typeId === type.id} aria-controls="booking-room-grid" onClick={() => selectType(type.id)}>เลือก {type.name}</button></div></article>)}</div>
+      {typeId && <section ref={roomSection} id="booking-room-grid" aria-labelledby="room-grid-title"><h2 id="room-grid-title">เลือกเลขห้อง {selectedType?.name}</h2>{gridError && <div className="notice error" role="alert">{gridError} <button onClick={() => setGridRefresh(value => value + 1)}>ลองอีกครั้ง</button></div>}{!grid && !gridError && <p role="status">กำลังโหลดห้อง…</p>}{grid && <><p>เลือกหนึ่งห้องที่ว่างครบ {nights} คืน</p>{grid.items.length === 0 && <p role="status">ไม่มีห้องที่เปิดใช้งานในประเภทนี้</p>}<div className="room-number-grid" role="group" aria-label="เลือกเลขห้อง">{grid.items.map(room => <button key={room.roomId} type="button" disabled={submitting || room.status !== 'available'} aria-pressed={roomId === room.roomId} className={'room-number ' + room.status} onClick={() => selectRoom(room.roomId)}>ห้อง {room.roomNumber}<small>{room.status === 'available' ? 'ว่าง' : room.status === 'maintenance' ? 'ซ่อมบำรุง' : 'ไม่ว่าง'}</small></button>)}</div></>}</section>}
+      {selectedRoom && grid && searched && !booking && <section className="booking-confirm" aria-labelledby="confirm-title">
+        <aside className="booking-stay-card"><div className="booking-stay-photo"><img src={roomPhoto(grid.roomType.name)} alt={'ภาพประกอบห้อง ' + grid.roomType.name} /><small>ภาพประกอบ</small></div><div className="booking-stay-copy"><span className="eyebrow">YOUR ROOM, YOUR STAY</span><h3>{grid.roomType.name}<span aria-hidden="true">☾</span></h3><span className="booking-room-tag">ห้อง {selectedRoom.roomNumber}</span><p>จำนวนผู้พักตามความจุห้อง: {grid.roomType.capacity} คน</p>{grid.roomType.amenities.length > 0 && <p>{grid.roomType.amenities.join(' · ')}</p>}<div className="booking-pay-note"><strong>ชำระที่โรงแรม</strong><span>ยืนยันห้องพักได้เลย แล้วชำระเมื่อมาถึง</span></div></div></aside>
+        <div ref={confirmSection} id="booking-confirmation" className="booking-details"><span className="eyebrow">ONE MORE STEP</span><h2 id="confirm-title">ยืนยันการจอง</h2><p className="booking-intro">ตรวจรายละเอียดการพัก แล้วเตรียมพบกับวันดี ๆ ที่ Lub d</p><dl className="booking-date-details"><div><dt>เช็กอิน</dt><dd>{searched.checkInDate}</dd></div><div><dt>เช็กเอาต์</dt><dd>{searched.checkOutDate}</dd></div></dl><div className="booking-price-details"><p><span>{nights} คืน × ฿{money(grid.roomType.pricePerNight)} / คืน</span><strong>฿{money(nights * grid.roomType.pricePerNight)}</strong></p><div className="booking-grand-total"><span>ราคารวม</span><strong>฿{money(nights * grid.roomType.pricePerNight)}</strong></div></div>
+          <ServiceCatalog key={grid.roomType.id} roomTypeId={grid.roomType.id} supportsExtraBed={!!grid.roomType.supportsExtraBed} />
+          {priceChanged && <p className="notice" role="status">แสดงราคาใหม่แล้ว กรุณาตรวจยอดรวมและกดยืนยันราคาใหม่เพื่อจอง</p>}
+          {user?.role !== 'customer' ? <div className="booking-login-prompt"><p>เข้าสู่ระบบเพื่อใช้ชื่อและอีเมลจากบัญชีของคุณ</p><button className="primary" onClick={customerLogin || member}>เข้าสู่ระบบหรือสมัครสมาชิกเพื่อจอง</button></div> : <form className="form-grid tw:grid tw:grid-cols-2 tw:gap-[16px]" onSubmit={confirm}><div className="booking-account"><span>ผู้จอง</span><strong>{user.name}</strong><small>{user.email}</small></div><label className="field"><span>เบอร์โทร</span><input type="tel" autoComplete="tel" required disabled={submitting} maxLength={30} value={phone} onChange={e => { setPhone(e.target.value); key.current = crypto.randomUUID() }} /></label><label className="field"><span>เลขบัตรประชาชนหรือพาสปอร์ต</span><input autoComplete="off" required disabled={submitting} minLength={5} maxLength={64} value={documentNo} onChange={e => { setDocumentNo(e.target.value); key.current = crypto.randomUUID() }} /></label><button className="primary" disabled={submitting}>{submitting ? 'กำลังจอง…' : priceChanged ? 'ยืนยันราคาใหม่และจอง · ชำระที่โรงแรม' : 'ยืนยันจอง · ชำระที่โรงแรม'}</button></form>}
+        </div>
+      </section>}
+      {booking && <div ref={successSection} id="booking-success" className="booking-confirm booking-success" role="status"><span className="booking-success-moon" aria-hidden="true">☾</span><span className="eyebrow">SEE YOU AT LUB D</span><h2>จองสำเร็จ</h2><p>เลขอ้างอิง {booking.id} · {booking.roomType} · ห้อง {booking.roomNumber}</p><p>{booking.checkInDate} – {booking.checkOutDate} · รวม ฿{money(booking.totalPrice)}</p><p>สถานะ: ยืนยันแล้ว · ชำระที่โรงแรม</p><p>หากต้องการแก้ไขหรือยกเลิก กรุณาติดต่อพนักงาน</p><button className="primary" onClick={member}>ดูการจองของฉัน</button><HotelContact /></div>}
     </section>
-    <section ref={results} className="public-results" aria-live="polite" aria-busy={busy} hidden={!stay && !error}>
-      <h2>ห้องพักสำหรับคืนที่ดีของคุณ</h2>
-      {stay && <p className="stay-summary">{dateLabel(stay.checkInDate)} – {dateLabel(stay.checkOutDate)} · {nights} คืน · {stay.guestCount} คน</p>}
-      {error && <div className="notice error" role="alert">{error}<button onClick={() => void search()}>ลองอีกครั้ง</button></div>}
-      {busy && <p className="loading">กำลังค้นหาห้องพักสำหรับคุณ…</p>}
-      {rooms && <>{rooms.items.length ? <><div className="public-room-grid">{rooms.items.map(room => <article className="public-room-card" data-reveal key={room.roomId}>
-        <span className="room-crescent" aria-hidden="true">☾</span><h3>{room.roomType}</h3><p>สูงสุด {room.capacity} คน · ห้อง {room.roomNumber}</p><span className="pill good">พร้อมจอง</span><strong>฿{money(room.pricePerNight)} / คืน</strong><p className="room-total">รวม {nights} คืน ฿{money(room.pricePerNight * nights)} · ติดต่อพนักงานเพื่อยืนยัน</p><button className="primary" onClick={() => showContact(room)}>ติดต่อพนักงาน</button>
-      </article>)}</div><div className="pagination"><span>พบ {rooms.total} ห้อง · หน้า {page}</span><div><button disabled={busy || page === 1} onClick={() => void search(undefined, page - 1, stay!)}>ก่อนหน้า</button><button disabled={busy || page * rooms.limit >= rooms.total} onClick={() => void search(undefined, page + 1, stay!)}>ถัดไป</button></div></div></> : <div className="public-empty"><h3>ยังไม่มีห้องว่างในช่วงวันที่เลือก</h3><p>ลองเปลี่ยนวันที่หรือจำนวนผู้เข้าพัก แล้วค้นหาอีกครั้ง</p><button onClick={() => discover.current?.scrollIntoView()}>เปลี่ยนการค้นหา</button></div>}<p className="public-help">ต้องการความช่วยเหลือ? ติดต่อเคาน์เตอร์โรงแรมเพื่อยืนยันการจอง</p></>}
-    </section>
-    <dialog ref={contact} className="contact-dialog" aria-labelledby="contact-title"><div><button className="dialog-close" onClick={() => contact.current?.close()} aria-label="ปิด">×</button><span className="eyebrow">LUB D · BANGKOK SIAM</span><h2 id="contact-title">ติดต่อเคาน์เตอร์โรงแรม</h2>{user && <div className="contact-member" role="status"><img src="/figma/profile.svg" alt="" /><div><strong>{user.name}</strong><small>เข้าสู่ระบบแล้ว · ติดต่อในชื่อบัญชีสมาชิกของคุณ</small></div></div>}<p>แจ้งรายละเอียดนี้กับพนักงาน เพื่อให้ตรวจห้องว่างและยืนยันการจอง</p>{selected && contactStay && <dl><dt>ห้องพัก</dt><dd>{selected.roomType} · ห้อง {selected.roomNumber}</dd><dt>วันเข้าพัก</dt><dd>{dateLabel(contactStay.checkInDate)} – {dateLabel(contactStay.checkOutDate)}</dd><dt>ผู้เข้าพัก</dt><dd>{contactStay.guestCount} คน · {(Date.parse(contactStay.checkOutDate) - Date.parse(contactStay.checkInDate)) / 86400000} คืน</dd><dt>ราคารวม</dt><dd>฿{money(selected.pricePerNight * ((Date.parse(contactStay.checkOutDate) - Date.parse(contactStay.checkInDate)) / 86400000))}</dd></dl>}{channels.length ? <div className="contact-links">{channels.map(channel => <a key={channel.href} href={channel.href} rel="noopener noreferrer">{channel.label}</a>)}</div> : <p role="status">ยังไม่ได้ตั้งค่าช่องทางติดต่อ กรุณาติดต่อเคาน์เตอร์โรงแรมโดยตรง</p>}<p>ผลค้นหานี้ยังไม่ได้สำรองห้อง กรุณาติดต่อพนักงานก่อนยืนยัน</p><button className="primary" onClick={() => contact.current?.close()}>เข้าใจแล้ว</button></div></dialog>
   </main>
 }

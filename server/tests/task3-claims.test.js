@@ -28,15 +28,15 @@ test('CLI requires matching database and explicit maintenance prerequisites for 
   expect(options(['--database', 'hotel_lobby_task3_test', '--apply', '--writes-stopped', '--backup-confirmed', '--copy-tested'], db.url).apply).toBe(true);
 });
 
-test('audit is read-only; backfill restores confirmed, checked-in and checked-out nights idempotently', async () => {
+test('audit is read-only; backfill restores active nights without recreating checkout holds', async () => {
   const b = await createBooking(db.prisma, input, actorId);
   await db.prisma.booking.update({ where: { id: b.id }, data: { status: 'checked_out' } });
   await db.prisma.roomNightClaim.deleteMany();
   const before = await rows();
-  expect(await auditClaims(db.prisma)).toMatchObject({ expectedClaimCount: 6, claimCount: 0, issues: [] });
+  expect(await auditClaims(db.prisma)).toMatchObject({ expectedClaimCount: 4, claimCount: 0, issues: [] });
   expect(await rows()).toEqual(before);
   const filled = await backfillMissingClaims(db.prisma);
-  expect(filled).toMatchObject({ added: 6, audit: { missingClaims: [], issues: [] } });
+  expect(filled).toMatchObject({ added: 4, audit: { missingClaims: [], issues: [] } });
   const after = await rows();
   expect((await backfillMissingClaims(db.prisma)).added).toBe(0);
   expect(await rows()).toEqual(after);

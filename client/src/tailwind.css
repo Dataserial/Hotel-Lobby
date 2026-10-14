@@ -1,0 +1,15 @@
+/* Keep the existing browser defaults: importing Preflight would reset the UI. */
+@layer theme, utilities;
+@import 'tailwindcss/theme.css' layer(theme) prefix(tw);
+@import 'tailwindcss/utilities.css' layer(utilities) prefix(tw) source('./');
+
+/* Reuse the hotel's existing tokens in CSS @apply and JSX utilities. */
+@theme inline {
+  --color-navy: var(--navy);
+  --color-blue: var(--blue);
+  --color-yellow: var(--yellow);
+  --color-canvas: var(--canvas);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+}

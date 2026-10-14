@@ -8,6 +8,18 @@ function api(fetch) {
   const code=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;
   const exports={};vm.runInNewContext(code,{exports,fetch,AbortController,DOMException,URLSearchParams,setTimeout,clearTimeout});return exports;
 }
+
+test('additional service payloads reject missing fields and invalid pricing or pagination', async () => {
+  const valid = { id: 'service', name: 'Breakfast', unit: 'per_stay', price: 300, included: false, extraBed: false, active: true, roomTypeIds: [], maxQuantity: 1 };
+  for (const item of [{ id: 'service' }, { ...valid, price: -1 }, { ...valid, price: 1.5 }, { ...valid, unit: 'unknown' }, { ...valid, maxQuantity: 0 }, { ...valid, active: 'true' }]) {
+    await assert.rejects(api(async () => Response.json({ items: [item], page: 1, limit: 20, total: 1 })).request('/additional-services', null), error => error.code === 'PROTOCOL_ERROR');
+  }
+  await assert.rejects(api(async () => Response.json({ items: [valid], page: 0, limit: 20, total: 1 })).request('/public/additional-services', null), error => error.code === 'PROTOCOL_ERROR');
+  assert.equal((await api(async () => Response.json({ items: [{ ...valid, price: null }], page: 1, limit: 20, total: 1 })).request('/additional-services', null)).items[0].price, null);
+});
+test('incorrect credentials show only the friendly Thai message without a request ID',()=>{
+  assert.equal(api(()=>{}).errorText({code:'INVALID_CREDENTIALS',message:'Invalid credentials',requestId:'trace-fixture'}),'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+});
 test('API rejects successful HTML, null JSON and malformed page items',async()=>{
   for(const response of [new Response('<html>oops</html>',{headers:{'Content-Type':'text/html'}}),Response.json(null),Response.json({items:[{id:5}],total:1,page:1,limit:20})]) {
     await assert.rejects(api(async()=>response).request('/guests',null),e=>e.code==='PROTOCOL_ERROR');

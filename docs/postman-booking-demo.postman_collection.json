@@ -1,0 +1,65 @@
+{
+  "info": {
+    "name": "Hotel-Lobby - Booking 2400 THB Demo",
+    "description": "Local demo API prepared on 127.0.0.1:3000. Send 1 Login, then 2 Create booking. Token and bookingId are saved automatically. To repeat the same dates, send 4 Cancel latest booking before 2 again. Credentials are dummy local demo credentials only.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://127.0.0.1:3000" },
+    { "key": "token", "value": "" },
+    { "key": "bookingId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1 - Login (automatically saves token)",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test('Login successful', () => pm.response.to.have.status(200));",
+        "if (pm.response.code === 200) pm.collectionVariables.set('token', pm.response.json().token);"
+      ] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"email\": \"postman@hotel-demo.local\",\n  \"password\": \"PostmanDemo!2026\"\n}", "options": { "raw": { "language": "json" } } },
+        "url": "{{baseUrl}}/api/auth/login"
+      }
+    },
+    {
+      "name": "2 - Create booking (confirmed, 1200 x 2 nights = 2400)",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test('Created', () => pm.response.to.have.status(201));",
+        "if (pm.response.code === 201) {",
+        "  const booking = pm.response.json();",
+        "  pm.collectionVariables.set('bookingId', booking.id);",
+        "  pm.test('Matches screenshot', () => {",
+        "    pm.expect(booking.status).to.eql('confirmed');",
+        "    pm.expect(booking.pricePerNight).to.eql(1200);",
+        "    pm.expect(booking.totalPrice).to.eql(2400);",
+        "  });",
+        "}"
+      ] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{token}}" }],
+        "body": { "mode": "raw", "raw": "{\n  \"guestId\": \"400000000000000000000001\",\n  \"roomId\": \"300000000000000000000001\",\n  \"guestCount\": 2,\n  \"checkInDate\": \"2026-11-10\",\n  \"checkOutDate\": \"2026-11-12\"\n}", "options": { "raw": { "language": "json" } } },
+        "url": "{{baseUrl}}/api/bookings"
+      }
+    },
+    {
+      "name": "3 - Get latest booking (optional)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/bookings/{{bookingId}}"
+      }
+    },
+    {
+      "name": "4 - Cancel latest booking to repeat same dates (optional)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{token}}" }],
+        "body": { "mode": "raw", "raw": "{}", "options": { "raw": { "language": "json" } } },
+        "url": "{{baseUrl}}/api/bookings/{{bookingId}}/cancel"
+      }
+    }
+  ]
+}

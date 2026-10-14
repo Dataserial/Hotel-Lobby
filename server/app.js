@@ -44,11 +44,19 @@ function createApp(db = prisma, { trustedProxyCidrs = process.env.TRUSTED_PROXY_
     finally { clearTimeout(timer); }
   });
   app.use('/api/public/rooms/availability', rateLimit({ limit: 60 }), require('./routes/api-availability')(db, { publicAccess: true }));
+  app.use('/api/public/rooms/summary', rateLimit({ limit: 60 }), require('./routes/api-public-room-summary')(db));
+  app.use('/api/public/rooms/grid', rateLimit({ limit: 60 }), require('./routes/api-public-room-grid')(db));
   app.use('/api/public/overview', rateLimit({ limit: 60 }), require('./routes/api-public-overview')(db));
+  app.use('/api/public/additional-services', rateLimit({ limit: 60 }), require('./routes/api-additional-services')(db, { publicAccess: true }));
   app.use('/api/auth/login', rateLimit({ limit: 20, windowMs: 900000 }));
   app.use('/api/auth/register', rateLimit({ limit: 20, windowMs: 900000 }));
   app.use('/api/auth', require('./routes/api-auth')(db));
-  app.use('/api', requireAuth(db), role('admin', 'receptionist'));
+  app.use('/api/customer/bookings', requireAuth(db), rateLimit({ limit: 30 }), require('./routes/api-customer-bookings')(db));
+  app.use('/api', requireAuth(db));
+  // Member requests are mounted before the staff-only boundary.
+  app.use('/api/stay-requests', require('./routes/api-stay-requests')(db));
+  app.use('/api/additional-services', role('admin', 'receptionist'), require('./routes/api-additional-services')(db));
+  app.use('/api', role('admin', 'receptionist'));
   app.use('/api/dashboard', require('./routes/api-dashboard')(db));
   app.use('/api/users', require('./routes/api-users')(db));
   app.use('/api/room-types', require('./routes/api-room-types')(db));

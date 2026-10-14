@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap');
+@import './tailwind.css';
 :root { --navy: #043d55; --blue: #045575; --yellow: #ffd45c; --canvas: #f5f8fa; --ink: #123b4d; --muted: #536977; --line: #dfe8ed; font-family: 'IBM Plex Sans Thai', 'Segoe UI', sans-serif; color: var(--ink); background: var(--canvas); font-synthesis: none; }
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 320px; }

@@ -1,6 +1,6 @@
 const { BookingError, validateStay } = require('./booking-validation');
 
-const holdsNights = new Set(['confirmed', 'checked_in', 'checked_out']);
+const holdsNights = new Set(['confirmed', 'checked_in']);
 const claimKey = ({ roomId, night }) => `${roomId}:${night}`;
 
 async function auditClaims(prisma) {
@@ -35,7 +35,7 @@ async function auditClaims(prisma) {
     let nights;
     try { nights = validateStay(b.checkInDate, b.checkOutDate).nights; }
     catch (_error) { issues.push({ code: 'INVALID_STAY', bookingId: b.id }); continue; }
-    if (b.status === 'cancelled') continue;
+    if (b.status === 'cancelled' || b.status === 'checked_out') continue;
     if (!holdsNights.has(b.status)) { issues.push({ code: 'INVALID_STATUS', bookingId: b.id }); continue; }
     for (const night of nights) {
       const claim = { bookingId: b.id, roomId: b.roomId, night };
@@ -52,6 +52,7 @@ async function auditClaims(prisma) {
     actual.set(key, c);
     if (!b) issues.push({ code: 'ORPHAN_CLAIM', claimId: c.id });
     else if (b.status === 'cancelled') issues.push({ code: 'CANCELLED_CLAIM', claimId: c.id, bookingId: b.id });
+    else if (b.status === 'checked_out') issues.push({ code: 'CHECKED_OUT_CLAIM', claimId: c.id, bookingId: b.id });
     else if (expected.get(key)?.bookingId !== c.bookingId) {
       issues.push({ code: 'UNEXPECTED_CLAIM', claimId: c.id, bookingId: b.id });
     }

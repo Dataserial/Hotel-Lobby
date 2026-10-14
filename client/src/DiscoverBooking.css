@@ -1,0 +1,134 @@
+@reference "./tailwind.css";
+
+/* Discover uses the same navy, yellow, type scale and rounded cards as Home. */
+.public-hotel .discover-section { @apply tw:min-h-[auto]; }
+.discover-hero { @apply tw:grid tw:grid-cols-[1.1fr_1fr] tw:items-center tw:gap-[6%]; background: var(--navy); @apply tw:text-white tw:p-[68px_5%_60px]; }
+.public-hotel .discover-heading { @apply tw:m-[0]; }
+.discover-heading .eyebrow { @apply tw:text-yellow; letter-spacing: .16em; }
+.public-hotel .discover-heading h1 { font-size: clamp(32px, 3.5vw, 58px); line-height: 1.45; @apply tw:m-[22px_0]; }
+.discover-heading-highlight { @apply tw:block tw:text-yellow; }
+.public-hotel .discover-heading p { color: #d0dfe7; font-size: 17px; line-height: 1.9; }
+.discover-heading small { @apply tw:block tw:mt-[28px]; color: #bcd0da; }
+.public-hotel .hotel-gallery { @apply tw:relative tw:block tw:p-[0] tw:overflow-hidden tw:rounded-[32px] tw:h-[340px]; }
+.public-hotel .hotel-gallery > img:first-child { @apply tw:block tw:w-full tw:h-full tw:rounded-[0] tw:object-cover; }
+.public-hotel .hotel-gallery > img + img { @apply tw:hidden; }
+.discover-photo-caption { @apply tw:absolute tw:bottom-[0] tw:left-[0] tw:w-full tw:p-[44px_24px_20px]; background: linear-gradient(transparent, #043d55e6); @apply tw:text-white; font-size: 16px; }
+.discover-photo-caption small { @apply tw:block; color: #d0dfe7; font-size: 11px; @apply tw:mt-[6px]; }
+
+.public-hotel .booking-steps { @apply tw:flex; flex-wrap: nowrap; @apply tw:justify-center tw:max-w-[800px] tw:m-[44px_auto_34px] tw:p-[0_20px] tw:gap-[0]; }
+.public-hotel .booking-steps li { @apply tw:relative; flex: 1; @apply tw:flex tw:flex-col tw:items-center tw:gap-[14px] tw:p-[0]; border: 0; @apply tw:rounded-[0]; background: transparent; @apply tw:text-center tw:min-w-0; }
+.booking-steps li:not(:last-child)::after { content: ''; @apply tw:absolute tw:h-[2px]; background: #d4e1e8; @apply tw:top-[25px] tw:left-[50%] tw:w-full; }
+.booking-steps li.step-complete::after { background: var(--navy); }
+.booking-step-number { @apply tw:relative; z-index: 1; @apply tw:w-[52px] tw:h-[52px] tw:grid tw:place-items-center; border: 2px solid #d4e1e8; @apply tw:rounded-[50%]; background: var(--canvas); @apply tw:text-muted; font-size: 18px; @apply tw:font-semibold; }
+.booking-step-label { @apply tw:text-muted; font-size: 14px; line-height: 1.6; }
+.public-hotel .booking-step-link { @apply tw:relative; z-index: 1; @apply tw:flex tw:flex-col tw:items-center tw:gap-[14px] tw:w-full tw:min-h-[0] tw:p-[0]; border: 0; @apply tw:rounded-[12px]; background: transparent; box-shadow: none; }
+.public-hotel .booking-step-link:disabled { opacity: 1; @apply tw:cursor-not-allowed; }
+.public-hotel .booking-step-link:hover:not(:disabled) { background: transparent; box-shadow: none; }
+#booking-dates, #booking-types-section, #booking-room-grid, #booking-confirmation, #booking-success { scroll-margin-top: 128px; scroll-margin-bottom: 24px; }
+.step-complete .booking-step-number { background: var(--navy); border-color: var(--navy); @apply tw:text-white; }
+.public-hotel .booking-steps [aria-current="step"] { border: 0; }
+.booking-steps [aria-current="step"] .booking-step-number { background: var(--yellow); border-color: var(--yellow); @apply tw:text-navy; box-shadow: 0 0 0 5px var(--canvas), 0 0 0 7px var(--yellow); }
+.booking-steps [aria-current="step"] .booking-step-label, .step-complete .booking-step-label { @apply tw:text-navy tw:font-semibold; }
+.public-hotel .discover-search { @apply tw:max-w-[1100px] tw:m-[0_auto_0] tw:p-[0_5%_48px]; }
+.public-hotel .availability-search { box-shadow: 0 12px 36px #043d5508; border: 1px solid var(--line); }
+.public-hotel .public-results { @apply tw:pt-[52px] tw:min-h-[360px]; }
+.discover-section-head { @apply tw:text-center tw:mb-[32px]; }
+.public-hotel .discover-section-head h2 { font-size: clamp(26px, 2.4vw, 36px); @apply tw:m-[12px_0]; }
+.public-hotel .stay-summary { font-size: 15px; @apply tw:m-[0]; }
+
+.public-hotel .room-type-summary-grid { @apply tw:flex tw:flex-wrap tw:gap-[24px] tw:mb-[48px]; }
+.public-hotel .room-type-summary-grid .room-type-card { flex: 1 1 calc((100% - 48px) / 3); max-width: calc((100% - 48px) / 3); @apply tw:flex tw:flex-col tw:p-[0] tw:gap-[0]; border: 1px solid var(--line); @apply tw:rounded-[24px] tw:overflow-hidden; background: white; }
+.public-hotel .room-type-summary-grid .room-type-selected { border-color: var(--navy); box-shadow: 0 0 0 2px var(--navy); }
+.public-hotel .room-type-photo { aspect-ratio: 16 / 10; }
+.public-hotel .room-type-photo img { @apply tw:block; }
+.discover-room-badge { @apply tw:absolute tw:top-[16px] tw:right-[16px]; background: var(--yellow); @apply tw:text-navy tw:rounded-[999px] tw:p-[7px_12px]; font-size: 12px; @apply tw:font-semibold; }
+.public-hotel .room-type-content { @apply tw:p-[26px] tw:gap-[14px]; }
+.discover-room-title > span { @apply tw:text-navy; font-size: 32px; line-height: 1; }
+.public-hotel .room-type-content p { @apply tw:m-[0]; font-size: 14px; @apply tw:text-muted; }
+.discover-room-price { @apply tw:mt-auto tw:pt-[12px]; }
+.discover-room-price strong { font-size: 30px; @apply tw:font-semibold; }
+.discover-room-price > span { @apply tw:text-muted; font-size: 14px; }
+.public-hotel .room-type-content button[aria-pressed="true"] { outline: none; background: var(--navy); @apply tw:text-white; }
+.public-hotel #booking-room-grid { border-top: 1px solid var(--line); @apply tw:pt-[36px]; }
+.public-hotel #room-grid-title { font-size: clamp(25px, 2.4vw, 36px); @apply tw:mb-[12px]; }
+.public-hotel #booking-room-grid > p { @apply tw:text-muted; }
+
+.public-hotel .booking-confirm { @apply tw:grid tw:grid-cols-[minmax(0,_.9fr)_minmax(0,_1.2fr)] tw:p-[0] tw:rounded-[32px] tw:m-[48px_0_0] tw:overflow-hidden; border: 1px solid var(--line); background: white; }
+.booking-stay-card { background: var(--navy); @apply tw:text-white tw:min-w-0; }
+.booking-stay-photo { @apply tw:relative; aspect-ratio: 16 / 10; }
+.booking-stay-photo img { @apply tw:block tw:w-full tw:h-full tw:object-cover; }
+.booking-stay-photo small { @apply tw:absolute tw:left-[20px] tw:bottom-[16px]; background: #043d55dd; @apply tw:text-white; font-size: 11px; @apply tw:p-[6px_12px] tw:rounded-[999px]; }
+.booking-stay-copy { @apply tw:p-[32px]; }
+.booking-stay-copy .eyebrow { @apply tw:text-yellow; }
+.booking-stay-copy h3 { @apply tw:flex tw:justify-between; font-size: 32px; @apply tw:font-semibold tw:m-[16px_0]; }
+.booking-stay-copy h3 > span { @apply tw:text-yellow; }
+.booking-room-tag { @apply tw:inline-flex; border: 1px solid #668696; @apply tw:rounded-[999px] tw:p-[7px_16px] tw:mb-[20px]; }
+.booking-stay-copy p { color: #d0dfe7; font-size: 14px; line-height: 1.8; }
+.booking-pay-note { @apply tw:grid tw:gap-[6px]; border-top: 1px solid #426779; @apply tw:pt-[24px] tw:mt-[24px]; }
+.booking-pay-note strong { @apply tw:text-yellow; font-size: 18px; @apply tw:font-semibold; }
+.booking-pay-note span { color: #d0dfe7; font-size: 13px; }
+.booking-details { @apply tw:p-[36px] tw:min-w-0; }
+.public-hotel .booking-details h2 { font-size: clamp(26px, 2.4vw, 36px); @apply tw:m-[12px_0]; }
+.booking-intro { @apply tw:text-muted; font-size: 14px; line-height: 1.8; @apply tw:mb-[24px]; }
+.booking-date-details { @apply tw:grid tw:grid-cols-[1fr_1fr] tw:gap-[16px] tw:m-[0]; background: var(--canvas); @apply tw:p-[18px] tw:rounded-[16px]; }
+.booking-date-details dt { @apply tw:text-muted; font-size: 13px; @apply tw:mb-[6px]; }
+.booking-date-details dd { @apply tw:m-[0]; font-size: 16px; @apply tw:font-semibold; }
+.booking-price-details { @apply tw:pt-[20px]; }
+.booking-price-details > p { @apply tw:flex tw:justify-between tw:gap-[16px]; font-size: 14px; @apply tw:text-muted; }
+.booking-price-details > p strong { @apply tw:text-navy tw:whitespace-nowrap; }
+.booking-grand-total { @apply tw:flex tw:justify-between tw:items-center tw:gap-[16px]; border-top: 1px solid var(--line); @apply tw:p-[18px_0_24px]; }
+.booking-grand-total strong { font-size: 32px; @apply tw:font-semibold tw:text-navy; }
+.booking-details .form-grid { @apply tw:max-w-none tw:gap-[18px]; }
+.booking-account { grid-column: 1 / -1; @apply tw:grid tw:gap-[4px] tw:p-[18px]; background: #edf4f7; @apply tw:rounded-[16px]; }
+.booking-account > span, .booking-account small { @apply tw:text-muted; font-size: 13px; }
+.booking-details .form-grid > button { grid-column: 1 / -1; @apply tw:w-full; }
+.booking-details .field { font-size: 13px; }
+.booking-details .field input { background: white; @apply tw:rounded-[12px] tw:min-h-[48px] tw:w-full; }
+.booking-login-prompt { @apply tw:pt-[20px]; border-top: 1px solid var(--line); }
+.booking-login-prompt p { @apply tw:text-muted; font-size: 14px; }
+.booking-login-prompt button { @apply tw:w-full; }
+.service-catalog { border-top: 1px solid var(--line); @apply tw:p-[18px_0]; }
+.service-catalog summary { @apply tw:cursor-pointer tw:font-semibold; }
+.service-catalog p { font-size: 13px; @apply tw:text-muted; line-height: 1.7; }
+.service-catalog ul { list-style: none; @apply tw:p-[0] tw:m-[0]; }
+.service-catalog li { @apply tw:flex tw:justify-between tw:flex-wrap tw:gap-[10px]; border-bottom: 1px solid var(--line); @apply tw:p-[12px_0]; font-size: 13px; }
+.public-hotel .booking-success { @apply tw:block tw:text-center; background: var(--navy); @apply tw:text-white tw:p-[40px]; }
+.booking-success .eyebrow { @apply tw:block tw:text-yellow tw:m-[12px_0]; }
+.booking-success-moon { @apply tw:block tw:text-yellow; font-size: 56px; }
+.booking-success p { color: #d0dfe7; line-height: 1.8; }
+
+@media (max-width: 960px) {
+  .discover-hero { @apply tw:gap-[4%]; }
+  .public-hotel .room-type-content { @apply tw:p-[20px]; }
+  .public-hotel .room-type-summary-grid { @apply tw:gap-[16px]; }
+  .public-hotel .room-type-summary-grid .room-type-card { flex-basis: calc((100% - 32px) / 3); max-width: calc((100% - 32px) / 3); }
+  .booking-details, .booking-stay-copy { @apply tw:p-[24px]; }
+  .booking-details .form-grid { @apply tw:grid-cols-[1fr]; }
+}
+@media (max-width: 680px) {
+  .discover-hero { @apply tw:grid-cols-[1fr] tw:p-[36px_20px] tw:gap-[28px]; }
+  .public-hotel .discover-heading h1 { font-size: 36px; }
+  .public-hotel .discover-heading p { font-size: 16px; }
+  .public-hotel .hotel-gallery { @apply tw:h-[220px] tw:rounded-[24px]; }
+  .public-hotel .booking-steps { @apply tw:m-[32px_auto] tw:p-[0_16px]; }
+  .public-hotel .booking-steps li { flex: 1; @apply tw:gap-[12px]; font-size: inherit; }
+  .public-hotel .booking-step-link { @apply tw:gap-[12px]; }
+  #booking-dates, #booking-types-section, #booking-room-grid, #booking-confirmation, #booking-success { scroll-margin-top: 180px; }
+  .booking-step-number { @apply tw:w-[42px] tw:h-[42px]; font-size: 16px; }
+  .booking-steps li:not(:last-child)::after { @apply tw:top-[20px]; }
+  .booking-step-label { font-size: 11px; }
+  .public-hotel .discover-search { @apply tw:p-[0_20px_32px]; }
+  .public-hotel .availability-search { background: white; @apply tw:p-[20px] tw:rounded-[24px] tw:gap-[16px]; }
+  .public-hotel .availability-search .field { @apply tw:min-h-[auto]; }
+  .public-hotel .public-results { @apply tw:pt-[36px]; }
+  .public-hotel .room-type-summary-grid { @apply tw:flex-col tw:gap-[20px] tw:mb-[32px]; }
+  .public-hotel .room-type-summary-grid .room-type-card { flex-basis: auto; @apply tw:max-w-none tw:w-full; }
+  .public-hotel .room-type-content { @apply tw:p-[24px]; }
+  .public-hotel .booking-confirm { @apply tw:grid-cols-[1fr] tw:rounded-[24px] tw:mt-[32px]; }
+  .booking-stay-photo { aspect-ratio: 16 / 9; }
+  .booking-stay-copy, .booking-details { @apply tw:p-[24px]; }
+  .booking-date-details { @apply tw:p-[14px] tw:gap-[12px]; }
+  .booking-date-details dd { font-size: 14px; }
+  .booking-grand-total strong { font-size: 28px; }
+  .public-hotel .booking-success { @apply tw:p-[28px]; }
+}

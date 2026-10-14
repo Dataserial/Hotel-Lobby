@@ -4,7 +4,7 @@ const ts=require('typescript');const {JSDOM}=require('jsdom');
 function domApp(url='http://localhost:5173/',env={}) {
   const dom=new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>',{url,pretendToBeVisual:true});
   const saved=new Map();
-  const globals={window:dom.window,document:dom.window.document,HTMLElement:dom.window.HTMLElement,HTMLDialogElement:dom.window.HTMLDialogElement,navigator:dom.window.navigator,requestAnimationFrame:dom.window.requestAnimationFrame.bind(dom.window),cancelAnimationFrame:dom.window.cancelAnimationFrame.bind(dom.window),IS_REACT_ACT_ENVIRONMENT:true};
+  const globals={window:dom.window,document:dom.window.document,HTMLElement:dom.window.HTMLElement,HTMLDialogElement:dom.window.HTMLDialogElement,navigator:dom.window.navigator,sessionStorage:dom.window.sessionStorage,requestAnimationFrame:dom.window.requestAnimationFrame.bind(dom.window),cancelAnimationFrame:dom.window.cancelAnimationFrame.bind(dom.window),IS_REACT_ACT_ENVIRONMENT:true};
   for(const [key,value]of Object.entries(globals)){saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{configurable:true,writable:true,value})}
   dom.window.scrollTo=()=>{};dom.window.HTMLElement.prototype.scrollIntoView=function(){};
   dom.window.matchMedia=()=>({matches:true,addEventListener(){},removeEventListener(){}});
@@ -24,7 +24,8 @@ function domApp(url='http://localhost:5173/',env={}) {
   const loadSource=name=>load(path.resolve(__dirname,'../../src',name));
   const button=text=>Array.from(dom.window.document.querySelectorAll('button')).find(b=>b.textContent.trim()===text);
   async function input(element,value){await React.act(async()=>{const descriptor=Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype,'value');descriptor.set.call(element,value);element.dispatchEvent(new dom.window.Event('input',{bubbles:true}))})}
+  async function openAccount(){const trigger=dom.window.document.querySelector('[data-account-trigger]');if(!trigger)throw new Error('Account menu trigger missing');if(trigger.getAttribute('aria-expanded')!=='true')await React.act(async()=>trigger.click())}
   async function waitFor(predicate,timeout=10000){const end=Date.now()+timeout;while(!predicate()){if(Date.now()>end)throw new Error('DOM condition timed out: '+dom.window.document.body.textContent.slice(0,600));await React.act(async()=>{await new Promise(r=>setTimeout(r,20))})}}
-  return {dom,React,root,loadSource,button,input,waitFor,async close(){await React.act(async()=>root.unmount());dom.window.close();for(const [key,descriptor]of saved){if(descriptor)Object.defineProperty(globalThis,key,descriptor);else delete globalThis[key]}}};
+  return {dom,React,root,loadSource,button,input,openAccount,waitFor,async close(){await React.act(async()=>root.unmount());dom.window.close();for(const [key,descriptor]of saved){if(descriptor)Object.defineProperty(globalThis,key,descriptor);else delete globalThis[key]}}};
 }
 module.exports={domApp};

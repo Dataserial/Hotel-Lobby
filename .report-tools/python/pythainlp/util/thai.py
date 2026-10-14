@@ -1,0 +1,425 @@
+# SPDX-FileCopyrightText: 2016-2026 PyThaiNLP Project
+# SPDX-FileType: SOURCE
+# SPDX-License-Identifier: Apache-2.0
+"""Check whether text is Thai."""
+
+from __future__ import annotations
+
+import string
+from collections import Counter, defaultdict
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Optional
+
+from pythainlp import (
+    thai_above_vowels,
+    thai_below_vowels,
+    thai_consonants,
+    thai_digits,
+    thai_follow_vowels,
+    thai_lead_vowels,
+    thai_punctuations,
+    thai_signs,
+    thai_tonemarks,
+    thai_vowels,
+)
+from pythainlp.tools import warn_deprecation
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+_DEFAULT_IGNORE_CHARS: str = (
+    string.whitespace + string.digits + string.punctuation
+)
+_TH_FIRST_CHAR_ASCII: int = 3584
+_TH_LAST_CHAR_ASCII: int = 3711
+
+# A comprehensive map of Thai characters to their descriptive names.
+# MappingProxyType makes this constant read-only at runtime.
+_THAI_CHAR_NAMES: MappingProxyType[str, str] = MappingProxyType(
+    {
+        # Consonants
+        **{char: char for char in thai_consonants},
+        # Vowels and Signs
+        "\u0e24": "ฤ",
+        "\u0e26": "ฦ",
+        "\u0e30": "สระ อะ",
+        "\u0e31": "ไม้หันอากาศ",
+        "\u0e32": "สระ อา",
+        "\u0e33": "สระ อำ",
+        "\u0e34": "สระ อิ",
+        "\u0e35": "สระ อี",
+        "\u0e36": "สระ อึ",
+        "\u0e37": "สระ อือ",
+        "\u0e38": "สระ อุ",
+        "\u0e39": "สระ อู",
+        "\u0e40": "สระ เอ",
+        "\u0e41": "สระ แอ",
+        "\u0e42": "สระ โอ",
+        "\u0e43": "สระ ใอ",
+        "\u0e44": "สระ ไอ",
+        "\u0e45": "ไม้ม้วน",
+        "\u0e4d": "นฤคหิต",
+        "\u0e47": "ไม้ไต่คู้",
+        # Tone Marks
+        "\u0e48": "ไม้เอก",
+        "\u0e49": "ไม้โท",
+        "\u0e4a": "ไม้ตรี",
+        "\u0e4b": "ไม้จัตวา",
+        # Other Signs
+        "\u0e2f": "ไปยาลน้อย",
+        "\u0e3a": "พินทุ",
+        "\u0e46": "ไม้ยมก",
+        "\u0e4c": "การันต์",
+        "\u0e4e": "ยามักการ",
+        # Punctuation
+        "\u0e4f": "ฟองมัน",
+        "\u0e5a": "อังคั่นคู่",
+        "\u0e5b": "โคมุต",
+        # Digits
+        **{char: char for char in thai_digits},
+        # Symbol
+        "\u0e3f": "฿",
+    }
+)
+
+
+def is_thai_char(ch: str) -> bool:
+    """
+    Check whether a character is a Thai character.
+
+    :param str ch: character to check
+    :return: True if the character is a Thai character, otherwise False
+    :rtype: bool
+
+    :Example:
+
+        >>> from pythainlp.util import is_thai_char
+        >>> is_thai_char("ก")  # THAI CHARACTER KO KAI
+        True
+        >>> is_thai_char("๕")  # THAI DIGIT FIVE
+        True
+    """
+    ch_val = ord(ch)
+    return _TH_FIRST_CHAR_ASCII <= ch_val <= _TH_LAST_CHAR_ASCII
+
+
+def isthaichar(ch: str) -> bool:
+    """
+    Check whether a character is a Thai character.
+
+    .. deprecated:: 5.3.2
+        Use :func:`is_thai_char` instead.
+
+    :param str ch: character to check
+    :return: True if the character is a Thai character, otherwise False
+    :rtype: bool
+    """
+    warn_deprecation(
+        "pythainlp.util.isthaichar",
+        "pythainlp.util.is_thai_char",
+        "5.3.2",
+        "6.0",
+    )
+    return is_thai_char(ch)
+
+
+def is_thai(text: str, ignore_chars: str = ".") -> bool:
+    """
+    Check whether every character in text is a Thai character.
+
+    :param str text: text to check
+    :param str ignore_chars: characters to be ignored (default is ".")
+    :return: True if every character in the text is Thai, otherwise False
+    :rtype: bool
+
+    :Example:
+
+        >>> from pythainlp.util import is_thai
+        >>> is_thai("กาลเวลา")
+        True
+        >>> is_thai("กาลเวลา.")
+        True
+        >>> is_thai("กาล-เวลา")
+        False
+        >>> is_thai("กาล-เวลา +66", ignore_chars="01234567890+-., ")
+        True
+
+    """
+    if not ignore_chars:
+        ignore_chars = ""
+
+    for ch in text:
+        if ch not in ignore_chars and not is_thai_char(ch):
+            return False
+    return True
+
+
+def isthai(text: str, ignore_chars: str = ".") -> bool:
+    """
+    Check whether every character in text is a Thai character.
+
+    .. deprecated:: 5.3.2
+        Use :func:`is_thai` instead.
+
+    :param str text: text to check
+    :param str ignore_chars: characters to be ignored (default is ".")
+    :return: True if every character in the text is Thai, otherwise False
+    :rtype: bool
+    """
+    warn_deprecation(
+        "pythainlp.util.isthai",
+        "pythainlp.util.is_thai",
+        "5.3.2",
+        "6.0",
+    )
+    return is_thai(text, ignore_chars)
+
+
+def count_thai(text: str, ignore_chars: str = _DEFAULT_IGNORE_CHARS) -> float:
+    """
+    Calculate the proportion of Thai characters in text.
+
+    :param str text: text to check
+    :param str ignore_chars: characters to be ignored
+        (default is whitespace, digits, and punctuation marks)
+    :return: proportion of Thai characters in the text (percentage)
+    :rtype: float
+
+    :Example:
+
+        >>> from pythainlp.util import count_thai
+        >>> count_thai("ไทยเอ็นแอลพี 3.0")
+        100.0
+        >>> count_thai("PyThaiNLP 3.0")
+        0.0
+        >>> count_thai("ใช้งาน PyThaiNLP 3.0")
+        40.0
+        >>> count_thai("ใช้งาน PyThaiNLP 3.0", ignore_chars="")
+        30.0
+    """
+    if not text or not isinstance(text, str):
+        return 0.0
+
+    if not ignore_chars:
+        ignore_chars = ""
+
+    num_thai = 0
+    num_ignore = 0
+
+    for ch in text:
+        if ch in ignore_chars:
+            num_ignore += 1
+        elif is_thai_char(ch):
+            num_thai += 1
+
+    num_count = len(text) - num_ignore
+
+    if num_count == 0:
+        return 0.0
+
+    return (num_thai / num_count) * 100
+
+
+def countthai(text: str, ignore_chars: str = _DEFAULT_IGNORE_CHARS) -> float:
+    """
+    Calculate the proportion of Thai characters in text.
+
+    .. deprecated:: 5.3.2
+        Use :func:`count_thai` instead.
+
+    :param str text: text to check
+    :param str ignore_chars: characters to be ignored
+        (default is whitespace, digits, and punctuation marks)
+    :return: proportion of Thai characters in the text (percentage)
+    :rtype: float
+    """
+    warn_deprecation(
+        "pythainlp.util.countthai",
+        "pythainlp.util.count_thai",
+        "5.3.2",
+        "6.0",
+    )
+    return count_thai(text, ignore_chars)
+
+
+def display_thai_char(ch: str) -> str:
+    """
+    Prefix an underscore (_) to a high-position vowel or a tone mark.
+
+    The underscore eases readability.
+
+    :param str ch: character to be displayed
+    :return: "_" + ch for a high-position vowel or a tone mark,
+        otherwise the character itself
+    :rtype: str
+
+    :Example:
+
+        >>> from pythainlp.util import display_thai_char
+        >>> display_thai_char("้")
+        '_้'
+    """
+    if (
+        ch in thai_above_vowels
+        or ch in thai_tonemarks
+        or ch in "\u0e33\u0e4c\u0e4d\u0e4e"
+    ):
+        # last condition is Sra Aum, Thanthakhat, Nikhahit, Yamakkan
+        return "_" + ch
+    return ch
+
+
+def thai_word_tone_detector(word: Optional[str]) -> list[tuple[str, str]]:
+    """
+    Detect the tone of each syllable in a Thai word.
+
+    This function converts the word to pronunciation with
+    :func:`pythainlp.transliterate.pronunciate`.
+
+    :param Optional[str] word: Thai word, or None
+    :return: list of (syllable, tone) tuples, one for each syllable.
+        Tone values are ``l`` (low), ``m`` (mid), ``h`` (high),
+        ``r`` (rising), ``f`` (falling), or an empty string
+        if it cannot be detected.
+        Return ``[]`` if the word is None or empty.
+    :rtype: list[tuple[str, str]]
+
+    :Example:
+
+        >>> from pythainlp.util import thai_word_tone_detector
+        >>> print(thai_word_tone_detector("คนดี"))
+        [('คน', 'm'), ('ดี', 'm')]
+        >>> print(thai_word_tone_detector("มือถือ"))
+        [('มือ', 'm'), ('ถือ', 'r')]
+        >>> print(thai_word_tone_detector(None))
+        []
+    """
+    if not word:
+        return []
+
+    from ..transliterate import pronunciate
+    from ..util.syllable import tone_detector
+
+    _pronunciate = pronunciate(word).split("-")
+    return [(i, tone_detector(i.replace("หฺ", "ห"))) for i in _pronunciate]
+
+
+# Character types for count_thai_chars(), checked in this order.
+_CHAR_TYPES: tuple[tuple[str, str], ...] = (
+    ("lead_vowels", thai_lead_vowels),
+    ("follow_vowels", thai_follow_vowels),
+    ("above_vowels", thai_above_vowels),
+    ("below_vowels", thai_below_vowels),
+    ("consonants", thai_consonants),
+    ("tonemarks", thai_tonemarks),
+    ("signs", thai_signs),
+    ("thai_digits", thai_digits),
+    ("punctuations", thai_punctuations),
+)
+_COUNT_KEYS: tuple[str, ...] = (
+    "vowels",
+    *(name for name, _ in _CHAR_TYPES),
+    "non_thai",
+)
+
+
+def _build_char_type_table() -> dict[str, str]:
+    """Map each character to its type; the first matching type wins."""
+    table: dict[str, str] = {}
+    for name, chars in _CHAR_TYPES:
+        for char in chars:
+            table.setdefault(char, name)
+    return table
+
+
+_CHAR_TYPE_TABLE: dict[str, str] = _build_char_type_table()
+_VOWEL_SET: frozenset[str] = frozenset(thai_vowels)
+# Below this length, a direct loop is faster than counting with Counter.
+_COUNTER_MIN_LEN: int = 64
+
+
+def _char_type(char: str) -> str:
+    """Return the name of the first character type containing ``char``."""
+    for name, chars in _CHAR_TYPES:
+        if char in chars:
+            return name
+    return "non_thai"
+
+
+def _count_iterable(
+    text: Iterable[str], counts: dict[str, int]
+) -> dict[str, int]:
+    """Count the items of a non-string iterable, as ``str`` containment."""
+    for c in text:
+        if c in thai_vowels:
+            counts["vowels"] += 1
+        counts[_char_type(c)] += 1
+    return counts
+
+
+def count_thai_chars(text: str) -> dict[str, int]:
+    """
+    Count Thai characters by type.
+
+    The types are consonants, vowels, lead_vowels, follow_vowels,
+    above_vowels, below_vowels, tonemarks, signs, thai_digits,
+    punctuations, and non_thai.
+
+    :param str text: text to be counted
+    :return: dictionary of character counts by type
+    :rtype: dict[str, int]
+
+    :Example:
+
+        >>> from pythainlp.util import count_thai_chars
+        >>> count_thai_chars("ทดสอบภาษาไทย")  # doctest: +NORMALIZE_WHITESPACE
+        {'vowels': 3, 'lead_vowels': 1, 'follow_vowels': 2,
+        'above_vowels': 0, 'below_vowels': 0, 'consonants': 9,
+        'tonemarks': 0, 'signs': 0, 'thai_digits': 0,
+        'punctuations': 0, 'non_thai': 0}
+    """
+    counts = dict.fromkeys(_COUNT_KEYS, 0)
+    if not isinstance(text, str):
+        # Tolerate non-str iterables.
+        return _count_iterable(text, counts)  # type: ignore[unreachable]
+    if len(text) < _COUNTER_MIN_LEN:
+        type_of = _CHAR_TYPE_TABLE.get
+        for char in text:
+            counts[type_of(char, "non_thai")] += 1
+            if char in _VOWEL_SET:
+                counts["vowels"] += 1
+        return counts
+    for char, num in Counter(text).items():
+        if char in _VOWEL_SET:
+            counts["vowels"] += num
+        counts[_CHAR_TYPE_TABLE.get(char, "non_thai")] += num
+    return counts
+
+
+def analyze_thai_text(text: str) -> dict[str, int]:
+    """
+    Count characters in Thai text by descriptive name.
+
+    Process the text character by character and map each Thai character
+    to its descriptive name, or to itself (for consonants and digits).
+
+    :param str text: Thai text to be analyzed
+    :return: dictionary mapping character names to their counts
+    :rtype: dict[str, int]
+
+    :Example:
+
+        >>> from pythainlp.util import analyze_thai_text
+        >>> analyze_thai_text("คนดี")
+        {'ค': 1, 'น': 1, 'ด': 1, 'สระ อี': 1}
+        >>> analyze_thai_text("เล่น")
+        {'สระ เอ': 1, 'ล': 1, 'ไม้เอก': 1, 'น': 1}
+
+    """
+    results: dict[str, int] = defaultdict(int)
+
+    for char in text:
+        # Unknown characters are counted as themselves.
+        results[_THAI_CHAR_NAMES.get(char, char)] += 1
+
+    return dict(results)

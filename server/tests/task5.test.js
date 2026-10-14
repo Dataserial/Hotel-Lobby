@@ -33,7 +33,11 @@ test('full HTTP flow from login to booking, payment, stay, dashboard, public and
     .send({ amount: 1500, method: 'cash', reference: 'TASK5-VOUCHER', occurredAt: new Date().toISOString() }).expect(201);
   await post(`/api/bookings/${booking.id}/check-in`, {}).expect(200);
   await post(`/api/bookings/${booking.id}/check-out`, {}).expect(200);
-  expect((await request(app).get('/api/dashboard').set(auth()).expect(200)).body).toMatchObject({ date, timezone: 'Asia/Bangkok' });
+  expect((await request(app).get('/api/dashboard').set(auth()).expect(200)).body).toMatchObject({ date, timezone: 'Asia/Bangkok', arrivalsToday: 1, departuresToday: 1 });
+  expect((await request(app).get('/api/public/rooms/availability').query(stay)).body.items.map(r => r.roomId)).toContain(room.id);
+  const activity = (await request(app).get('/api/bookings').set(auth()).query({ activityDate: date }).expect(200)).body.items;
+  expect(activity.find(row => row.id === booking.id)).toMatchObject({ status: 'checked_out' });
+  await post('/api/bookings', { ...stay, guestId: guest.id, roomId: room.id }).expect(201);
   expect((await request(app).get('/api/dashboard/report').set(auth()).expect(200)).body.receivedBaht).toBeGreaterThanOrEqual(1500);
   await post('/api/auth/logout', {}).expect(204);
   await request(app).get('/api/dashboard').set(auth()).expect(401);
@@ -45,8 +49,9 @@ test('dashboard uses Bangkok boundary and availability service with exact fixtur
   const rooms = await require('../services/availability-service').findAvailableRooms(db.prisma, { checkInDate: result.date, checkOutDate: '2026-10-10', guestCount: 1 });
   expect(result.availableRooms).toBe(rooms.length);
   expect(result.occupiedRooms).toBe(await db.prisma.room.count({ where: { active: true, status: 'occupied' } }));
-  expect(result.arrivalsToday).toBe(await db.prisma.booking.count({ where: { checkInDate: result.date, status: { not: 'cancelled' } } }));
-  expect(result.departuresToday).toBe(await db.prisma.booking.count({ where: { checkOutDate: result.date, status: { not: 'cancelled' } } }));
+  const today = { gte: new Date('2026-10-08T17:00:00Z'), lt: new Date('2026-10-09T17:00:00Z') };
+  expect(result.arrivalsToday).toBe(await db.prisma.booking.count({ where: { actualCheckInAt: today, status: { not: 'cancelled' } } }));
+  expect(result.departuresToday).toBe(await db.prisma.booking.count({ where: { actualCheckOutAt: today, status: 'checked_out' } }));
   expect(hotelToday(new Date('2026-10-08T16:59:59Z'))).toBe('2026-10-08');
 });
 

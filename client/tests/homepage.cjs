@@ -22,19 +22,23 @@ test('first visit shows real overview and every public, member and staff logo re
     await h.input(doc.querySelector('input[type="email"]'),'home-admin@example.test');await h.input(doc.querySelector('input[type="password"]'),'homepage-admin-123');
     await h.React.act(async()=>doc.querySelector('.login-card').dispatchEvent(new h.dom.window.Event('submit',{bubbles:true,cancelable:true})));
     await h.waitFor(()=>doc.querySelector('.sidebar'));
+    assert.ok(doc.querySelector('.topbar.floating-navbar'));
     await h.React.act(async()=>doc.querySelector('.sidebar .home-link').click());await h.waitFor(()=>doc.querySelector('.home-page'));
+    await h.openAccount();
     assert.ok(doc.querySelector('.home-header').textContent.includes('DOM Admin'));
     await h.React.act(async()=>h.button('ระบบพนักงาน').click());await h.waitFor(()=>doc.querySelector('.sidebar'));
     assert.equal(await db.prisma.session.count(),1);
     // Customer profile has the same global home link, and retains its login.
-    await h.React.act(async()=>h.button('ออกจากระบบ').click());await h.waitFor(()=>doc.querySelector('.login-card'));
+    await h.openAccount();await h.React.act(async()=>h.button('ออกจากระบบ').click());await h.waitFor(()=>doc.querySelector('.login-card'));
     await h.React.act(async()=>doc.querySelector('.login-brand').click());await h.waitFor(()=>doc.querySelector('.home-page'));
     await h.React.act(async()=>h.button('สมัครสมาชิก').click());await h.waitFor(()=>doc.querySelector('input[autocomplete="name"]'));
     await h.input(doc.querySelector('input[autocomplete="name"]'),'Home Member');await h.input(doc.querySelector('input[type="email"]'),'home-member@example.test');
     for(const input of doc.querySelectorAll('input[type="password"]'))await h.input(input,'homepage-member-123');
     await h.React.act(async()=>doc.querySelector('.login-card').dispatchEvent(new h.dom.window.Event('submit',{bubbles:true,cancelable:true})));
     await h.waitFor(()=>doc.querySelector('.member-page'));
+    assert.ok(doc.querySelector('.member-header.floating-navbar'));
     await h.React.act(async()=>doc.querySelector('.member-page .home-link').click());await h.waitFor(()=>doc.querySelector('.home-page'));
+    await h.openAccount();
     assert.ok(doc.querySelector('.home-header').textContent.includes('Home Member'));
     await h.React.act(async()=>h.button('บัญชีสมาชิก').click());await h.waitFor(()=>doc.querySelector('.member-page'));
   }finally{if(h)await h.close();if(server)await new Promise(r=>server.close(r));await db.stop()}

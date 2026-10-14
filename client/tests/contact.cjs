@@ -1,7 +1,2 @@
-const {test}=require('node:test');
-const assert=require('node:assert/strict');
-const {harness}=require('./helpers/components.cjs');
-test('public contact explicitly reports unavailable channels when no real channel is configured',()=>{
-  const h=harness({staff(){}}, {}, 'PublicHotel.tsx');
-  assert.ok(JSON.stringify(h.render('default')).includes('ยังไม่ได้ตั้งค่าช่องทางติดต่อ'));
-});
+const {test}=require('node:test');const assert=require('node:assert/strict');const {domApp}=require('./helpers/dom.cjs');
+test('discover asks for dates before showing room options',async()=>{const h=domApp('http://localhost:5173/discover');try{const PublicHotel=h.loadSource('PublicHotel.tsx').default;await h.React.act(async()=>h.root.render(h.React.createElement(PublicHotel,{staff(){},member(){}})));const doc=h.dom.window.document;assert.equal(doc.querySelectorAll('.availability-search input[type="date"]').length,2);assert.equal(doc.querySelector('.availability-search select'),null);assert.equal(doc.querySelectorAll('.room-number').length,0)}finally{await h.close()}});

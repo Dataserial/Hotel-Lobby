@@ -2,6 +2,34 @@ const {test}=require('node:test');const assert=require('node:assert/strict');
 const {domApp}=require('./helpers/dom.cjs');
 const member=(name,id='first')=>({id,name,email:id+'@example.test',role:'customer',active:true});
 
+test('late authentication failure from an old staff session cannot log out a new login', async () => {
+  const originalFetch = globalThis.fetch, h = domApp('http://localhost:5173/staff');
+  let count = 0, completeOld;
+  globalThis.fetch = async (url, options) => {
+    if (url.endsWith('/auth/login')) return Response.json({ token: 'token-' + (++count), expiresIn: 3600, user: { ...member('Admin ' + count, 'admin-' + count), role: 'admin' } });
+    if (url.endsWith('/auth/logout')) return new Response(null, { status: 204 });
+    if (url.endsWith('/dashboard') && options.headers.Authorization === 'Bearer token-1') return new Promise(resolve => { completeOld = () => resolve(Response.json({ error: { code: 'UNAUTHENTICATED', message: 'Old session expired' } }, { status: 401 })); });
+    if (url.endsWith('/dashboard')) return Response.json({ date: '2026-10-14', availableRooms: 60, occupiedRooms: 0, arrivalsToday: 0, departuresToday: 0 });
+    return Response.json({ items: [], page: 1, limit: 20, total: 0 });
+  };
+  const staffLogin = async () => {
+    const doc = h.dom.window.document;
+    await h.input(doc.querySelector('input[type="email"]'), 'admin@example.test');
+    await h.input(doc.querySelector('input[type="password"]'), 'test-password-123');
+    await h.React.act(async () => doc.querySelector('.login-card').dispatchEvent(new h.dom.window.Event('submit', { bubbles: true, cancelable: true })));
+  };
+  try {
+    const App = h.loadSource('App.tsx').default;
+    await h.React.act(async () => h.root.render(h.React.createElement(App)));
+    await staffLogin(); await h.waitFor(() => completeOld);
+    await h.openAccount(); await h.React.act(async () => h.button('ออกจากระบบ').click());
+    await staffLogin(); await h.waitFor(() => h.dom.window.document.querySelector('.shell'));
+    await h.React.act(async () => { completeOld(); await new Promise(resolve => setImmediate(resolve)); });
+    assert.ok(h.dom.window.document.querySelector('.shell'));
+    assert.equal(JSON.parse(h.dom.window.sessionStorage.getItem('hotel-lobby-session')).token, 'token-2');
+  } finally { await h.close(); globalThis.fetch = originalFetch; }
+});
+
 async function login(h) {
   const doc=h.dom.window.document;
   await h.input(doc.querySelector('input[type="email"]'),'member@example.test');
@@ -24,7 +52,7 @@ for(const replacement of [false,true]) test('deferred profile save cannot '+(rep
     await h.input(h.dom.window.document.querySelector('input[autocomplete="name"]'),'Stale Profile');
     await h.React.act(async()=>h.dom.window.document.querySelector('.member-card form').dispatchEvent(new h.dom.window.Event('submit',{bubbles:true,cancelable:true})));
     assert.ok(completeProfile);assert.equal(profileSignal.aborted,false);
-    await h.React.act(async()=>h.button('ออกจากระบบ').click());await h.waitFor(()=>h.dom.window.document.querySelector('.login-card'));
+    await h.openAccount();await h.React.act(async()=>h.button('ออกจากระบบ').click());await h.waitFor(()=>h.dom.window.document.querySelector('.login-card'));
     if(replacement)await login(h);
     await h.React.act(async()=>{completeProfile();await new Promise(resolve=>setImmediate(resolve))});
     if(replacement){assert.ok(h.dom.window.document.querySelector('.member-card').textContent.includes('Second Member'));assert.ok(!h.dom.window.document.body.textContent.includes('Stale Profile'))}
@@ -44,9 +72,32 @@ test('stale member update callback cannot overwrite the replacement session',asy
     const module=h.loadSource('MemberAccount.tsx');const MemberAccount=module.default;
     module.default=props=>{if(!staleUpdated)staleUpdated=props.updated;return h.React.createElement(MemberAccount,props)};
     const App=h.loadSource('App.tsx').default;await h.React.act(async()=>h.root.render(h.React.createElement(App)));await login(h);
-    await h.React.act(async()=>h.button('ออกจากระบบ').click());await h.waitFor(()=>h.dom.window.document.querySelector('.login-card'));await login(h);
+    await h.openAccount();await h.React.act(async()=>h.button('ออกจากระบบ').click());await h.waitFor(()=>h.dom.window.document.querySelector('.login-card'));await login(h);
     await h.React.act(async()=>staleUpdated(member('Stale Profile')));
     assert.ok(h.dom.window.document.querySelector('.member-card').textContent.includes('Second Member'));
     assert.ok(!h.dom.window.document.body.textContent.includes('Stale Profile'));
+  }finally{await h.close();globalThis.fetch=originalFetch}
+});
+
+test('customer hotel staff callback logs out, opens staff login and its logo returns home',async()=>{
+  const originalFetch=globalThis.fetch;const h=domApp('http://localhost:5173/#member');let logouts=0;
+  globalThis.fetch=async(url)=>{
+    if(url.endsWith('/auth/login'))return Response.json({token:'customer-token',expiresIn:3600,user:member('Customer Member')});
+    if(url.endsWith('/auth/logout')){logouts++;return new Response(null,{status:204})}
+    if(url.endsWith('/public/overview'))return Response.json({date:'2026-10-13',checkOutDate:'2026-10-14',timezone:'Asia/Bangkok',updatedAt:'2026-10-13T03:00:00Z',totalRooms:0,availableRooms:0,bookedRooms:0,roomTypes:[]});
+    throw new Error('Unexpected URL '+url);
+  };
+  try {
+    // The logged-in hotel hides its staff control; expose only the existing callback
+    // at the test seam while keeping the real PublicHotel and React DOM mounted.
+    const module=h.loadSource('PublicHotel.tsx');const PublicHotel=module.default;
+    module.default=props=>h.React.createElement(h.React.Fragment,null,h.React.createElement(PublicHotel,props),h.React.createElement('button',{'data-test-staff':true,onClick:props.staff},'Test staff route'));
+    const App=h.loadSource('App.tsx').default;await h.React.act(async()=>h.root.render(h.React.createElement(App)));await login(h);
+    await h.React.act(async()=>h.button('ดูห้องพัก').click());await h.waitFor(()=>h.dom.window.document.querySelector('.hotel-header'));
+    await h.React.act(async()=>h.dom.window.document.querySelector('[data-test-staff]').click());
+    await h.waitFor(()=>h.dom.window.document.querySelector('.login-card'),500);
+    assert.equal(logouts,1);assert.ok(h.dom.window.document.querySelector('.login-card').textContent.includes('Admin และ Receptionist'));
+    await h.React.act(async()=>h.dom.window.document.querySelector('.login-brand').click());await h.waitFor(()=>h.dom.window.document.querySelector('.home-page'));
+    assert.equal(h.dom.window.location.pathname,'/');assert.ok(!h.dom.window.document.querySelector('.home-header').textContent.includes('Customer Member'));
   }finally{await h.close();globalThis.fetch=originalFetch}
 });

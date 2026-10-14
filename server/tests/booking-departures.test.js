@@ -18,8 +18,19 @@ test('departure filter includes checked-out bookings without imposing a status',
   expect(model.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { checkOutDate: { gte: '2026-10-09', lte: '2026-10-09' } }, skip: 100, take: 100 }));
 });
 
+test('daily activity includes scheduled stays and actual early checkout using Bangkok midnight', async () => {
+  await request(app).get('/bookings').query({ activityDate: '2026-10-14' }).expect(200);
+  const today = { gte: new Date('2026-10-13T17:00:00Z'), lt: new Date('2026-10-14T17:00:00Z') };
+  expect(model.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { OR: [
+    { checkInDate: '2026-10-14' }, { checkOutDate: '2026-10-14' },
+    { actualCheckInAt: today }, { actualCheckOutAt: today },
+  ] } }));
+});
+
 test.each([
   { checkOutFrom: '2026-02-30' },
+  { activityDate: '2026-02-30' },
+  { activityDate: 'bad-date' },
   { checkOutTo: 'invalid' },
   { checkOutFrom: '2026-10-10', checkOutTo: '2026-10-09' },
 ])('rejects invalid departure filters %j', async query => {

@@ -20,20 +20,9 @@ For local administration, temporarily allow your own IP as well.
 
 An empty staging database needs Prisma indexes and an initial administrator.
 From `server`, after setting `DATABASE_URL` privately to the verified **empty
-staging** database, run `npm run db:push`. Set `BOOTSTRAP_ADMIN_EMAIL`,
-`BOOTSTRAP_ADMIN_PASSWORD` and optionally `BOOTSTRAP_ADMIN_NAME` privately, then run:
-
-```powershell
-npm run db:bootstrap:admin -- --database hotel_lobby_staging --initial-admin
-```
-
-The database argument must exactly match `DATABASE_URL`. This creates only the
-first administrator, never demo rooms. It refuses to reset an existing account
-or create another initial admin when users already exist; rerunning with the
-same active admin and credentials only verifies it. New passwords need at least
-12 characters and at most 72 UTF-8 bytes. The command never prints credentials.
-`db:seed:demo` remains restricted to a separate **local** demo database and must
-not be used on Atlas. Neither command is part of the deployment build.
+staging** database, run `npm run db:push`. To create the administrator, follow
+the one-time setup below. `db:seed:demo` accepts only local demo/test databases;
+it cannot seed Atlas.
 For an existing database, follow `implementation-audit.md`, the booking claims
 audit and payment reconciliation runbooks before enabling writes. Never seed
 or push automatically as part of deploy.
@@ -74,6 +63,40 @@ automatically its ingress proxy ranges. If those ranges cannot be established,
 use verified edge rate limiting. Do not enable `trust proxy = true`.
 
 ## 3. Vercel web
+
+### One-time administrator setup
+
+After deploying the code containing `db:admin:create`, set `ADMIN_EMAIL` and
+`ADMIN_PASSWORD` privately on the Render backend. Choose a new password with
+at least 12 characters, at most 72 UTF-8 bytes, and no surrounding whitespace.
+Run `npm run db:admin:create` from the service's `server` directory using an
+available service shell. Alternatively, run it locally from `server` with a
+private `server/.env` containing the same Atlas `DATABASE_URL`, `ADMIN_EMAIL`,
+and `ADMIN_PASSWORD` (Atlas must allow your IP).
+
+The command creates only an active admin with a bcrypt password hash. It does
+not create rooms or change existing accounts. A repeat run with matching
+credentials succeeds without changes; a conflicting existing account fails.
+Sign in using those credentials, then remove `ADMIN_EMAIL`, `ADMIN_PASSWORD`,
+and unused `DEMO_ADMIN_*` variables. The account remains in MongoDB. Setting
+environment variables alone does not create the account. Do not add this
+command to the build or start command, or put credentials in Vercel.
+
+### Frontend configuration
+
+For room inventory, run `npm run db:seed:rooms` from `server` to inspect the
+connected database and preview additions. Then run `npm run db:seed:rooms --
+--apply` to insert them. An active admin and existing schema indexes are required.
+The seed uses every active room type already in the database, preserving prices,
+capacity and amenities. Only if there are no types at all does it create Standard
+(2 guests, 1,200 baht), Deluxe (2 guests, 1,800 baht), and Family (4 guests,
+2,600 baht), based on the project's sample catalog. These are sample rates.
+It proposes 20 room numbers per type (101–120, 201–220, etc.), skipping any
+existing numbers, including occupied, disabled or maintenance rooms. With an
+empty inventory this creates 60 available rooms. Repeating the command with
+unchanged types adds no duplicates. If types are added, removed or renamed,
+preview again because the ordered floor mapping may change. No bookings or
+payments are created. Keep this command out of automatic builds/startup.
 
 Import `Dataserial/Hotel-Lobby`, choose **Vite**, and set **Root Directory** to
 `client`. Set the production branch to `develop` in project Git settings.

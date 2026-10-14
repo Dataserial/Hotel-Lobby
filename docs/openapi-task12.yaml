@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Hotel Lobby Task 1–2 API
   version: 0.2.0
-  description: Prisma/MongoDB API. Prices use integer baht; timestamps use UTC. Customer auth additions are in openapi-membership.yaml; operational routes require admin/receptionist, and user management requires admin.
+  description: Prisma/MongoDB API. Prices use integer baht; timestamps use UTC. See membership.md for public overview and customer flows; operational routes require admin/receptionist, and user management requires admin.
 servers:
   - url: http://localhost:3000
 security:
@@ -175,6 +175,47 @@ paths:
       security: []
       summary: Process health (no DB readiness check)
       responses: { '200': { description: Process running } }
+  /api/auth/register:
+    post:
+      security: []
+      summary: Create a customer account; role and audit fields are not accepted
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [name, email, password]
+              properties:
+                name: { type: string, minLength: 1, maxLength: 120 }
+                email: { type: string, format: email }
+                password: { type: string, minLength: 12, maxLength: 72, description: At most 72 UTF-8 bytes; whitespace preserved }
+      responses:
+        '201': { description: Customer user object wrapped in user }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '429': { description: Registration rate limit exceeded }
+  /api/auth/profile:
+    patch:
+      summary: Update own name or email (customer only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              additionalProperties: false
+              properties:
+                name: { type: string, minLength: 1, maxLength: 120 }
+                email: { type: string, format: email }
+      responses:
+        '200': { description: Updated user object wrapped in user }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
   /api/auth/login:
     post:
       security: []
