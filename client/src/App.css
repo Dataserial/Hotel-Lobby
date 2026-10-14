@@ -172,3 +172,17 @@ input::placeholder { opacity: 1; }
 .member-page > header > div { display: flex; flex-wrap: wrap; gap: 8px; }
 .member-card { padding: 32px; }
 .service-manager { margin-top: 32px; padding: 24px; background: white; border-radius: 20px; }.service-manager h2 { margin-top: 0; }.service-admin-row { display: grid; grid-template-columns: 1.4fr .8fr 100px 110px auto; gap: 10px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); }.service-admin-row input { min-height: 38px; padding: 8px; }.service-admin-row button { min-height: 38px; padding: 6px 12px; }@media (max-width:680px){.service-admin-row{grid-template-columns:1fr 1fr}.service-admin-row strong{grid-column:1/-1}}
+.service-manager-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.service-manager-head p, .service-definition-list p, .service-definition-list small { color: var(--muted); }
+.service-definition-form { padding: 24px; margin: 20px 0; border: 1px solid var(--line); border-radius: 16px; }
+.service-checkbox { display: flex; align-items: center; gap: 10px; }
+.service-checkbox input { min-height: 0; width: 18px; height: 18px; }
+.service-type-options { display: flex; flex-wrap: wrap; gap: 14px; padding: 18px; border: 1px solid var(--line); border-radius: 12px; }
+.service-definition-list article { display: grid; grid-template-columns: minmax(0,1fr) auto auto; align-items: center; gap: 16px; padding: 18px 0; border-top: 1px solid var(--line); }
+.service-definition-list p { margin: 8px 0; }
+.booking-filter-panel { margin: 12px 0 24px; border-top: 1px solid var(--line); padding-top: 16px; }
+.booking-filter-panel summary { cursor: pointer; margin-bottom: 16px; }
+.hotel-contact { padding: 20px; margin-top: 24px; background: #edf4f7; border-radius: 16px; color: var(--navy); }
+.hotel-contact p { color: var(--muted); font-size: 14px; }
+.booking-success .hotel-contact { text-align: left; }
+@media(max-width:680px) { .service-definition-list article { grid-template-columns: minmax(0,1fr) auto; }.service-definition-list article > div { grid-column: 1/-1; }.service-definition-form { padding: 16px; } }

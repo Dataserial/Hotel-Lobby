@@ -24,24 +24,26 @@ module.exports = (prisma) => {
   }));
   router.use(role('admin'));
   router.post('/', asyncRoute(async (req, res) => {
-    body(req.body, ['name', 'capacity', 'basePrice', 'amenities'], ['name', 'capacity', 'basePrice']);
+    body(req.body, ['name', 'capacity', 'basePrice', 'amenities', 'supportsExtraBed'], ['name', 'capacity', 'basePrice']);
     const name = str(req.body.name, 'name', 80);
     const item = await prisma.roomType.create({ data: {
       name, nameKey: name.toLocaleLowerCase('en-US'), capacity: int(req.body.capacity, 'capacity', 1, 20),
       basePrice: int(req.body.basePrice, 'basePrice', 0, 2147483647), amenities: amenities(req.body.amenities ?? []),
+      supportsExtraBed: req.body.supportsExtraBed === undefined ? false : bool(req.body.supportsExtraBed, 'supportsExtraBed'),
       createdById: req.actor.id, updatedById: req.actor.id,
     } });
     res.status(201).json(item);
   }));
   router.patch('/:id', asyncRoute(async (req, res) => {
     const id = objectId(req.params.id);
-    body(req.body, ['name', 'capacity', 'basePrice', 'amenities', 'active']);
+    body(req.body, ['name', 'capacity', 'basePrice', 'amenities', 'active', 'supportsExtraBed']);
     const data = { updatedById: req.actor.id };
     if ('name' in req.body) { data.name = str(req.body.name, 'name', 80); data.nameKey = data.name.toLocaleLowerCase('en-US'); }
     if ('capacity' in req.body) data.capacity = int(req.body.capacity, 'capacity', 1, 20);
     if ('basePrice' in req.body) data.basePrice = int(req.body.basePrice, 'basePrice', 0, 2147483647);
     if ('amenities' in req.body) data.amenities = amenities(req.body.amenities);
     if ('active' in req.body) data.active = bool(req.body.active, 'active');
+    if ('supportsExtraBed' in req.body) data.supportsExtraBed = bool(req.body.supportsExtraBed, 'supportsExtraBed');
     const item = await prisma.$transaction(async (tx) => {
       const current = await tx.roomType.findUnique({ where: { id } });
       if (!current) fail(404, 'NOT_FOUND', 'Room type not found');
@@ -59,7 +61,7 @@ module.exports = (prisma) => {
   router.delete('/:id', asyncRoute(async (req, res) => {
     const id = objectId(req.params.id);
     if (!await prisma.roomType.findUnique({ where: { id } })) fail(404, 'NOT_FOUND', 'Room type not found');
-    if (await prisma.room.count({ where: { roomTypeId: id } })) fail(409, 'REFERENCE_CONFLICT', 'Rooms still use this type');
+    if (await prisma.room.count({ where: { roomTypeId: id } }) || await prisma.additionalService.count({ where: { roomTypeIds: { has: id } } })) fail(409, 'REFERENCE_CONFLICT', 'Rooms or services still use this type');
     await prisma.roomType.delete({ where: { id } });
     res.status(204).end();
   }));

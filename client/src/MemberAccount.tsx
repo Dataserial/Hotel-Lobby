@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { errorText, type CustomerBooking, type Paged, type RequestOptions, type User } from './api'
 import { Brand } from './Brand'
 import AccountMenu from './AccountMenu'
+import HotelContact from './HotelContact'
 
 const statusLabel: Record<string, string> = { confirmed: 'ยืนยันแล้ว', checked_in: 'เข้าพักแล้ว', checked_out: 'เช็กเอาต์แล้ว', cancelled: 'ยกเลิกแล้ว', pending: 'รอชำระที่โรงแรม', paid: 'ชำระแล้ว', refunded: 'คืนเงินแล้ว' }
 export default function MemberAccount({ user, call, updated, logout, back }: { user: User; call: <T>(path: string, options?: RequestOptions) => Promise<T>; updated: (user: User) => void; logout: () => void; back: () => void }) {
@@ -35,5 +36,6 @@ export default function MemberAccount({ user, call, updated, logout, back }: { u
       {!bookings && !bookingError && <p role="status">กำลังโหลดการจอง…</p>}
       {bookings && (bookings.items.length ? <div className="my-bookings">{bookings.items.map(booking => <article key={booking.id}><strong>{booking.roomType} · ห้อง {booking.roomNumber}</strong><p>เลขอ้างอิง {booking.id}</p><p>{booking.checkInDate} – {booking.checkOutDate} · ฿{booking.totalPrice.toLocaleString('th-TH')}</p><p>สถานะ {statusLabel[booking.status] || booking.status} · {statusLabel[booking.paymentStatus] || booking.paymentStatus}</p></article>)}</div> : <p>ยังไม่มีการจอง</p>)}
       {bookings && bookings.total > bookings.limit && <nav aria-label="หน้าการจอง"><button disabled={page === 1} onClick={() => setPage(value => value - 1)}>หน้าก่อน</button><span> หน้า {page} </span><button disabled={page * bookings.limit >= bookings.total} onClick={() => setPage(value => value + 1)}>หน้าถัดไป</button></nav>}
+      <HotelContact />
     </section></section></main>
 }

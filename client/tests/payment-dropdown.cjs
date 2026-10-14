@@ -23,7 +23,7 @@ async function openPayment(pricePerNight, nights, remaining, ledgerReady = true)
 test('receipt dropdown uses the booked nightly price and offers the complete balance', async () => {
   for (const price of [1200, 1800, 2600]) {
     const { h, amount } = await openPayment(price, 3, price * 3);
-    const options = nodes(amount(), n => n.type === 'option' && n.props.value !== '');
+    const options = nodes(amount(), n => n.type === 'option' && Number.isInteger(n.props.value));
     assert.deepEqual(options.map(n => n.props.value), [price * 3, price, price * 2]);
     assert.ok(options[1].props.children[0].includes('1 คืน'));
     h.unmount();
@@ -32,7 +32,7 @@ test('receipt dropdown uses the booked nightly price and offers the complete bal
 
 test('partial receipt offers the exact 276-baht balance and submits it as a number', async () => {
   const { h, render, amount, calls } = await openPayment(2600, 1, 276);
-  assert.deepEqual(nodes(amount(), n => n.type === 'option' && n.props.value !== '').map(n => n.props.value), [276]);
+  assert.deepEqual(nodes(amount(), n => n.type === 'option' && Number.isInteger(n.props.value)).map(n => n.props.value), [276]);
   amount().props.onChange({ target: { value: '276' } });
   const reference = () => nodes(nodes(render(), n => n.props.title === 'เลขอ้างอิงหลักฐาน')[0], n => n.type === 'input')[0];
   reference().props.onChange({ target: { value: 'RC-20261014-0001' } });
@@ -60,5 +60,20 @@ test('an amount outside the current balance options is rejected before calling t
   await nodes(render(), n => n.type === 'form' && n.props.className === 'form-grid money-form')[0].props.onSubmit({ preventDefault() {} });
   assert.equal(calls.length, 0);
   assert.ok(errors[0].includes('ยอดคงเหลือ'));
+  h.unmount();
+});
+
+test('a custom partial receipt preserves presets and rejects an amount above the remaining balance', async () => {
+  const { h, render, amount, calls, errors } = await openPayment(1200, 1, 1200);
+  amount().props.onChange({ target: { value: 'custom' } });
+  const customInput = () => nodes(render(), n => n.type === 'input' && n.props['aria-label'] === 'ระบุยอดรับจริง')[0];
+  customInput().props.onChange({ target: { value: '300' } });
+  const form = () => nodes(render(), n => n.type === 'form' && n.props.className === 'form-grid money-form')[0];
+  await form().props.onSubmit({ preventDefault() {} });
+  assert.equal(calls[0][2].amount, 300);
+  customInput().props.onChange({ target: { value: '1201' } });
+  await form().props.onSubmit({ preventDefault() {} });
+  assert.equal(calls.length, 1);
+  assert.ok(errors.at(-1).includes('ยอดคงเหลือ'));
   h.unmount();
 });

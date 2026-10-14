@@ -86,6 +86,11 @@
 .booking-login-prompt { padding-top: 20px; border-top: 1px solid var(--line); }
 .booking-login-prompt p { color: var(--muted); font-size: 14px; }
 .booking-login-prompt button { width: 100%; }
+.service-catalog { border-top: 1px solid var(--line); padding: 18px 0; }
+.service-catalog summary { cursor: pointer; font-weight: 600; }
+.service-catalog p { font-size: 13px; color: var(--muted); line-height: 1.7; }
+.service-catalog ul { list-style: none; padding: 0; margin: 0; }
+.service-catalog li { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid var(--line); padding: 12px 0; font-size: 13px; }
 .public-hotel .booking-success { display: block; text-align: center; background: var(--navy); color: white; padding: 40px; }
 .booking-success .eyebrow { display: block; color: var(--yellow); margin: 12px 0; }
 .booking-success-moon { display: block; color: var(--yellow); font-size: 56px; }

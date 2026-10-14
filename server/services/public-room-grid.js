@@ -15,7 +15,7 @@ async function roomGrid(tx, type, stay) {
     status: room.status === 'maintenance' ? 'maintenance' :
       !claimed.has(room.id) && await roomBookable(tx, { ...room, roomType: type }, stay.checkInDate, now, occupants.filter(row => row.roomId === room.id)) ? 'available' : 'unavailable',
   })));
-  return { roomType: { id: type.id, name: type.name, capacity: type.capacity, pricePerNight: type.basePrice, amenities: type.amenities }, items };
+  return { roomType: { id: type.id, name: type.name, capacity: type.capacity, pricePerNight: type.basePrice, amenities: type.amenities, supportsExtraBed: !!type.supportsExtraBed }, items };
 }
 
 module.exports = { roomGrid };

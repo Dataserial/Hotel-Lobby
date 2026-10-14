@@ -11,6 +11,12 @@ const ids = value => {
 const price = value => value === null ? null : int(value, 'price', 0, 2147483647);
 const present = service => ({ id: service.id, name: service.name, unit: service.unit, price: service.price, included: service.included, extraBed: service.extraBed, roomTypeIds: service.roomTypeIds, maxQuantity: service.maxQuantity, active: service.active, createdAt: service.createdAt, updatedAt: service.updatedAt });
 
+async function assertRoomTypes(tx, roomTypeIds) {
+  if (roomTypeIds.length && await tx.roomType.count({ where: { id: { in: roomTypeIds } } }) !== roomTypeIds.length) {
+    fail(400, 'INVALID_REFERENCE', 'One or more room types do not exist');
+  }
+}
+
 module.exports = (prisma, { publicAccess = false } = {}) => {
   const router = express.Router();
   router.get('/', asyncRoute(async (req, res) => {
@@ -31,7 +37,11 @@ module.exports = (prisma, { publicAccess = false } = {}) => {
     body(req.body, ['name', 'unit', 'price', 'included', 'extraBed', 'roomTypeIds', 'maxQuantity'], ['name', 'unit']);
     const name = str(req.body.name, 'name', 80);
     const included = req.body.included === undefined ? false : bool(req.body.included, 'included');
-    const item = await prisma.additionalService.create({ data: { name, nameKey: name.toLocaleLowerCase('en-US'), unit: unit(req.body.unit), price: req.body.price === undefined ? null : price(req.body.price), included, extraBed: req.body.extraBed === undefined ? false : bool(req.body.extraBed, 'extraBed'), roomTypeIds: req.body.roomTypeIds === undefined ? [] : ids(req.body.roomTypeIds), maxQuantity: req.body.maxQuantity === undefined ? 1 : int(req.body.maxQuantity, 'maxQuantity', 1, 20), createdById: req.actor.id, updatedById: req.actor.id } });
+    const data = { name, nameKey: name.toLocaleLowerCase('en-US'), unit: unit(req.body.unit), price: req.body.price === undefined ? null : price(req.body.price), included, extraBed: req.body.extraBed === undefined ? false : bool(req.body.extraBed, 'extraBed'), roomTypeIds: req.body.roomTypeIds === undefined ? [] : ids(req.body.roomTypeIds), maxQuantity: req.body.maxQuantity === undefined ? 1 : int(req.body.maxQuantity, 'maxQuantity', 1, 20), createdById: req.actor.id, updatedById: req.actor.id };
+    const item = await prisma.$transaction(async tx => {
+      await assertRoomTypes(tx, data.roomTypeIds);
+      return tx.additionalService.create({ data });
+    });
     res.status(201).json(present(item));
   }));
   router.patch('/:id', asyncRoute(async (req, res) => {
@@ -45,7 +55,11 @@ module.exports = (prisma, { publicAccess = false } = {}) => {
     if ('roomTypeIds' in req.body) data.roomTypeIds = ids(req.body.roomTypeIds);
     if ('maxQuantity' in req.body) data.maxQuantity = int(req.body.maxQuantity, 'maxQuantity', 1, 20);
     if ('active' in req.body) data.active = bool(req.body.active, 'active');
-    const item = await prisma.additionalService.update({ where: { id: objectId(req.params.id) }, data });
+    const id = objectId(req.params.id);
+    const item = await prisma.$transaction(async tx => {
+      if (data.roomTypeIds) await assertRoomTypes(tx, data.roomTypeIds);
+      return tx.additionalService.update({ where: { id }, data });
+    });
     res.json(present(item));
   }));
   return router;

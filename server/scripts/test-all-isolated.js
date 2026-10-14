@@ -50,7 +50,8 @@ async function main() {
   await run(jest, ['--runInBand', '--testTimeout=30000', '--runTestsByPath', 'tests/task5.test.js', 'tests/seed-demo.test.js',
     'tests/audit-auth.test.js', 'tests/audit-availability.test.js', 'tests/registration.test.js',
     'tests/proxy-security.test.js', 'tests/receipt-pagination.test.js', 'tests/bootstrap-admin.test.js', 'tests/public-overview.test.js', 'tests/public-room-summary.test.js',
-    'tests/customer-booking-flow.test.js', 'tests/customer-booking-indexes.test.js'], process.env);
+    'tests/customer-booking-flow.test.js', 'tests/customer-booking-indexes.test.js',
+    'tests/non-overlapping-bookings.test.js'], process.env);
 }
 
 main().catch((error) => { console.error(error.message); process.exitCode = 1; });

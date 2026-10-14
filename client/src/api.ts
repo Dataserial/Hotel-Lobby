@@ -4,17 +4,17 @@ export type ApiError = Error & { status?: number; code?: string; requestId?: str
 export type User = { id: string; name: string; email: string; role: 'admin' | 'receptionist' | 'customer'; active: boolean }
 export type Paged<T> = { items: T[]; page: number; limit: number; total: number }
 export type Guest = { id: string; fullName: string; phone: string; email?: string; documentNoMasked?: string; active: boolean }
-export type RoomType = { id: string; name: string; capacity: number; basePrice: number; amenities: string[]; active: boolean }
+export type RoomType = { id: string; name: string; capacity: number; basePrice: number; amenities: string[]; active: boolean; supportsExtraBed?: boolean }
 export type Room = { id: string; roomNumber: string; floor?: number; roomTypeId: string; status: string; active: boolean }
 export type AvailableRoom = { roomId: string; roomNumber: string; roomType: string; capacity: number; pricePerNight: number }
 export type PublicOverview = { date: string; checkOutDate: string; timezone: string; updatedAt: string; totalRooms: number; availableRooms: number; bookedRooms: number; roomTypes: { id: string; name: string; capacity: number; pricePerNight: number; amenities: string[]; totalRooms: number; availableRooms: number }[] }
 export type AvailabilityStay = { checkInDate: string; checkOutDate: string; guestCount: number }
 export type RoomAvailabilitySearch = AvailabilityStay & { roomTypeId?: string }
 export type RoomAvailabilitySummary = AvailabilityStay & { nights: number; previewDays: number; timezone: string; updatedAt: string; totalAvailableRooms: number; roomTypes: (PublicOverview['roomTypes'][number] & { dates: { checkInDate: string; checkOutDate: string; availableRooms: number }[] })[] }
-export type RoomGrid = { roomType: { id: string; name: string; capacity: number; pricePerNight: number; amenities: string[] }; items: { roomId: string; roomNumber: string; status: 'available' | 'unavailable' | 'maintenance' }[] }
+export type RoomGrid = { roomType: { id: string; name: string; capacity: number; pricePerNight: number; amenities: string[]; supportsExtraBed?: boolean }; items: { roomId: string; roomNumber: string; status: 'available' | 'unavailable' | 'maintenance' }[] }
 export type BookingRoomType = RoomGrid['roomType'] & { totalRooms: number; availableRooms: number }
 export type CustomerBooking = { id: string; roomNumber: string; roomType: string; checkInDate: string; checkOutDate: string; guestCount: number; pricePerNight: number; totalPrice: number; status: string; paymentStatus: string }
-export type Booking = { id: string; guestId: string; roomId: string; guestCount: number; checkInDate: string; checkOutDate: string; status: string; pricePerNight: number; totalPrice: number }
+export type Booking = { id: string; guestId: string; roomId: string; guestCount: number; checkInDate: string; checkOutDate: string; status: string; pricePerNight: number; totalPrice: number; actualCheckInAt?: string | null; actualCheckOutAt?: string | null; cancelledAt?: string | null }
 export type Payment = { amount: number; paidAmount: number; refundedAmount: number; net: number; remaining: number; status: string; ledgerReady: boolean }
 export type Transaction = { id: string; kind: string; amount: number; method: string; reference: string; receiptId?: string; occurredAt: string }
 export type Dashboard = { date: string; availableRooms: number; occupiedRooms: number; arrivalsToday: number; departuresToday: number }
@@ -48,6 +48,11 @@ function validItem(resource: string, item: unknown): boolean {
   if (!record(item)) return false
   if (resource.includes('availability')) return strings(item, 'roomId', 'roomNumber', 'roomType') && numbers(item, 'capacity', 'pricePerNight')
   if (!strings(item, 'id')) return false
+  if (resource.startsWith('/additional-services')) return strings(item, 'name', 'unit') && ['per_night', 'per_set', 'per_stay'].includes(String(item.unit))
+    && (item.price === null || (numbers(item, 'price') && Number(item.price) >= 0 && Number(item.price) <= 2147483647))
+    && ['included', 'extraBed', 'active'].every(key => typeof item[key] === 'boolean')
+    && numbers(item, 'maxQuantity') && Number(item.maxQuantity) >= 1 && Number(item.maxQuantity) <= 20
+    && Array.isArray(item.roomTypeIds) && item.roomTypeIds.length <= 50 && item.roomTypeIds.every(id => typeof id === 'string')
   if (resource.includes('transactions') || /\/(receipts|refunds)$/.test(resource)) return strings(item, 'kind', 'method', 'reference', 'occurredAt') && numbers(item, 'amount')
   if (resource.startsWith('/guests')) return strings(item, 'fullName', 'phone') && ['email', 'documentNoMasked'].every(key => item[key] == null || typeof item[key] === 'string')
   if (resource.startsWith('/room-types')) return strings(item, 'name') && numbers(item, 'capacity', 'basePrice') && Array.isArray(item.amenities) && item.amenities.every(a => typeof a === 'string')
@@ -67,8 +72,7 @@ function validPayload(path: string, data: unknown, method: string): boolean {
   }
   if (resource === '/public/rooms/summary') return validRoomSummary(data)
   if (resource === '/public/overview') return calendarDate(data.date) && calendarDate(data.checkOutDate) && strings(data, 'timezone', 'updatedAt') && Number.isFinite(Date.parse(String(data.updatedAt))) && numbers(data, 'totalRooms', 'availableRooms', 'bookedRooms') && ['totalRooms', 'availableRooms', 'bookedRooms'].every(key => Number(data[key]) >= 0) && Array.isArray(data.roomTypes) && data.roomTypes.every(type => record(type) && strings(type, 'id', 'name') && numbers(type, 'capacity', 'pricePerNight', 'totalRooms', 'availableRooms') && Number(type.capacity) > 0 && Number(type.pricePerNight) >= 0 && Number(type.totalRooms) >= 0 && Number(type.availableRooms) >= 0 && Array.isArray(type.amenities) && type.amenities.every(amenity => typeof amenity === 'string'))
-  if (resource === '/public/additional-services') return Array.isArray(data.items) && numbers(data, 'page', 'limit', 'total') && data.items.every(item => validItem('/additional-services', item))
-  if (resource === '/additional-services' && method === 'GET') return Array.isArray(data.items) && numbers(data, 'page', 'limit', 'total') && data.items.every(item => validItem('/additional-services', item))
+  if (resource === '/public/additional-services' || (resource === '/additional-services' && method === 'GET')) return Array.isArray(data.items) && numbers(data, 'page', 'limit', 'total') && Number(data.page) >= 1 && Number(data.limit) >= 1 && Number(data.limit) <= 100 && Number(data.total) >= 0 && data.items.length <= Number(data.limit) && data.items.every(item => validItem('/additional-services', item))
   if (resource === '/stay-requests' && method === 'GET') return Array.isArray(data.items) && numbers(data, 'page', 'limit', 'total')
   if (resource === '/auth/login') return strings(data, 'token') && numbers(data, 'expiresIn') && Number(data.expiresIn) > 0 && validItem('/users', data.user)
   if (['/auth/me', '/auth/register', '/auth/profile'].includes(resource)) return validItem('/users', data.user)
@@ -127,6 +131,24 @@ const messages: Record<string, string> = {
   PRICE_CHANGED: 'ราคาห้องเปลี่ยนแล้ว กรุณาตรวจราคาใหม่ก่อนยืนยัน', DOCUMENT_REVIEW_REQUIRED: 'เลขเอกสารนี้มีในระบบแล้ว กรุณาติดต่อพนักงานเพื่อตรวจสอบ',
   IDEMPOTENCY_CONFLICT: 'รายการเดิมมีข้อมูลต่างกัน กรุณาตรวจสอบหลักฐาน', DUPLICATE_REFERENCE: 'เลขอ้างอิงนี้ถูกใช้แล้ว',
   RATE_LIMITED: 'ส่งคำขอบ่อยเกินไป กรุณารอสักครู่',
+  INVALID_TRANSITION: 'สถานะรายการเปลี่ยนแล้ว หรือยังไม่ถึงขั้นตอนนี้ กรุณารีเฟรชและตรวจสอบอีกครั้ง',
+  ROOM_NOT_READY: 'ห้องยังไม่พร้อมเข้าพัก กรุณาตรวจสถานะห้องและผู้พักเดิม',
+  CHECK_IN_DATE_REQUIRED: 'เช็กอินได้เฉพาะช่วงวันที่จอง ตั้งแต่วันเข้าและก่อนวันออก',
+  ROOM_OCCUPIED: 'ห้องมีผู้เข้าพัก ต้องเช็กเอาต์ก่อนเปลี่ยนสถานะหรือประเภทห้อง',
+  ROOM_TYPE_UNAVAILABLE: 'ประเภทห้องนี้ไม่ได้เปิดใช้งาน กรุณาเลือกประเภทห้องอื่น',
+  CAPACITY_CONFLICT: 'ลดความจุไม่ได้ เพราะมีการจองที่จำนวนผู้พักเกินความจุใหม่',
+  BOOKING_CONFLICT: 'มีการจองที่ยังใช้งานอยู่ กรุณาจัดการการจองก่อนปิดห้อง',
+  REFERENCE_CONFLICT: 'รายการนี้ยังถูกใช้งานหรือมีประวัติอ้างอิง จึงลบหรือปิดใช้งานไม่ได้',
+  SELF_ADMIN_CHANGE: 'ไม่สามารถปิดบัญชีหรือลดสิทธิ์ผู้ดูแลระบบของตัวเองได้',
+  LAST_ADMIN: 'ต้องมีผู้ดูแลระบบที่เปิดใช้งานอย่างน้อย 1 คน',
+  PAYMENT_EXCEEDS_REMAINING: 'จำนวนเงินมากกว่ายอดคงเหลือ กรุณาตรวจยอดล่าสุด',
+  REFUND_EXCEEDS_RECEIPT: 'ยอดคืนเกินยอดที่คืนได้ของหลักฐานต้นทาง กรุณาตรวจประวัติคืนเงิน',
+  INVALID_RECEIPT: 'กรุณาเลือกหลักฐานรับเงินของการจองนี้เป็นรายการต้นทาง',
+  PAYMENT_LIMIT_EXCEEDED: 'ยอดรับหรือคืนสะสมเกินขอบเขตที่ระบบรองรับ',
+  WRITE_CONFLICT: 'มีผู้ใช้อื่นแก้ไขข้อมูลพร้อมกัน กรุณารีเฟรชแล้วลองใหม่',
+  INVALID_REFERENCE: 'รายการที่อ้างอิงไม่ถูกต้อง กรุณาตรวจข้อมูลที่เลือก',
+  NOT_FOUND: 'ไม่พบรายการนี้ กรุณารีเฟรชและตรวจสอบอีกครั้ง',
+  DUPLICATE: 'ข้อมูลนี้มีอยู่ในระบบแล้ว กรุณาตรวจรายการเดิม',
   PASSWORD_POLICY: 'รหัสผ่านต้องมีอย่างน้อย 12 ตัวอักษร และไม่เกิน 72 ไบต์ UTF-8 (ภาษาไทยใช้หลายไบต์ต่อตัว)',
 }
 export function errorText(error: unknown) {
