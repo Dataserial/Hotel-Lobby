@@ -1,5 +1,11 @@
 # Hotel-Lobby
 
+## Frontend และ Tailwind CSS
+
+เว็บ React/Vite ใช้ Tailwind CSS 4 ผ่าน `@tailwindcss/vite` เริ่มทำงานใน `client` ด้วย `npm ci` และ `npm run dev` ตรวจด้วย `npm run build`, `npm run lint` และ `npm test`
+
+กำหนดสีร่วมใน `client/src/tailwind.css` โดยอ้างอิง token เดิม เช่น `tw:text-navy` ใช้ utility ที่มี prefix `tw:` ใน JSX เช่น `tw:flex tw:gap-[16px]` เพื่อลดการชนกับชื่อ class เดิม และใช้ `@reference "./tailwind.css"` / `@apply` ใน stylesheet ของแต่ละหน้า สไตล์เฉพาะหน้า แอนิเมชัน และ breakpoint เดิมยังอยู่ใน CSS ไม่เปิด Preflight เพื่อรักษา browser defaults และหน้าตาเดิม เมื่อเพิ่ม utility ให้เขียนชื่อ class แบบเต็มเพื่อให้ Tailwind ตรวจพบตอน build ดู [คู่มือ Vite](https://tailwindcss.com/docs/installation/using-vite) และ [การปิด Preflight](https://tailwindcss.com/docs/preflight)
+
 ## การจองผ่านเว็บ
 
 หน้า `/discover` ให้เลือกวันที่ ประเภทห้อง และเลขห้อง ก่อนเข้าสู่ระบบลูกค้าเพื่อยืนยันจองแบบชำระที่โรงแรม อ่าน [API และขั้นตอนเตรียม index แบบเพิ่มข้อมูล](docs/customer-booking-release.md) และ [หลักฐานทดสอบบนฐานแยก](docs/qa-booking-2026-10-14/report.md).

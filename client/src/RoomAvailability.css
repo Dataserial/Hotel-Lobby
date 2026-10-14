@@ -1,45 +1,47 @@
-.availability-panel { margin: 0 5% 48px; padding: 36px; border: 1px solid #dbe7ed; border-radius: 32px; background: #edf4f7; }
-.availability-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 24px; }
-.availability-panel-head h2 { font-size: clamp(26px,2.5vw,36px); margin: 12px 0; font-weight: 600; }
-.availability-panel-head p { color: var(--muted); margin: 0; line-height: 1.8; }
-.availability-banner { display: flex; align-items: center; gap: 20px; border-radius: 20px; padding: 24px; background: var(--navy); color: white; margin-bottom: 28px; }
-.availability-banner-icon { font-size: 42px; color: var(--yellow); }
-.availability-banner strong { font-size: 20px; font-weight: 600; }
-.availability-banner p { margin: 8px 0 0; color: #d0dfe7; font-size: 14px; line-height: 1.8; }
-.availability-banner-empty { background: #fff5d1; color: var(--navy); border: 1px solid #e8d58a; }
-.availability-banner-empty p, .availability-banner-empty .availability-banner-icon { color: var(--navy); }
-.room-type-browser { background: white; border-radius: 24px; overflow: hidden; }
-.room-type-selector { display: flex; flex-wrap: wrap; gap: 10px; padding: 20px 24px; border-bottom: 1px solid var(--line); }
-.room-type-selector h3 { width: 100%; margin: 0 0 4px; font-size: 18px; }
-.room-type-selector button { flex: 1; min-width: 100px; font-weight: 600; }
-.room-type-selector button[aria-pressed="true"] { background: var(--yellow); border-color: var(--yellow); color: var(--navy); }
-.room-type-summary-grid { display: grid; grid-template-columns: minmax(0,1fr); }
-.room-type-summary-grid .room-type-card { background: white; overflow: hidden; min-width: 0; display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
-.room-type-photo { position: relative; overflow: hidden; background: #dfe8ed; }
-.room-type-photo img { width: 100%; height: 100%; object-fit: cover; }
-.room-type-photo > small { position: absolute; bottom: 12px; left: 16px; background: #043d55dd; color: white; padding: 5px 10px; border-radius: 999px; font-size: 11px; }
-.room-count-badge { position: absolute; right: 14px; top: 14px; padding: 9px 14px; border-radius: 999px; background: var(--yellow); color: var(--navy); font-weight: 600; font-size: 14px; }
+@reference "./tailwind.css";
+
+.availability-panel { @apply tw:m-[0_5%_48px] tw:p-[36px]; border: 1px solid #dbe7ed; @apply tw:rounded-[32px]; background: #edf4f7; }
+.availability-panel-head { @apply tw:flex tw:items-center tw:justify-between tw:gap-[24px] tw:flex-wrap tw:mb-[24px]; }
+.availability-panel-head h2 { font-size: clamp(26px,2.5vw,36px); @apply tw:m-[12px_0] tw:font-semibold; }
+.availability-panel-head p { @apply tw:text-muted tw:m-[0]; line-height: 1.8; }
+.availability-banner { @apply tw:flex tw:items-center tw:gap-[20px] tw:rounded-[20px] tw:p-[24px]; background: var(--navy); @apply tw:text-white tw:mb-[28px]; }
+.availability-banner-icon { font-size: 42px; @apply tw:text-yellow; }
+.availability-banner strong { font-size: 20px; @apply tw:font-semibold; }
+.availability-banner p { @apply tw:m-[8px_0_0]; color: #d0dfe7; font-size: 14px; line-height: 1.8; }
+.availability-banner-empty { background: #fff5d1; @apply tw:text-navy; border: 1px solid #e8d58a; }
+.availability-banner-empty p, .availability-banner-empty .availability-banner-icon { @apply tw:text-navy; }
+.room-type-browser { background: white; @apply tw:rounded-[24px] tw:overflow-hidden; }
+.room-type-selector { @apply tw:flex tw:flex-wrap tw:gap-[10px] tw:p-[20px_24px]; border-bottom: 1px solid var(--line); }
+.room-type-selector h3 { @apply tw:w-full tw:m-[0_0_4px]; font-size: 18px; }
+.room-type-selector button { flex: 1; @apply tw:min-w-[100px] tw:font-semibold; }
+.room-type-selector button[aria-pressed="true"] { background: var(--yellow); border-color: var(--yellow); @apply tw:text-navy; }
+.room-type-summary-grid { @apply tw:grid tw:grid-cols-[minmax(0,1fr)]; }
+.room-type-summary-grid .room-type-card { background: white; @apply tw:overflow-hidden tw:min-w-0 tw:grid tw:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]; }
+.room-type-photo { @apply tw:relative tw:overflow-hidden; background: #dfe8ed; }
+.room-type-photo img { @apply tw:w-full tw:h-full tw:object-cover; }
+.room-type-photo > small { @apply tw:absolute tw:bottom-[12px] tw:left-[16px]; background: #043d55dd; @apply tw:text-white tw:p-[5px_10px] tw:rounded-[999px]; font-size: 11px; }
+.room-count-badge { @apply tw:absolute tw:right-[14px] tw:top-[14px] tw:p-[9px_14px] tw:rounded-[999px]; background: var(--yellow); @apply tw:text-navy tw:font-semibold; font-size: 14px; }
 .room-count-badge.sold-out { background: white; }
-.room-type-content { display: flex; flex-direction: column; gap: 16px; padding: 24px; flex: 1; overflow-wrap: anywhere; }
-.room-type-content h3 { font-size: 26px; font-weight: 600; margin: 0; }
-.room-type-facts { display: flex; flex-wrap: wrap; gap: 8px; color: var(--muted); font-size: 12px; }
-.room-type-facts span { background: #edf4f7; border-radius: 8px; padding: 6px 9px; }
-.room-type-price strong { font-size: 30px; font-weight: 600; }
-.room-type-price > span, .room-type-price small { color: var(--muted); font-size: 13px; }.room-type-price small { display: block; margin-top: 6px; }
-.room-availability-copy, .room-type-amenities { font-size: 13px; color: var(--muted); line-height: 1.8; margin: 0; }
-.room-calendar { border-top: 1px solid var(--line); padding-top: 18px; margin-top: auto; }
-.room-calendar h4 { font-size: 13px; font-weight: 600; margin: 0 0 12px; }
-.date-chip-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 7px; }
-button.date-chip { min-height: 58px; padding: 8px 3px; border-radius: 10px; font-size: 11px; display: grid; gap: 3px; line-height: 1.5; }
-.date-chip strong { font-size: 11px; font-weight: 600; color: #215b46; }
+.room-type-content { @apply tw:flex tw:flex-col tw:gap-[16px] tw:p-[24px]; flex: 1; overflow-wrap: anywhere; }
+.room-type-content h3 { font-size: 26px; @apply tw:font-semibold tw:m-[0]; }
+.room-type-facts { @apply tw:flex tw:flex-wrap tw:gap-[8px] tw:text-muted; font-size: 12px; }
+.room-type-facts span { background: #edf4f7; @apply tw:rounded-[8px] tw:p-[6px_9px]; }
+.room-type-price strong { font-size: 30px; @apply tw:font-semibold; }
+.room-type-price > span, .room-type-price small { @apply tw:text-muted; font-size: 13px; }.room-type-price small { @apply tw:block tw:mt-[6px]; }
+.room-availability-copy, .room-type-amenities { font-size: 13px; @apply tw:text-muted; line-height: 1.8; @apply tw:m-[0]; }
+.room-calendar { border-top: 1px solid var(--line); @apply tw:pt-[18px] tw:mt-auto; }
+.room-calendar h4 { font-size: 13px; @apply tw:font-semibold tw:m-[0_0_12px]; }
+.date-chip-grid { @apply tw:grid tw:grid-cols-[repeat(4,minmax(0,1fr))] tw:gap-[7px]; }
+button.date-chip { @apply tw:min-h-[58px] tw:p-[8px_3px] tw:rounded-[10px]; font-size: 11px; @apply tw:grid tw:gap-[3px]; line-height: 1.5; }
+.date-chip strong { font-size: 11px; @apply tw:font-semibold; color: #215b46; }
 .date-chip.selected-date { background: #fff6d4; border-color: #d7ae38; }
-.date-chip:disabled { opacity: 1; background: #f2f4f5; color: var(--muted); border-color: #e8edef; }.date-chip:disabled strong { color: var(--muted); }
-.room-type-content > button { width: 100%; font-size: 14px; }
-.availability-calendar-pager { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; align-items: center; margin: 24px 0; font-size: 13px; color: var(--muted); }.availability-calendar-pager > div { display: flex; flex-wrap: wrap; gap: 8px; }.availability-calendar-pager button { font-size: 13px; min-height: 42px; }
-.availability-footnote { color: var(--muted); font-size: 12px; line-height: 1.9; margin: 18px 0 0; }
-.availability-panel .notice button { display: block; margin-top: 12px; }
-.availability-feedback { padding: 24px; border-radius: 20px; background: white; color: var(--muted); }
-.public-room-card .result-room-photo { width: calc(100% + 64px); height: 200px; object-fit: cover; margin: -32px -32px 0; border-radius: 24px 24px 0 0; }
-.stay-request-form { margin: 0 24px 24px; padding: 20px; border-radius: 16px; background: #edf4f7; }.stay-request-form h3,.stay-request-form h4 { margin: 0 0 8px; }.stay-request-form > p { color: var(--muted); font-size: 13px; }.service-list { display: grid; gap: 8px; margin: 16px 0; }.service-option { display: flex; align-items: center; gap: 10px; padding: 12px; background: white; border-radius: 12px; }.service-option > span:nth-child(2) { display: grid; gap: 3px; flex: 1; }.service-option small { color: var(--muted); }.quantity { display: flex !important; align-items: center; gap: 6px; }.quantity button { min-height: 34px; min-width: 34px; padding: 2px 9px; }.stay-request-summary { border-top: 1px solid var(--line); padding-top: 16px; }.stay-request-summary p { margin: 7px 0; font-size: 14px; }.confirm-request { display: grid; gap: 10px; margin-top: 16px; }.confirm-request label { display: grid; gap: 4px; font-size: 13px; }.confirm-request input,.confirm-request textarea { min-height: 40px; }.confirm-request textarea { min-height: 72px; }
-@media (max-width: 960px) { .room-type-summary-grid .room-type-card { grid-template-columns: 1fr; }.room-type-photo { aspect-ratio: 3/2; } }
-@media (max-width: 680px) { .availability-panel { margin: 0 20px 32px; padding: 20px 16px; border-radius: 24px; }.room-type-selector { padding: 16px; gap: 6px; }.room-type-selector button { min-width: 0; padding: 12px 8px; font-size: 13px; }.availability-banner { align-items: start; padding: 18px; gap: 12px; }.availability-banner strong { font-size: 17px; }.availability-panel-head { gap: 16px; }.availability-panel-head > button { width: 100%; }.room-type-content { padding: 20px; }.room-type-content h3 { font-size: 24px; } }
+.date-chip:disabled { opacity: 1; background: #f2f4f5; @apply tw:text-muted; border-color: #e8edef; }.date-chip:disabled strong { @apply tw:text-muted; }
+.room-type-content > button { @apply tw:w-full; font-size: 14px; }
+.availability-calendar-pager { @apply tw:flex tw:flex-wrap tw:justify-between tw:gap-[16px] tw:items-center tw:m-[24px_0]; font-size: 13px; @apply tw:text-muted; }.availability-calendar-pager > div { @apply tw:flex tw:flex-wrap tw:gap-[8px]; }.availability-calendar-pager button { font-size: 13px; @apply tw:min-h-[42px]; }
+.availability-footnote { @apply tw:text-muted; font-size: 12px; line-height: 1.9; @apply tw:m-[18px_0_0]; }
+.availability-panel .notice button { @apply tw:block tw:mt-[12px]; }
+.availability-feedback { @apply tw:p-[24px] tw:rounded-[20px]; background: white; @apply tw:text-muted; }
+.public-room-card .result-room-photo { width: calc(100% + 64px); @apply tw:h-[200px] tw:object-cover tw:m-[-32px_-32px_0] tw:rounded-[24px_24px_0_0]; }
+.stay-request-form { @apply tw:m-[0_24px_24px] tw:p-[20px] tw:rounded-[16px]; background: #edf4f7; }.stay-request-form h3,.stay-request-form h4 { @apply tw:m-[0_0_8px]; }.stay-request-form > p { @apply tw:text-muted; font-size: 13px; }.service-list { @apply tw:grid tw:gap-[8px] tw:m-[16px_0]; }.service-option { @apply tw:flex tw:items-center tw:gap-[10px] tw:p-[12px]; background: white; @apply tw:rounded-[12px]; }.service-option > span:nth-child(2) { @apply tw:grid tw:gap-[3px]; flex: 1; }.service-option small { @apply tw:text-muted; }.quantity { display: flex !important; @apply tw:items-center tw:gap-[6px]; }.quantity button { @apply tw:min-h-[34px] tw:min-w-[34px] tw:p-[2px_9px]; }.stay-request-summary { border-top: 1px solid var(--line); @apply tw:pt-[16px]; }.stay-request-summary p { @apply tw:m-[7px_0]; font-size: 14px; }.confirm-request { @apply tw:grid tw:gap-[10px] tw:mt-[16px]; }.confirm-request label { @apply tw:grid tw:gap-[4px]; font-size: 13px; }.confirm-request input,.confirm-request textarea { @apply tw:min-h-[40px]; }.confirm-request textarea { @apply tw:min-h-[72px]; }
+@media (max-width: 960px) { .room-type-summary-grid .room-type-card { @apply tw:grid-cols-[1fr]; }.room-type-photo { aspect-ratio: 3/2; } }
+@media (max-width: 680px) { .availability-panel { @apply tw:m-[0_20px_32px] tw:p-[20px_16px] tw:rounded-[24px]; }.room-type-selector { @apply tw:p-[16px] tw:gap-[6px]; }.room-type-selector button { @apply tw:min-w-0 tw:p-[12px_8px]; font-size: 13px; }.availability-banner { align-items: start; @apply tw:p-[18px] tw:gap-[12px]; }.availability-banner strong { font-size: 17px; }.availability-panel-head { @apply tw:gap-[16px]; }.availability-panel-head > button { @apply tw:w-full; }.room-type-content { @apply tw:p-[20px]; }.room-type-content h3 { font-size: 24px; } }

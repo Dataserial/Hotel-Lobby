@@ -22,7 +22,7 @@ test('room editor preserves floor zero and patches only allowed changed metadata
   const h=harness({call:async url=>url.includes('room-types')?page([{id:'t1',name:'Standard',active:true,amenities:[]}]):page([room]),action:async(...args)=>{payload=args;return true},busy:false,setError(){},admin:true,typesPage(){}});
   h.render('RoomsView');await h.flush();button(h.render('RoomsView'),'แก้ไข').props.onClick();let t=h.render('RoomsView');
   const input=nodes(t,n=>n.type==='input'&&n.props.type==='number')[0];assert.equal(input.props.value,0);input.props.onChange({target:{value:'-1'}});
-  t=h.render('RoomsView');await nodes(t,n=>n.type==='form'&&n.props.className==='form-grid')[0].props.onSubmit({preventDefault(){}});
+  t=h.render('RoomsView');await nodes(t,n=>n.type==='form'&&n.props.className?.split(/\s+/).includes('form-grid'))[0].props.onSubmit({preventDefault(){}});
   assert.equal(JSON.stringify(payload),JSON.stringify(['/rooms/r1','PATCH',{floor:-1}]));h.unmount();
 });
 

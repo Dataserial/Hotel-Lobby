@@ -1,33 +1,35 @@
+@reference "./tailwind.css";
+
 header.floating-navbar {
-  position: sticky; top: 12px; z-index: 30; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
-  width: calc(100% - 32px); height: auto; min-height: 76px; margin: 16px auto 24px; padding: 16px 24px; gap: 16px;
-  background: #043d55; color: white; border: 1px solid #467288; border-radius: 24px; box-shadow: 0 10px 30px #043d5530;
+  @apply tw:sticky tw:top-[12px]; z-index: 30; @apply tw:flex tw:flex-wrap tw:items-center tw:justify-between;
+  width: calc(100% - 32px); @apply tw:h-auto tw:min-h-[76px] tw:m-[16px_auto_24px] tw:p-[16px_24px] tw:gap-[16px];
+  background: #043d55; @apply tw:text-white; border: 1px solid #467288; @apply tw:rounded-[24px]; box-shadow: 0 10px 30px #043d5530;
 }
-.floating-navbar .home-link, .floating-navbar .login-brand, .floating-navbar .auth-home { color: white; text-decoration: none; }
+.floating-navbar .home-link, .floating-navbar .login-brand, .floating-navbar .auth-home { @apply tw:text-white tw:no-underline; }
 .floating-navbar .home-link, .floating-navbar .login-brand, .floating-navbar .auth-home { transition: color 220ms ease, opacity 220ms ease; }
-.floating-navbar .home-link:hover, .floating-navbar .login-brand:hover, .floating-navbar .auth-home:hover { color: var(--yellow); }
+.floating-navbar .home-link:hover, .floating-navbar .login-brand:hover, .floating-navbar .auth-home:hover { @apply tw:text-yellow; }
 .floating-navbar button:not(.account-trigger) { transition: color 220ms ease, background-color 220ms ease, border-color 220ms ease, box-shadow 220ms ease; }
 .floating-navbar .home-link:focus-visible, .floating-navbar .login-brand:focus-visible, .floating-navbar .auth-home:focus-visible { outline: 3px solid var(--yellow); outline-offset: 5px; }
-.floating-navbar .auth-home { text-decoration: underline; text-underline-offset: 5px; }
-.auth-page header.floating-navbar { max-width: 1160px; width: 100%; margin: 0 auto 28px; }
-.auth-page .floating-navbar .login-brand { color: white; }
-.member-page header.floating-navbar { width: 100%; }
-.account-menu { position: relative; flex: 0 0 auto; }
-.account-menu button.account-trigger { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; min-height: 48px; padding: 0; border-radius: 50%; border: 2px solid #ffe699; background: var(--yellow); color: var(--navy); font-size: 18px; font-weight: 700; }
+.floating-navbar .auth-home { @apply tw:underline; text-underline-offset: 5px; }
+.auth-page header.floating-navbar { @apply tw:max-w-[1160px] tw:w-full tw:m-[0_auto_28px]; }
+.auth-page .floating-navbar .login-brand { @apply tw:text-white; }
+.member-page header.floating-navbar { @apply tw:w-full; }
+.account-menu { @apply tw:relative; flex: 0 0 auto; }
+.account-menu button.account-trigger { @apply tw:inline-flex tw:items-center tw:justify-center tw:w-[48px] tw:h-[48px] tw:min-h-[48px] tw:p-[0] tw:rounded-[50%]; border: 2px solid #ffe699; background: var(--yellow); @apply tw:text-navy; font-size: 18px; @apply tw:font-bold; }
 .account-menu .account-trigger[aria-expanded=true] { outline: 3px solid #ffd45c55; outline-offset: 3px; }
-.account-dropdown { position: absolute; top: calc(100% + 12px); right: 0; width: min(280px,calc(100vw - 48px)); padding: 10px; border: 1px solid var(--line); border-radius: 20px; background: white; color: var(--navy); box-shadow: 0 14px 40px #043d5533; z-index: 40; animation: content-enter 180ms ease; }
-.account-dropdown .account-details { padding: 12px; border-bottom: 1px solid var(--line); margin-bottom: 8px; overflow-wrap: anywhere; }
-.account-details strong, .account-details small, .account-details span { display: block; }
-.account-details strong { font-size: 16px; }.account-details small, .account-details span { color: var(--muted); font-size: 12px; margin-top: 4px; }
-.account-dropdown button { display: block; width: 100%; border: 0; border-radius: 12px; text-align: left; padding: 12px; min-height: 44px; font-size: 14px; background: white; color: var(--navy); }
+.account-dropdown { @apply tw:absolute; top: calc(100% + 12px); @apply tw:right-[0]; width: min(280px,calc(100vw - 48px)); @apply tw:p-[10px]; border: 1px solid var(--line); @apply tw:rounded-[20px]; background: white; @apply tw:text-navy; box-shadow: 0 14px 40px #043d5533; z-index: 40; animation: content-enter 180ms ease; }
+.account-dropdown .account-details { @apply tw:p-[12px]; border-bottom: 1px solid var(--line); @apply tw:mb-[8px]; overflow-wrap: anywhere; }
+.account-details strong, .account-details small, .account-details span { @apply tw:block; }
+.account-details strong { font-size: 16px; }.account-details small, .account-details span { @apply tw:text-muted; font-size: 12px; @apply tw:mt-[4px]; }
+.account-dropdown button { @apply tw:block tw:w-full; border: 0; @apply tw:rounded-[12px] tw:text-left tw:p-[12px] tw:min-h-[44px]; font-size: 14px; background: white; @apply tw:text-navy; }
 .account-dropdown button:hover:not(:disabled), .account-dropdown button:focus-visible { background: #edf4f7; translate: none; }
 .account-dropdown button.account-logout { color: #a12f2f; }
-.floating-navbar .nav-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-left: auto; color: #d0dfe7; font-size: 12px; }
-.shell { padding: 12px; gap: 16px; }
-.shell .sidebar { position: sticky; top: 12px; align-self: start; height: calc(100dvh - 24px); min-height: 0; overflow-y: auto; border-radius: 24px; box-shadow: 0 10px 30px #043d5520; }
-.shell .content { padding: 0 12px 48px; }
-.shell header.floating-navbar { width: 100%; margin: 0 0 24px; }
-.shell .sidebar-foot { margin-top: auto; }
+.floating-navbar .nav-meta { @apply tw:flex tw:flex-wrap tw:items-center tw:gap-[12px] tw:ml-auto; color: #d0dfe7; font-size: 12px; }
+.shell { @apply tw:p-[12px] tw:gap-[16px]; }
+.shell .sidebar { @apply tw:sticky tw:top-[12px]; align-self: start; height: calc(100dvh - 24px); @apply tw:min-h-[0] tw:overflow-y-auto tw:rounded-[24px]; box-shadow: 0 10px 30px #043d5520; }
+.shell .content { @apply tw:p-[0_12px_48px]; }
+.shell header.floating-navbar { @apply tw:w-full tw:m-[0_0_24px]; }
+.shell .sidebar-foot { @apply tw:mt-auto; }
 #discover, #home-rooms, #home-guide, .public-results { scroll-margin-top: 116px; }
 @media (prefers-reduced-motion: reduce) {
   .account-dropdown { animation: none; }
@@ -36,11 +38,11 @@ header.floating-navbar {
   .floating-navbar button:not(.account-trigger) { transition: none; }
 }
 @media (max-width: 680px) {
-  header.floating-navbar { top: 8px; width: calc(100% - 20px); margin: 10px auto 20px; padding: 12px 16px; border-radius: 20px; gap: 12px; }
-  .floating-navbar .lub-brand { font-size: 28px; }.floating-navbar .home-account { margin-left: auto; }.floating-navbar .hotel-account-actions { margin-left: auto; width: auto; }
-  .account-menu button.account-trigger { width: 44px; height: 44px; min-height: 44px; }
-  .home-header.floating-navbar nav { gap: 12px; justify-content: space-between; }
-  .shell { padding: 8px; }.shell .sidebar { position: static; height: auto; overflow: visible; margin-bottom: 16px; border-radius: 20px; }.shell .content { padding: 0 4px 32px; }
-  .shell .floating-navbar .nav-meta { display: none; }
+  header.floating-navbar { @apply tw:top-[8px]; width: calc(100% - 20px); @apply tw:m-[10px_auto_20px] tw:p-[12px_16px] tw:rounded-[20px] tw:gap-[12px]; }
+  .floating-navbar .lub-brand { font-size: 28px; }.floating-navbar .home-account { @apply tw:ml-auto; }.floating-navbar .hotel-account-actions { @apply tw:ml-auto tw:w-[auto]; }
+  .account-menu button.account-trigger { @apply tw:w-[44px] tw:h-[44px] tw:min-h-[44px]; }
+  .home-header.floating-navbar nav { @apply tw:gap-[12px] tw:justify-between; }
+  .shell { @apply tw:p-[8px]; }.shell .sidebar { @apply tw:static tw:h-auto tw:overflow-visible tw:mb-[16px] tw:rounded-[20px]; }.shell .content { @apply tw:p-[0_4px_32px]; }
+  .shell .floating-navbar .nav-meta { @apply tw:hidden; }
   #discover, #home-rooms, #home-guide, .public-results { scroll-margin-top: 160px; }
 }

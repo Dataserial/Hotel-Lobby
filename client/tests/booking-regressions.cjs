@@ -63,7 +63,7 @@ test('editing the same stay preserves the booked price on review', async () => {
   tree = h2.render(); button(tree, 'รายละเอียด').props.onClick()
   await new Promise(resolve => setImmediate(resolve))
   tree = h2.render(); button(tree, 'แก้ไข').props.onClick()
-  tree = h2.render(); await nodes(tree, n => n.type === 'form' && n.props.className === 'form-grid booking-form')[0].props.onSubmit({ preventDefault() {} })
+  tree = h2.render(); await nodes(tree, n => n.type === 'form' && n.props.className?.split(/\s+/).includes('booking-form'))[0].props.onSubmit({ preventDefault() {} })
   assert.ok(JSON.stringify(h2.render()).includes('3,600'))
 })
 

@@ -1,0 +1,199 @@
+erDiagram
+    User ||--o{ Session : "userId"
+    User |o--o{ Guest : "customerId"
+    User |o--o{ Booking : "customerId"
+    User ||--o{ Booking : "createdById"
+    User ||--o{ Booking : "updatedById"
+    User ||--o{ Payment : "recordedById"
+    User ||--o{ PaymentTransaction : "recordedById"
+    User ||--o{ StayRequest : "memberId"
+    RoomType |o--o{ Room : "roomTypeId"
+    Guest ||--o{ Booking : "guestId"
+    Room ||--o{ Booking : "roomId"
+    Booking ||--o| Payment : "bookingId_(UK)"
+    Payment ||--o{ PaymentTransaction : "paymentId"
+    PaymentTransaction |o--o{ PaymentTransaction : "receiptId_to_รายการรับเงินต้นทาง"
+    Room ||--o{ RoomNightClaim : "roomId"
+    Booking ||--o{ RoomNightClaim : "bookingId"
+    StayRequest ||--o{ StayRequestService : "requestId"
+    RoomType ||..o{ StayRequest : "roomTypeId_[REF]"
+    Room |o..o{ StayRequest : "roomId_[REF]"
+    Booking |o..o{ StayRequest : "relatedBookingId_[REF_reserved]"
+    AdditionalService ||..o{ StayRequestService : "serviceId_[REF_snapshot]"
+    RoomType }o..o{ AdditionalService : "roomTypeIds[]_[REF_allowed_types]"
+    User ||..o{ CustomerBookingRequest : "customerId_[REF]"
+    Booking ||..o{ CustomerBookingRequest : "bookingId_[REF]"
+    User {
+        String id PK
+        String name
+        String email UK
+        String passwordHash
+        UserRole role
+        Boolean active
+        DateTime createdAt
+        DateTime updatedAt
+        String createdById
+        String updatedById
+    }
+    RoomType {
+        String id PK
+        String name
+        String nameKey UK
+        Int capacity
+        Int basePrice
+        StringArray amenities
+        Boolean active
+        Boolean supportsExtraBed
+        DateTime createdAt
+        DateTime updatedAt
+        String createdById
+        String updatedById
+    }
+    AdditionalService {
+        String id PK
+        String name
+        String nameKey UK
+        ServiceUnit unit
+        Int price
+        Boolean included
+        Boolean extraBed
+        StringArray roomTypeIds
+        Int maxQuantity
+        Boolean active
+        DateTime createdAt
+        DateTime updatedAt
+        String createdById
+        String updatedById
+    }
+    StayRequest {
+        String id PK
+        String memberId
+        String contactName
+        String contactPhone
+        String roomTypeId
+        String roomTypeName
+        String roomId
+        String roomNumber
+        String checkInDate
+        String checkOutDate
+        Int guestCount
+        Int roomPricePerNight
+        Int estimatedRoomTotal
+        Int estimatedServiceTotal
+        String notes
+        StayRequestStatus status
+        String clientRequestId
+        String relatedBookingId
+        DateTime createdAt
+        DateTime updatedAt
+    }
+    StayRequestService {
+        String id PK
+        String requestId
+        String serviceId
+        String name
+        Int quantity
+        ServiceUnit unit
+        Int price
+        Boolean included
+        Int estimatedTotal
+    }
+    Room {
+        String id PK
+        String number UK
+        Int floor
+        String roomTypeId
+        RoomStatus status
+        Boolean active
+        DateTime createdAt
+        DateTime updatedAt
+        String createdById
+        String updatedById
+    }
+    Guest {
+        String id PK
+        String fullName
+        String phone
+        String email
+        String documentNo
+        String documentNoKey UK
+        DateTime createdAt
+        DateTime updatedAt
+        String customerId
+        Boolean active
+        String createdById
+        String updatedById
+    }
+    Booking {
+        Int version
+        String id PK
+        String guestId
+        String customerId
+        String roomId
+        Int guestCount
+        String checkInDate
+        String checkOutDate
+        BookingStatus status
+        Int pricePerNight
+        Int totalPrice
+        DateTime actualCheckInAt
+        DateTime actualCheckOutAt
+        DateTime cancelledAt
+        DateTime createdAt
+        DateTime updatedAt
+        String createdById
+        String updatedById
+    }
+    Payment {
+        Boolean ledgerReady
+        String id PK
+        String bookingId UK
+        Int amount
+        Int paidAmount
+        Int refundedAmount
+        PaymentMethod method
+        PaymentStatus status
+        DateTime paidAt
+        DateTime refundedAt
+        DateTime createdAt
+        DateTime updatedAt
+        String recordedById
+    }
+    CustomerBookingRequest {
+        String key PK
+        String hash
+        String customerId
+        String bookingId
+    }
+    PaymentTransaction {
+        String id PK
+        String paymentId
+        PaymentTransactionKind kind
+        Int amount
+        PaymentMethod method
+        String reference
+        DateTime occurredAt
+        DateTime createdAt
+        String recordedById
+        String idempotencyKey UK
+        String receiptId
+        String reason
+    }
+    RoomNightClaim {
+        String id PK
+        String roomId
+        String bookingId
+        String night
+        DateTime createdAt
+    }
+    Session {
+        String id PK
+        String tokenHash UK
+        String userId
+        DateTime expiresAt
+        DateTime createdAt
+    }
+    AdminGuard {
+        String id PK
+        Int version
+    }

@@ -62,22 +62,22 @@ export default function AdditionalServices({ call, setError }: { call: Call; set
   }
 
   return <section className="service-manager" aria-labelledby="service-settings-title">
-    <div className="service-manager-head"><div><h2 id="service-settings-title">ตั้งค่าบริการเพิ่มเติม</h2><p>เปิด/ปิดบริการ กำหนดราคาและเงื่อนไขของบริการ</p></div><button className="primary" disabled={busy} onClick={() => edit()}>＋ เพิ่มบริการ</button></div>
+    <div className="service-manager-head tw:flex tw:items-center tw:justify-between tw:gap-[16px] tw:flex-wrap"><div><h2 id="service-settings-title">ตั้งค่าบริการเพิ่มเติม</h2><p>เปิด/ปิดบริการ กำหนดราคาและเงื่อนไขของบริการ</p></div><button className="primary" disabled={busy} onClick={() => edit()}>＋ เพิ่มบริการ</button></div>
     {notice && <p className="notice" role="status">{notice}</p>}
     <form className="toolbar" onSubmit={event => { event.preventDefault(); setSearch(q); changePage(1); setRefresh(value => value + 1) }}>
       <input aria-label="ค้นหาบริการเพิ่มเติม" placeholder="ค้นหาชื่อบริการ" value={q} onChange={event => setQ(event.target.value)} />
       <label className="field"><span>สถานะบริการ</span><select value={active} onChange={event => { setActive(event.target.value); changePage(1) }}><option value="">ทั้งหมด</option><option value="true">เปิดใช้งาน</option><option value="false">ปิดใช้งาน</option></select></label><button>ค้นหา</button>
     </form>
-    {open && <form className="form-grid service-definition-form" onSubmit={save}>
+    {open && <form className="form-grid service-definition-form tw:grid tw:grid-cols-2 tw:gap-[16px]" onSubmit={save}>
       <h3 className="full">{editing ? 'แก้ไขบริการ' : 'เพิ่มบริการใหม่'}</h3>
       <label className="field"><span>ชื่อบริการ</span><input required maxLength={80} disabled={busy} value={form.name} onChange={event => setForm({ ...form, name: event.target.value })} /></label>
       <label className="field"><span>หน่วยคิดราคา</span><select disabled={busy} value={form.unit} onChange={event => setForm({ ...form, unit: event.target.value })}>{Object.entries(units).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
       <label className="field"><span>ราคาต่อหน่วย (บาท)</span><input type="number" min="0" max="2147483647" step="1" disabled={busy} value={form.price} onChange={event => setForm({ ...form, price: event.target.value })} /><small>เว้นว่างเมื่อราคายังรอยืนยัน</small></label>
       <label className="field"><span>จำนวนสูงสุดต่อรายการ</span><input type="number" required min="1" max="20" disabled={busy} value={form.maxQuantity} onChange={event => setForm({ ...form, maxQuantity: Number(event.target.value) })} /></label>
-      <label className="service-checkbox"><input type="checkbox" disabled={busy} checked={form.included} onChange={event => setForm({ ...form, included: event.target.checked })} /> รวมในค่าห้องแล้ว</label>
-      <label className="service-checkbox"><input type="checkbox" disabled={busy} checked={form.extraBed} onChange={event => setForm({ ...form, extraBed: event.target.checked })} /> เป็นบริการเตียงเสริม</label>
-      <fieldset className="full service-type-options"><legend>ประเภทห้องที่ใช้บริการได้ (ไม่เลือก = ทุกประเภท)</legend>{types.map(type => <label key={type.id} className="service-checkbox"><input type="checkbox" disabled={busy} checked={form.roomTypeIds.includes(type.id)} onChange={event => setForm({ ...form, roomTypeIds: event.target.checked ? [...form.roomTypeIds, type.id] : form.roomTypeIds.filter(id => id !== type.id) })} /> {type.name}{!type.active && ' (ปิดใช้งาน)'}</label>)}</fieldset>
-      {editing && <label className="service-checkbox full"><input type="checkbox" disabled={busy} checked={form.active} onChange={event => setForm({ ...form, active: event.target.checked })} /> เปิดใช้งานบริการ</label>}
+      <label className="service-checkbox tw:flex tw:items-center tw:gap-[10px]"><input type="checkbox" disabled={busy} checked={form.included} onChange={event => setForm({ ...form, included: event.target.checked })} /> รวมในค่าห้องแล้ว</label>
+      <label className="service-checkbox tw:flex tw:items-center tw:gap-[10px]"><input type="checkbox" disabled={busy} checked={form.extraBed} onChange={event => setForm({ ...form, extraBed: event.target.checked })} /> เป็นบริการเตียงเสริม</label>
+      <fieldset className="full service-type-options"><legend>ประเภทห้องที่ใช้บริการได้ (ไม่เลือก = ทุกประเภท)</legend>{types.map(type => <label key={type.id} className="service-checkbox tw:flex tw:items-center tw:gap-[10px]"><input type="checkbox" disabled={busy} checked={form.roomTypeIds.includes(type.id)} onChange={event => setForm({ ...form, roomTypeIds: event.target.checked ? [...form.roomTypeIds, type.id] : form.roomTypeIds.filter(id => id !== type.id) })} /> {type.name}{!type.active && ' (ปิดใช้งาน)'}</label>)}</fieldset>
+      {editing && <label className="service-checkbox full tw:flex tw:items-center tw:gap-[10px]"><input type="checkbox" disabled={busy} checked={form.active} onChange={event => setForm({ ...form, active: event.target.checked })} /> เปิดใช้งานบริการ</label>}
       <div className="form-actions"><button type="button" disabled={busy} onClick={() => setOpen(false)}>ยกเลิก</button><button className="primary" disabled={busy}>{busy ? 'กำลังบันทึก…' : 'บันทึกบริการ'}</button></div>
     </form>}
     {loading ? <p role="status">กำลังโหลดบริการ…</p> : data?.items.length ? <div className="service-definition-list">{data.items.map(service => <article key={service.id}>

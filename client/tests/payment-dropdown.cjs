@@ -36,7 +36,7 @@ test('partial receipt offers the exact 276-baht balance and submits it as a numb
   amount().props.onChange({ target: { value: '276' } });
   const reference = () => nodes(nodes(render(), n => n.props.title === 'เลขอ้างอิงหลักฐาน')[0], n => n.type === 'input')[0];
   reference().props.onChange({ target: { value: 'RC-20261014-0001' } });
-  await nodes(render(), n => n.type === 'form' && n.props.className === 'form-grid money-form')[0].props.onSubmit({ preventDefault() {} });
+  await nodes(render(), n => n.type === 'form' && n.props.className?.split(/\s+/).includes('money-form'))[0].props.onSubmit({ preventDefault() {} });
   assert.equal(calls[0][0], '/bookings/booking1/payment/receipts');
   assert.equal(calls[0][2].amount, 276);
   assert.equal(calls[0][2].reference, 'RC-20261014-0001');
@@ -48,7 +48,7 @@ test('settled balances and unverified ledgers cannot submit a receipt', async ()
     const { h, render, amount, calls } = await openPayment(1200, 1, remaining, ledgerReady);
     assert.equal(amount().props.disabled, true);
     assert.equal(button(render(), 'บันทึกรับเงิน')?.props.disabled ?? nodes(render(), n => n.type === 'button' && n.props.children[0] === 'บันทึก')[0].props.disabled, true);
-    await nodes(render(), n => n.type === 'form' && n.props.className === 'form-grid money-form')[0].props.onSubmit({ preventDefault() {} });
+    await nodes(render(), n => n.type === 'form' && n.props.className?.split(/\s+/).includes('money-form'))[0].props.onSubmit({ preventDefault() {} });
     assert.equal(calls.length, 0);
     h.unmount();
   }
@@ -57,7 +57,7 @@ test('settled balances and unverified ledgers cannot submit a receipt', async ()
 test('an amount outside the current balance options is rejected before calling the API', async () => {
   const { h, render, amount, calls, errors } = await openPayment(2600, 1, 276);
   amount().props.onChange({ target: { value: '2600' } });
-  await nodes(render(), n => n.type === 'form' && n.props.className === 'form-grid money-form')[0].props.onSubmit({ preventDefault() {} });
+  await nodes(render(), n => n.type === 'form' && n.props.className?.split(/\s+/).includes('money-form'))[0].props.onSubmit({ preventDefault() {} });
   assert.equal(calls.length, 0);
   assert.ok(errors[0].includes('ยอดคงเหลือ'));
   h.unmount();
@@ -68,7 +68,7 @@ test('a custom partial receipt preserves presets and rejects an amount above the
   amount().props.onChange({ target: { value: 'custom' } });
   const customInput = () => nodes(render(), n => n.type === 'input' && n.props['aria-label'] === 'ระบุยอดรับจริง')[0];
   customInput().props.onChange({ target: { value: '300' } });
-  const form = () => nodes(render(), n => n.type === 'form' && n.props.className === 'form-grid money-form')[0];
+  const form = () => nodes(render(), n => n.type === 'form' && n.props.className?.split(/\s+/).includes('money-form'))[0];
   await form().props.onSubmit({ preventDefault() {} });
   assert.equal(calls[0][2].amount, 300);
   customInput().props.onChange({ target: { value: '1201' } });
