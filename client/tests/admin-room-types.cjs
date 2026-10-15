@@ -1,0 +1,101 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { domApp } = require('./helpers/dom.cjs');
+
+test('admin creates a custom room type, handles errors, and assigns it to a bookable room', { timeout: 180000 }, async () => {
+  const { startDatabase } = require('../../server/tests/task3-db');
+  const { createApp } = require('../../server/app');
+  const db = await startDatabase('hotel_lobby_task5_test');
+  let server, h;
+  try {
+    const bcrypt = require('../../server/node_modules/bcryptjs');
+    for (const role of ['admin', 'receptionist', 'customer']) {
+      await db.prisma.user.create({ data: { name: role, email: `${role}@types.test`, role, passwordHash: await bcrypt.hash('types-password-123', 4) } });
+    }
+    server = createApp(db.prisma).listen(0, '127.0.0.1');
+    await new Promise(resolve => server.once('listening', resolve));
+    const base = `http://127.0.0.1:${server.address().port}/api`;
+    const payload = { name: 'Garden Suite', capacity: 3, basePrice: 3456, amenities: ['Wi-Fi', 'Garden'] };
+    const post = (path, body, token) => fetch(base + path, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify(body) });
+    assert.equal((await post('/room-types', payload)).status, 401);
+    for (const role of ['receptionist', 'customer']) {
+      const login = await (await post('/auth/login', { email: `${role}@types.test`, password: 'types-password-123' })).json();
+      assert.equal((await post('/room-types', payload, login.token)).status, 403);
+    }
+    h = domApp('http://localhost:5173/staff', { VITE_API_BASE_URL: base });
+    const App = h.loadSource('App.tsx').default;
+    await h.React.act(async () => h.root.render(h.React.createElement(App)));
+    const doc = h.dom.window.document;
+    const submit = async form => h.React.act(async () => form.dispatchEvent(new h.dom.window.Event('submit', { bubbles: true, cancelable: true })));
+    await h.input(doc.querySelector('input[type="email"]'), 'admin@types.test');
+    await h.input(doc.querySelector('input[type="password"]'), 'types-password-123');
+    await submit(doc.querySelector('.login-card'));
+    await h.waitFor(() => h.button('ห้องพัก / ประเภท'));
+    await h.waitFor(() => doc.querySelector('.metric-grid'));
+    await h.React.act(async () => h.button('ห้องพัก / ประเภท').click());
+    await h.waitFor(() => h.button('＋ เพิ่มประเภทห้อง'));
+    await h.React.act(async () => h.button('＋ เพิ่มประเภทห้อง').click());
+    await h.waitFor(() => !doc.querySelector('.loading'));
+    const modal = () => doc.querySelector('[role="dialog"]');
+    assert.equal(modal().getAttribute('aria-label'), 'เพิ่มประเภทห้อง');
+    assert.equal(modal().querySelector('input').maxLength, 80);
+    const inputs = modal().querySelectorAll('input');
+    await h.input(inputs[0], '   ');
+    await submit(modal().querySelector('form'));
+    assert.match(modal().textContent, /กรุณาระบุชื่อประเภทห้อง/);
+    assert.equal(await db.prisma.roomType.count(), 0);
+    await h.input(inputs[0], '  Garden Suite  ');
+    await h.input(inputs[1], '3');
+    await h.input(inputs[2], '3456');
+    await h.input(inputs[3], 'Wi-Fi, Garden');
+    await submit(modal().querySelector('form'));
+    await h.waitFor(() => !modal() && doc.querySelector('tbody')?.textContent.includes('Garden Suite'));
+    const type = await db.prisma.roomType.findUnique({ where: { nameKey: 'garden suite' } });
+    assert.ok(type);
+    assert.equal(type.capacity, 3);
+    assert.equal(type.basePrice, 3456);
+    assert.deepEqual(type.amenities, ['Wi-Fi', 'Garden']);
+    assert.ok(type.createdById);
+    await h.React.act(async () => h.button('＋ เพิ่มประเภทห้อง').click());
+    await h.input(modal().querySelector('input'), 'garden suite');
+    await submit(modal().querySelector('form'));
+    await h.waitFor(() => modal()?.querySelector('[role="alert"]'));
+    assert.equal(await db.prisma.roomType.count(), 1);
+    assert.equal(modal().querySelector('input').value, 'garden suite');
+    await h.React.act(async () => h.button('ยกเลิก').click());
+    await h.React.act(async () => h.button('← ห้องพักและประเภทห้อง').click());
+    await h.waitFor(() => doc.querySelector('.room-type-card')?.textContent.includes('Garden Suite'));
+    await h.React.act(async () => h.button('＋ เพิ่มห้องพัก').click());
+    await h.waitFor(() => Array.from(modal().querySelectorAll('option')).some(option => option.value === type.id));
+    await h.input(modal().querySelector('input'), 'G-101');
+    const picker = modal().querySelector('select[aria-label="ประเภทห้อง"]');
+    await h.React.act(async () => { picker.value = type.id; picker.dispatchEvent(new h.dom.window.Event('change', { bubbles: true })); });
+    await submit(modal().querySelector('form'));
+    await h.waitFor(() => !modal() && doc.querySelector('tbody')?.textContent.includes('G-101'));
+    await h.waitFor(() => doc.querySelector('tbody')?.textContent.includes('Garden Suite'));
+    const rooms = await db.prisma.room.findMany({ where: { roomTypeId: type.id } });
+    assert.equal(rooms.length, 1);
+    const overview = await (await fetch(base + '/public/overview')).json();
+    assert.ok(overview.roomTypes.some(item => item.id === type.id && item.name === 'Garden Suite'));
+    const available = await (await fetch(base + `/public/rooms/availability?checkInDate=2027-01-01&checkOutDate=2027-01-02&guestCount=3&roomTypeId=${type.id}`)).json();
+    assert.equal(available.items[0].roomType, 'Garden Suite');
+    assert.equal(available.items[0].pricePerNight, 3456);
+    await h.openAccount();
+    await h.React.act(async () => h.button('ออกจากระบบ').click());
+    await h.waitFor(() => doc.querySelector('.login-card'));
+    await h.input(doc.querySelector('input[type="email"]'), 'receptionist@types.test');
+    await h.input(doc.querySelector('input[type="password"]'), 'types-password-123');
+    await submit(doc.querySelector('.login-card'));
+    await h.waitFor(() => h.button('ห้องพัก / ประเภท'));
+    await h.waitFor(() => doc.querySelector('.metric-grid'));
+    await h.React.act(async () => h.button('ห้องพัก / ประเภท').click());
+    await h.waitFor(() => doc.querySelector('.room-type-card'));
+    await h.waitFor(() => doc.querySelector('tbody')?.textContent.includes('Garden Suite'));
+    assert.equal(h.button('＋ เพิ่มประเภทห้อง'), undefined);
+    assert.equal(h.button('จัดการประเภทห้องทั้งหมด →'), undefined);
+  } finally {
+    if (h) await h.close();
+    if (server) await new Promise(resolve => server.close(resolve));
+    await db.stop();
+  }
+});

@@ -191,3 +191,6 @@ input::placeholder { opacity: 1; }
 /* ปรับการแสดงผลตามขนาดหน้าจอหรือการตั้งค่าอุปกรณ์ */
 
 @media(max-width:680px) { .service-definition-list article { @apply tw:grid-cols-[minmax(0,1fr)_auto]; }.service-definition-list article > div { grid-column: 1/-1; }.service-definition-form { @apply tw:p-[16px]; } }
+
+.room-types-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.room-types-section > p { color: var(--muted); margin-bottom: 16px; }
