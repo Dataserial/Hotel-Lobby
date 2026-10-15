@@ -1,9 +1,10 @@
-/* Keep the existing browser defaults: importing Preflight would reset the UI. */
+/* จัดรูปแบบตั้งค่า Tailwind และสีร่วมของเว็บไซต์ */
+/* คงรูปแบบพื้นฐานของเบราว์เซอร์ โดยไม่ใช้ Preflight รีเซ็ตหน้าจอ */
 @layer theme, utilities;
 @import 'tailwindcss/theme.css' layer(theme) prefix(tw);
 @import 'tailwindcss/utilities.css' layer(utilities) prefix(tw) source('./');
 
-/* Reuse the hotel's existing tokens in CSS @apply and JSX utilities. */
+/* ใช้ค่าสีเดิมร่วมกันใน CSS และ utility ของ JSX */
 @theme inline {
   --color-navy: var(--navy);
   --color-blue: var(--blue);

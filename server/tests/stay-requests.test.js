@@ -1,3 +1,4 @@
+// ทดสอบการส่งคำขอเข้าพักและสิทธิ์เจ้าของคำขอ
 const request = require('supertest');
 const bcrypt = require('bcryptjs');
 const { createApp } = require('../app');
@@ -17,6 +18,7 @@ beforeEach(async () => {
   ]);
   roomType = await db.prisma.roomType.create({ data: { name: 'Stay Request Type', nameKey: 'stay-request-type', capacity: 2, basePrice: 1200, amenities: [] } });
   await db.prisma.room.create({ data: { number: 'REQUEST-101', roomTypeId: roomType.id, status: 'available', active: true } });
+  // เข้าสู่ระบบแล้วเก็บ session ที่ได้รับ
   const login = user => request(app).post('/api/auth/login').send({ email: user.email, password: 'stay-request-password-123' });
   memberToken = (await login(member)).body.token; otherToken = (await login(other)).body.token; staffToken = (await login(staff)).body.token;
 });

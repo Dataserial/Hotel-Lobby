@@ -1,3 +1,4 @@
+// ทดสอบขั้นตอนลูกค้าจองห้องจริง
 const request = require('supertest');
 const bcrypt = require('bcryptjs');
 const { startDatabase } = require('./task3-db');
@@ -173,7 +174,7 @@ test('customers can book a checked-out room again, including legacy holds, with 
   await checkIn(db.prisma, prior.id, desk.id, clock);
   await recordTestReceipt(db.prisma, prior.id, desk.id, prior.totalPrice);
   await checkOut(db.prisma, prior.id, desk.id, clock);
-  // Reproduce persisted holds left by the previous version of checkout.
+  // จำลองสิทธิ์กันห้องที่เวอร์ชันเดิมลืมคืนตอนเช็คเอาต์
   await db.prisma.roomNightClaim.createMany({ data: ['2026-12-10', '2026-12-11'].map(night => ({ roomId: room.id, bookingId: prior.id, night })) });
   const grid = (await request(app).get('/api/public/rooms/grid').query({ checkInDate: payload.checkInDate, checkOutDate: payload.checkOutDate, roomTypeId: type.id }).expect(200)).body;
   expect(grid.items.find(item => item.roomId === room.id).status).toBe('available');

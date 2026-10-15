@@ -1,3 +1,4 @@
+// ทดสอบการแบ่งหน้าและข้อมูลย้อนหลังบนหน้าพนักงาน
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { harness, deferred, page, tick, nodes, button } = require('./helpers/components.cjs');

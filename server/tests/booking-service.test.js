@@ -1,3 +1,4 @@
+// ทดสอบการสร้าง แก้ไข และยกเลิกจอง
 const { createBooking, updateBooking, cancelBooking } = require('../services/booking-service');
 const { testPrisma, seedStep2Sample, sample } = require('./test-db');
 const { MongoClient, ObjectId } = require('mongodb');
@@ -9,6 +10,7 @@ const guestId = sample.guests[0]._id;
 const room101 = sample.rooms[0]._id;
 const room305 = sample.rooms[2]._id;
 
+// เรียก API พร้อม token เวลารอ และการตรวจคำตอบ
 function request(overrides = {}) {
   return {
     guestId, roomId: room101, guestCount: 2,

@@ -1,3 +1,4 @@
+// สร้างบัญชีผู้ดูแลจากค่าตั้งค่า
 const bcrypt = require('bcryptjs');
 const { email } = require('../lib/http');
 
@@ -21,6 +22,7 @@ async function createAdmin(prisma, env) {
   return 'Admin created. Sign in using ADMIN_EMAIL and ADMIN_PASSWORD.';
 }
 
+// เริ่มขั้นตอนหลัก: สร้างบัญชีผู้ดูแลจากค่าตั้งค่า
 async function main() {
   require('dotenv').config({ quiet: true });
   let url;
@@ -35,7 +37,7 @@ async function main() {
 }
 
 if (require.main === module) main().catch((error) => {
-  // Never print database errors: they can include connection details or values.
+  // ไม่พิมพ์ข้อผิดพลาดฐานข้อมูลที่อาจมีรหัสเชื่อมต่อหรือข้อมูลจริง
   console.error(error.name === 'Error' ? error.message : 'Admin creation failed. Check the database connection, indexes, and ADMIN_EMAIL.');
   process.exitCode = 1;
 });

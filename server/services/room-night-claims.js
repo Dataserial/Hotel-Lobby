@@ -1,10 +1,12 @@
+// กันห้องทีละคืนด้วยคู่ห้องและวันที่ที่ห้ามซ้ำ
 const { BookingError } = require('./booking-validation');
 
-// Older checkouts kept claims. Ignore only completed stays; other holds remain blocking.
+// ละเว้นสิทธิ์ค้างจากรายการที่เช็คเอาต์แล้ว ส่วนสิทธิ์อื่นยังกันห้องอยู่
 const heldClaims = { NOT: { booking: { is: { status: 'checked_out' } } } };
 
+// สร้างสิทธิ์กันห้องทีละคืนและปฏิเสธคืนที่ถูกจองแล้ว
 async function createClaims(tx, bookingId, roomId, nights) {
-  // Reclaim legacy checkout holds in the same transaction as the new reservation.
+  // คืนสิทธิ์ค้างของรายการที่ออกแล้วในธุรกรรมเดียวกับการจองใหม่
   await tx.roomNightClaim.deleteMany({ where: {
     roomId, night: { in: nights }, booking: { is: { status: 'checked_out' } },
   } });

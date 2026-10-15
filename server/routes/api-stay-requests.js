@@ -1,13 +1,18 @@
+// API ส่งคำขอเข้าพักและติดตามสถานะ
 const express = require('express');
 const { asyncRoute, body, str, int, objectId, page, list, fail } = require('../lib/http');
 const { validateStay, validateGuestCount, calculatePrice } = require('../services/booking-validation');
 
 const statuses = ['new', 'read', 'processed', 'rejected'];
+// ตรวจว่าเป็นผู้ดูแลหรือพนักงานต้อนรับ
 const staff = actor => ['admin', 'receptionist'].includes(actor.role);
 const requestInclude = { services: { orderBy: { name: 'asc' } }, member: { select: { id: true, name: true, email: true } } };
+// เลือกข้อมูลที่ส่งกลับให้หน้าจอ
 const present = row => ({ ...row, member: row.member, services: row.services });
+// ตรวจข้อความที่ส่งมาเมื่อมีค่า
 const text = (value, field, max) => value === undefined ? undefined : str(value, field, max);
 
+// ตรวจบริการที่เลือกและคำนวณยอดประมาณการ
 async function validateServices(prisma, selections, roomType, nights) {
   if (!Array.isArray(selections) || selections.length > 20) fail(400, 'VALIDATION_ERROR', 'Invalid service selections');
   const requested = selections.map(row => {
@@ -34,6 +39,7 @@ async function validateServices(prisma, selections, roomType, nights) {
 
 module.exports = prisma => {
   const router = express.Router();
+  // รับคำขอสร้างหรือทำรายการ /
   router.post('/', asyncRoute(async (req, res) => {
     if (req.actor.role !== 'customer') fail(403, 'FORBIDDEN', 'Only members may submit stay requests');
     body(req.body, ['clientRequestId', 'contactName', 'contactPhone', 'checkInDate', 'checkOutDate', 'guestCount', 'roomTypeId', 'roomId', 'services', 'notes'], ['clientRequestId', 'contactName', 'contactPhone', 'checkInDate', 'checkOutDate', 'guestCount', 'roomTypeId', 'services']);
@@ -65,6 +71,7 @@ module.exports = prisma => {
     if (!verified) fail(500, 'PERSISTENCE_FAILED', 'Stay request could not be verified');
     res.status(201).json(present(verified));
   }));
+  // อ่านข้อมูล /
   router.get('/', asyncRoute(async (req, res) => {
     const pagination = page(req.query, ['status']);
     const where = {};
@@ -75,11 +82,13 @@ module.exports = prisma => {
     const unreadCount = staff(req.actor) ? await prisma.stayRequest.count({ where: { status: 'new' } }) : undefined;
     res.json({ ...result, items: items.map(present), ...(unreadCount === undefined ? {} : { unreadCount }) });
   }));
+  // อ่านข้อมูล /:id
   router.get('/:id', asyncRoute(async (req, res) => {
     const item = await prisma.stayRequest.findUnique({ where: { id: objectId(req.params.id) }, include: requestInclude });
     if (!item || (!staff(req.actor) && item.memberId !== req.actor.id)) fail(404, 'NOT_FOUND', 'Stay request not found');
     res.json(present(item));
   }));
+  // รับคำขอแก้ไข /:id/status
   router.patch('/:id/status', asyncRoute(async (req, res) => {
     if (!staff(req.actor)) fail(403, 'FORBIDDEN', 'Staff access required');
     body(req.body, ['status'], ['status']);

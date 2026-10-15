@@ -1,9 +1,11 @@
+// API เลขห้องที่เลือกได้ตามวันเข้าพัก
 const express = require('express');
 const { asyncRoute, objectId, fail } = require('../lib/http');
 const { validateStay } = require('../services/booking-validation');
 const { roomGrid } = require('../services/public-room-grid');
 const { hotelToday } = require('../services/stay-service');
 
+// อ่านวันที่และจำนวนคนจากคำขอค้นหาห้อง
 function selectedStay(query) {
   const stay = validateStay(query.checkInDate, query.checkOutDate);
   if (stay.checkInDate < hotelToday(new Date())) fail(400, 'INVALID_DATE_RANGE', 'Check-in date is in the past');
@@ -12,6 +14,7 @@ function selectedStay(query) {
 
 module.exports = prisma => {
   const router = express.Router();
+  // อ่านข้อมูล /types
   router.get('/types', asyncRoute(async (req, res) => {
     if (Object.keys(req.query).some(key => !['checkInDate', 'checkOutDate'].includes(key))) fail(400, 'VALIDATION_ERROR', 'Unexpected query');
     const stay = selectedStay(req.query);
@@ -25,6 +28,7 @@ module.exports = prisma => {
     res.setHeader('Cache-Control', 'no-store');
     res.json({ items });
   }));
+  // อ่านข้อมูล /
   router.get('/', asyncRoute(async (req, res) => {
     if (Object.keys(req.query).some(key => !['checkInDate', 'checkOutDate', 'roomTypeId'].includes(key))) fail(400, 'VALIDATION_ERROR', 'Unexpected query');
     const stay = selectedStay(req.query);

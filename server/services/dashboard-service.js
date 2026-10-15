@@ -1,6 +1,8 @@
+// สรุปห้องพักและยอดรับคืนเงินสำหรับรายงาน
 const { hotelToday, hotelDayRange } = require('./stay-service');
 const { findAvailableRooms } = require('./availability-service');
 
+// สรุปสถานะห้องและการเข้าออกของวันนี้
 async function dashboard(prisma, now = new Date()) {
   const date = hotelToday(now);
   const today = hotelDayRange(date);
@@ -16,8 +18,9 @@ async function dashboard(prisma, now = new Date()) {
     arrivalsToday: arrivals, departuresToday: departures };
 }
 
+// รวมยอดรับ คืน และสุทธิจากรายการเงิน
 async function report(prisma) {
-  // Aggregate ledger money only: never silently mix unreconciled legacy summaries.
+  // รวมเงินจากบัญชีรายการเท่านั้น ไม่ผสมยอดเดิมที่ยังตรวจไม่ครบ
   const [received, refunded, unreconciledPayments] = await Promise.all([
     prisma.paymentTransaction.aggregate({ where: { kind: 'receive' }, _sum: { amount: true } }),
     prisma.paymentTransaction.aggregate({ where: { kind: 'refund' }, _sum: { amount: true } }),

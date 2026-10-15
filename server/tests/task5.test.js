@@ -1,3 +1,4 @@
+// ทดสอบ Dashboard รายงาน และ Public API
 const request = require('supertest');
 const bcrypt = require('bcryptjs');
 const { createApp } = require('../app');

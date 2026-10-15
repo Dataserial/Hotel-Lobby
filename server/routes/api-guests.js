@@ -1,19 +1,25 @@
+// API จัดการข้อมูลผู้เข้าพักและปกปิดเลขเอกสาร
 const express = require('express');
 const { asyncRoute, body, str, email, bool, objectId, page, list, fail } = require('../lib/http');
 
+// ปรับรูปแบบและตรวจเบอร์โทร
 const phone = (v) => {
   const value = str(v, 'phone', 25).replace(/[\s()-]/g, '');
   if (!/^\+?\d{8,15}$/.test(value)) fail(400, 'VALIDATION_ERROR', 'Invalid phone');
   return value;
 };
+// ตรวจเลขเอกสารผู้เข้าพัก
 const document = (v) => str(v, 'documentNo', 60);
+// จัดรูปแบบเลขเอกสารสำหรับตรวจค่าซ้ำ
 const key = (v) => v.replace(/\s/g, '').toUpperCase();
+// เลือกข้อมูลที่ส่งกลับให้หน้าจอ
 const present = (guest, actor, detail = false) => {
   const { documentNo, documentNoKey, ...safe } = guest;
   return actor.role === 'admin' && detail ? { ...safe, documentNo } : { ...safe, documentNoMasked: documentNo ? `***${documentNo.slice(-4)}` : null };
 };
 module.exports = (prisma) => {
   const router = express.Router();
+  // อ่านข้อมูล /
   router.get('/', asyncRoute(async (req, res) => {
     const pagination = page(req.query, ['active', 'q', 'documentNo']);
     const where = {};
@@ -26,11 +32,13 @@ module.exports = (prisma) => {
     const result = await list(prisma.guest, where, pagination, { createdAt: 'desc' });
     res.json({ ...result, items: result.items.map((g) => present(g, req.actor)) });
   }));
+  // อ่านข้อมูล /:id
   router.get('/:id', asyncRoute(async (req, res) => {
     const guest = await prisma.guest.findUnique({ where: { id: objectId(req.params.id) } });
     if (!guest) fail(404, 'NOT_FOUND', 'Guest not found');
     res.json(present(guest, req.actor, true));
   }));
+  // รับคำขอสร้างหรือทำรายการ /
   router.post('/', asyncRoute(async (req, res) => {
     body(req.body, ['fullName', 'phone', 'email', 'documentNo'], ['fullName', 'phone', 'documentNo']);
     const documentNo = document(req.body.documentNo);
@@ -41,6 +49,7 @@ module.exports = (prisma) => {
     } });
     res.status(201).json(present(guest, req.actor, true));
   }));
+  // รับคำขอแก้ไข /:id
   router.patch('/:id', asyncRoute(async (req, res) => {
     const id = objectId(req.params.id);
     body(req.body, ['fullName', 'phone', 'email', 'documentNo', 'active']);
@@ -53,6 +62,7 @@ module.exports = (prisma) => {
     const guest = await prisma.guest.update({ where: { id }, data });
     res.json(present(guest, req.actor, true));
   }));
+  // รับคำขอลบหรือปิดใช้งาน /:id
   router.delete('/:id', asyncRoute(async (req, res) => {
     const id = objectId(req.params.id);
     const guest = await prisma.guest.findUnique({ where: { id } });

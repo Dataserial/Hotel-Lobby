@@ -1,12 +1,15 @@
+// ตรวจรายการเงินและคำนวณยอดชำระสะสม
 const { createHash } = require('crypto');
 const { fail, int, str, objectId } = require('../lib/http');
 const MAX_AMOUNT = 2147483647;
 
+// คำนวณสถานะชำระจากยอดรับสุทธิ
 function paymentStatus(bookingStatus, amount, paid, refunded) {
   if (bookingStatus === 'cancelled' && paid > 0 && paid === refunded) return 'refunded';
   return paid - refunded === amount ? 'paid' : 'pending';
 }
 
+// ตรวจจำนวนเงิน เวลา วิธีชำระ และรหัสป้องกันรายการซ้ำ
 function moneyInput(kind, input, key, now = new Date()) {
   const fields = ['amount', 'method', 'reference', 'occurredAt', ...(kind === 'refund' ? ['receiptId', 'reason'] : [])];
   const required = kind === 'receive' ? fields.filter((field) => field !== 'reference') : fields;
@@ -23,7 +26,7 @@ function moneyInput(kind, input, key, now = new Date()) {
   }
   return {
     kind, amount: int(input.amount, 'amount', 1, MAX_AMOUNT), method: input.method,
-    // Stable internal identifier across retries; not external payment evidence.
+    // รหัสภายในคงเดิมเมื่อส่งซ้ำ และไม่ใช่เลขหลักฐานชำระเงินจริง
     reference: kind === 'receive' && input.reference === undefined
       ? `AUTO-RC-${createHash('sha256').update(key).digest('hex')}`
       : str(input.reference, 'reference', 128), occurredAt, idempotencyKey: key,
@@ -32,9 +35,11 @@ function moneyInput(kind, input, key, now = new Date()) {
   };
 }
 
+// รวมยอดรับคืนและตรวจความถูกต้องของบัญชีรายการเงิน
 function summarize(booking, rows) {
   let paidAmount = 0, refundedAmount = 0, latestReceipt = null, latestRefund = null;
   const receipts = new Map(), refunds = new Map();
+  // หยุดรายการเมื่อข้อมูลเงินไม่สอดคล้องกัน
   const invalid = () => fail(409, 'PAYMENT_INCONSISTENT', 'Payment ledger or summary is inconsistent');
   if (!Number.isInteger(booking.totalPrice) || booking.totalPrice < 0 || booking.totalPrice > MAX_AMOUNT) invalid();
   for (const row of rows) {
@@ -66,10 +71,12 @@ function summarize(booking, rows) {
   };
 }
 
+// อ่านบัญชีรายการเงินตามลำดับที่บันทึก
 async function ledgerRows(tx, paymentId) {
   return tx.paymentTransaction.findMany({ where: { paymentId }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] });
 }
 
+// เทียบยอดชำระสะสมกับรายการเงินจริง
 function assertSummary(payment, summary) {
   for (const key of Object.keys(summary)) {
     const left = payment[key] instanceof Date ? payment[key].toISOString() : payment[key];
@@ -78,6 +85,7 @@ function assertSummary(payment, summary) {
   }
 }
 
+// ยืนยันว่าบัญชีเงินพร้อมใช้และยอดสรุปตรงกัน
 async function assertLedger(tx, booking) {
   const payment = booking.payment;
   if (!payment?.ledgerReady) fail(409, 'PAYMENT_RECONCILIATION_REQUIRED', 'Reconcile verified payment evidence before this operation');

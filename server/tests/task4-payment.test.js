@@ -1,3 +1,4 @@
+// ทดสอบการรับคืนเงินและการส่งคำขอซ้ำ
 const { startDatabase, sample } = require('./task3-db');
 const { receivePayment, refundPayment } = require('../services/payment-service');
 const { auditPayments } = require('../services/payment-reconciliation');
@@ -32,7 +33,7 @@ test('replay returns original immutable transaction; changed data/key-reference 
   await expect(receive(1000, 'receipt', 'different-key')).rejects.toMatchObject({ code: 'DUPLICATE_REFERENCE' });
   await refund(first.transaction.id, 1000);
   await db.prisma.booking.update({ where: { id: bookingId }, data: { status: 'cancelled' } });
-  // Replay bypasses current transition guards, and preserves the original recorder.
+  // ส่งซ้ำให้คืนรายการเดิมและผู้บันทึกเดิม แม้สถานะการจองเปลี่ยนไปแล้ว
   expect((await receive(1000)).transaction).toEqual(first.transaction);
   await db.prisma.user.update({ where: { id: actorId }, data: { active: false } });
   await expect(receive(1000)).rejects.toMatchObject({ code: 'INVALID_ACTOR' });

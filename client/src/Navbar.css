@@ -1,3 +1,4 @@
+/* จัดรูปแบบรูปแบบแถบนำทาง */
 @reference "./tailwind.css";
 
 header.floating-navbar {
@@ -31,12 +32,16 @@ header.floating-navbar {
 .shell header.floating-navbar { @apply tw:w-full tw:m-[0_0_24px]; }
 .shell .sidebar-foot { @apply tw:mt-auto; }
 #discover, #home-rooms, #home-guide, .public-results { scroll-margin-top: 116px; }
+/* ปรับการแสดงผลตามขนาดหน้าจอหรือการตั้งค่าอุปกรณ์ */
+
 @media (prefers-reduced-motion: reduce) {
   .account-dropdown { animation: none; }
   .home-header nav a, .home-header button, .sidebar .nav-item,
   .floating-navbar .home-link, .floating-navbar .login-brand, .floating-navbar .auth-home,
   .floating-navbar button:not(.account-trigger) { transition: none; }
 }
+/* ปรับการแสดงผลตามขนาดหน้าจอหรือการตั้งค่าอุปกรณ์ */
+
 @media (max-width: 680px) {
   header.floating-navbar { @apply tw:top-[8px]; width: calc(100% - 20px); @apply tw:m-[10px_auto_20px] tw:p-[12px_16px] tw:rounded-[20px] tw:gap-[12px]; }
   .floating-navbar .lub-brand { font-size: 28px; }.floating-navbar .home-account { @apply tw:ml-auto; }.floating-navbar .hotel-account-actions { @apply tw:ml-auto tw:w-[auto]; }

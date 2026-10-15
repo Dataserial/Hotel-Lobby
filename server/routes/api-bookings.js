@@ -1,3 +1,4 @@
+// API จัดการรายการจองของพนักงาน
 const express = require('express');
 const { role } = require('../lib/auth');
 const { asyncRoute, body, page, list, objectId, fail } = require('../lib/http');
@@ -10,14 +11,18 @@ const select = Object.fromEntries([
   'id', ...writable, 'status', 'pricePerNight', 'totalPrice', 'actualCheckInAt',
   'actualCheckOutAt', 'cancelledAt', 'createdAt', 'updatedAt', 'createdById', 'updatedById',
 ].map((key) => [key, true]));
+// เลือกข้อมูลที่ส่งกลับให้หน้าจอ
 const present = (booking) => Object.fromEntries(Object.keys(select).map((key) => [key, booking[key]]));
+// ปฏิเสธพารามิเตอร์ที่เส้นทางนี้ไม่รองรับ
 const noQuery = (req) => {
   if (Object.keys(req.query).length) fail(400, 'VALIDATION_ERROR', 'Unexpected query field');
 };
 
 module.exports = (prisma) => {
   const router = express.Router();
+  // กำหนดเงื่อนไขร่วมของเส้นทาง
   router.use(role('admin', 'receptionist'));
+  // อ่านข้อมูล /
   router.get('/', asyncRoute(async (req, res) => {
     const pagination = page(req.query, ['status', 'guestId', 'roomId', 'checkInFrom', 'checkInTo', 'checkOutFrom', 'checkOutTo', 'activityDate']);
     const where = {};
@@ -58,22 +63,26 @@ module.exports = (prisma) => {
     }
     res.json(await list(prisma.booking, where, pagination, [{ createdAt: 'desc' }, { id: 'desc' }], select));
   }));
+  // อ่านข้อมูล /:id
   router.get('/:id', asyncRoute(async (req, res) => {
     noQuery(req);
     const booking = await prisma.booking.findUnique({ where: { id: objectId(req.params.id) }, select });
     if (!booking) fail(404, 'BOOKING_NOT_FOUND', 'Booking does not exist.');
     res.json(booking);
   }));
+  // รับคำขอสร้างหรือทำรายการ /
   router.post('/', asyncRoute(async (req, res) => {
     noQuery(req);
     body(req.body, writable, writable);
     res.status(201).json(present(await createBooking(prisma, req.body, req.actor.id)));
   }));
+  // รับคำขอแก้ไข /:id
   router.patch('/:id', asyncRoute(async (req, res) => {
     noQuery(req);
     body(req.body, writable);
     res.json(present(await updateBooking(prisma, req.params.id, req.body, req.actor.id)));
   }));
+  // รับคำขอสร้างหรือทำรายการ /:id/cancel
   router.post('/:id/cancel', asyncRoute(async (req, res) => {
     noQuery(req);
     if (req.body && (typeof req.body !== 'object' || Array.isArray(req.body) || Object.keys(req.body).length)) {

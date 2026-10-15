@@ -1,16 +1,20 @@
+// เปลี่ยนหน้าและเลื่อนไปยังส่วนที่เลือก
 const paths: Record<string, string> = { home: '/', discover: '/discover', hotel: '/hotel', staff: '/staff', member: '/member', register: '/register' }
 
+// อ่านเส้นทางปัจจุบันและรองรับลิงก์แบบเดิม
 export function currentPath() {
   const legacy = paths[window.location.hash.slice(1)]
   if (legacy) window.history.replaceState(null, '', legacy + window.location.search)
   return window.location.pathname.replace(/\/$/, '') || '/'
 }
 
+// เปลี่ยนเส้นทางพร้อมแจ้งให้หน้าจออัปเดต
 export function navigate(path: string) {
   if (window.location.pathname !== path || window.location.hash) window.history.pushState(null, '', path)
   window.dispatchEvent(new window.PopStateEvent('popstate'))
 }
 
+// เลื่อนไปยังส่วนที่เลือกตามการตั้งค่าการเคลื่อนไหว
 export function scrollToTarget(target: string | Element | null | undefined) {
   const element = typeof target === 'string' ? document.getElementById(target) : target
   if (!element) return false
@@ -19,6 +23,7 @@ export function scrollToTarget(target: string | Element | null | undefined) {
   return true
 }
 
+// รับคลิกลิงก์ภายในโดยรักษาพฤติกรรมเปิดแท็บใหม่
 export function handleNavigation(event: MouseEvent) {
   if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return
   const anchor = event.target instanceof window.Element ? event.target.closest('a') : null

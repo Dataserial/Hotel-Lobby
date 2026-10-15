@@ -1,3 +1,4 @@
+// ทดสอบยอดรับเงิน รหัสอัตโนมัติ และการส่งซ้ำ
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { harness, page, tick, nodes, button, deferred } = require('./helpers/components.cjs');
@@ -55,6 +56,7 @@ test('automatic receipt references meet the legacy API contract for every paymen
     const methodField = nodes(render(), n => n.props.title === 'วิธีชำระ')[0];
     nodes(methodField, n => n.type === 'select')[0].props.onChange({ target: { value: method } });
     assert.equal(nodes(render(), n => n.props.title === 'เลขอ้างอิงหลักฐาน').length, 0);
+    // ตรวจข้อมูลและส่งคำขอของฟอร์ม
     const submit = () => nodes(render(), n => n.type === 'form' && n.props.className?.split(/\s+/).includes('money-form'))[0].props.onSubmit({ preventDefault() {} });
     await submit();
     const payload = calls[0][2];
@@ -116,6 +118,7 @@ test('preset and custom amounts pass real API validation even when the device cl
     amount().props.onChange({ target: { value: mode === 'preset' ? String(price) : 'custom' } });
     if (mode === 'custom') nodes(render(), n => n.props['aria-label'] === 'ระบุยอดรับจริง')[0].props.onChange({ target: { value: String(price) } });
     nodes(nodes(render(), n => n.props.title === 'วิธีชำระ')[0], n => n.type === 'select')[0].props.onChange({ target: { value: method } });
+    // ตรวจข้อมูลและส่งคำขอของฟอร์ม
     const submit = () => nodes(render(), n => n.type === 'form' && n.props.className?.split(/\s+/).includes('money-form'))[0].props.onSubmit({ preventDefault() {} });
     await submit();
     assert.equal(calls.length, 1);
@@ -135,6 +138,7 @@ test('clock lookup failure sends no receipt and permits a retry', async () => {
     paymentOccurredAt: async () => { if (failClock) throw new Error('Server clock unavailable'); return '2026-10-15T07:35:19.000Z'; },
   });
   amount().props.onChange({ target: { value: '2600' } });
+  // ตรวจข้อมูลและส่งคำขอของฟอร์ม
   const submit = () => nodes(render(), n => n.type === 'form' && n.props.className?.split(/\s+/).includes('money-form'))[0].props.onSubmit({ preventDefault() {} });
   await submit();
   assert.equal(calls.length, 0);
@@ -149,6 +153,7 @@ test('double submission while obtaining server time records only one receipt', a
   const clock = deferred();
   const { h, render, amount, calls } = await openPayment(2600, 1, 2600, true, { paymentOccurredAt: () => clock.promise });
   amount().props.onChange({ target: { value: '2600' } });
+  // ตรวจข้อมูลและส่งคำขอของฟอร์ม
   const submit = () => nodes(render(), n => n.type === 'form' && n.props.className?.split(/\s+/).includes('money-form'))[0].props.onSubmit({ preventDefault() {} });
   const first = submit();
   await submit();

@@ -1,4 +1,5 @@
-/* Shared interaction motion; independent transform properties preserve centered controls. */
+/* จัดรูปแบบการเคลื่อนไหวและการลดแอนิเมชันตามการตั้งค่าผู้ใช้ */
+/* ใช้แอนิเมชันร่วมกันโดยไม่รบกวนตำแหน่งของปุ่ม */
 :root { --motion-ease: cubic-bezier(.2, .75, .25, 1); }
 button, .contact-links a {
   transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease,
@@ -13,13 +14,23 @@ button:focus-visible, .contact-links a:focus-visible { box-shadow: 0 0 0 5px #ff
 .modal { animation: dialog-enter 240ms var(--motion-ease); }
 .contact-dialog[open] { animation: dialog-enter 240ms var(--motion-ease); }
 .modal-backdrop, .contact-dialog[open]::backdrop { animation: backdrop-enter 180ms ease; }
+/* กำหนดจังหวะการเคลื่อนไหว */
+
 @keyframes content-enter { from { opacity: 0; translate: 0 12px; } to { opacity: 1; translate: 0 0; } }
+/* กำหนดจังหวะการเคลื่อนไหว */
+
 @keyframes dialog-enter { from { opacity: 0; translate: 0 12px; scale: .98; } to { opacity: 1; translate: 0 0; scale: 1; } }
+/* กำหนดจังหวะการเคลื่อนไหว */
+
 @keyframes backdrop-enter { from { opacity: 0; } to { opacity: 1; } }
+/* ปรับการแสดงผลตามขนาดหน้าจอหรือการตั้งค่าอุปกรณ์ */
+
 @media (hover: hover) and (pointer: fine) {
   button:hover:not(:disabled), .contact-links a:hover { translate: 0 -2px; box-shadow: 0 5px 14px #043d5518; }
   button:active:not(:disabled), .contact-links a:active { translate: 0 0; }
 }
+/* ปรับการแสดงผลตามขนาดหน้าจอหรือการตั้งค่าอุปกรณ์ */
+
 @media (prefers-reduced-motion: reduce) {
   .reveal-pending { opacity: 1; translate: none; transition: none; }
   .login-card, .member-card, .page-head, .notice, .public-empty, .modal, .contact-dialog[open], .modal-backdrop, .contact-dialog[open]::backdrop { animation: none; }

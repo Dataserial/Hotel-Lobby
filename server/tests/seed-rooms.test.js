@@ -1,3 +1,4 @@
+// ทดสอบการสร้างห้องพักตัวอย่าง
 const { seedRooms } = require('../scripts/seed-rooms');
 
 function database(types = [], rooms = []) {

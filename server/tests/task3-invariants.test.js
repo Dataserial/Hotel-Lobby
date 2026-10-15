@@ -1,3 +1,4 @@
+// ทดสอบความตรงกันของห้อง การจอง และยอดชำระ
 const { ObjectId } = require('mongodb');
 const { assertTestUrl, startDatabase, expectConsistent, sample } = require('./task3-db');
 

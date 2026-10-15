@@ -1,3 +1,4 @@
+// ทดสอบข้อกำหนดการสร้างผู้ดูแล
 const bcrypt = require('bcryptjs');
 const request = require('supertest');
 const express = require('express');

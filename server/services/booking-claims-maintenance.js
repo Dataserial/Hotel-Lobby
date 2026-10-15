@@ -1,8 +1,11 @@
+// ตรวจและเติมสิทธิ์กันห้องรายคืนของข้อมูลเดิม
 const { BookingError, validateStay } = require('./booking-validation');
 
 const holdsNights = new Set(['confirmed', 'checked_in']);
+// สร้างคีย์ห้องและคืนเพื่อเทียบสิทธิ์กันห้อง
 const claimKey = ({ roomId, night }) => `${roomId}:${night}`;
 
+// ตรวจสิทธิ์กันห้องเทียบกับการจองโดยไม่แก้ข้อมูล
 async function auditClaims(prisma) {
   const [bookings, claims, rooms, types, guests, users, payments, indexes] = await Promise.all([
     prisma.booking.findMany(), prisma.roomNightClaim.findMany(),
@@ -64,6 +67,7 @@ async function auditClaims(prisma) {
   return { bookingCount: bookings.length, claimCount: claims.length, expectedClaimCount: expected.size, missingClaims, issues };
 }
 
+// เติมสิทธิ์กันห้องที่ขาดหลังผ่านการตรวจ
 async function backfillMissingClaims(prisma) {
   const before = await auditClaims(prisma);
   if (before.issues.length) throw new BookingError(409, 'CLAIMS_REPAIR_BLOCKED', 'Resolve audit issues before adding missing claims.');

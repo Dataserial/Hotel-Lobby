@@ -1,3 +1,4 @@
+// ทดสอบข้อมูลวันที่ จำนวนคน และราคา
 const {
   validateStay, validateGuestCount, calculatePrice,
 } = require('../services/booking-validation');

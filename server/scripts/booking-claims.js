@@ -1,3 +1,4 @@
+// คำสั่งตรวจและเติมสิทธิ์กันห้องรายคืน
 require('dotenv').config({ quiet: true });
 const { PrismaClient } = require('@prisma/client');
 const { MongoClient } = require('mongodb');
@@ -20,6 +21,7 @@ function options(args, url) {
   return parsed;
 }
 
+// เริ่มขั้นตอนหลัก: คำสั่งตรวจและเติมสิทธิ์กันห้องรายคืน
 async function main() {
   const config = options(process.argv.slice(2), process.env.DATABASE_URL);
   const prisma = new PrismaClient();
@@ -34,7 +36,7 @@ async function main() {
 }
 
 if (require.main === module) main().catch((error) => {
-  // Never echo a database URL (which may contain credentials) or a Prisma query.
+  // ไม่พิมพ์ URL ฐานข้อมูลหรือคำสั่ง Prisma ที่อาจมีความลับ
   process.stderr.write(`${error.code === 'CLAIMS_REPAIR_BLOCKED' ? error.message : 'Claims command failed; check arguments, database access and schema.'}\n`);
   process.exitCode = 1;
 });

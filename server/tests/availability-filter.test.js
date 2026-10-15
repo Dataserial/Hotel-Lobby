@@ -1,3 +1,4 @@
+// ทดสอบตัวกรองประเภทห้องและจำนวนผู้เข้าพัก
 const express = require('express');
 const request = require('supertest');
 const { errors } = require('../lib/http');

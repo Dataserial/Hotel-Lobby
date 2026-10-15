@@ -1,3 +1,4 @@
+// ทดสอบข้อมูลตัวอย่างและฐานข้อมูลสำหรับชุดทดสอบ
 const { PrismaClient } = require('@prisma/client');
 const sample = require('../../docs/step2-sample-data.json');
 

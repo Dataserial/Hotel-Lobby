@@ -1,3 +1,4 @@
+/* จัดรูปแบบรูปแบบหน้าเข้าสู่ระบบและสมัครสมาชิก */
 @reference "./tailwind.css";
 
 .auth-page { background: #eef4f6; @apply tw:p-[28px_5%_48px]; }
@@ -29,7 +30,11 @@
 .auth-page .login-card .notice { font-size: 14px; }
 .auth-form-eyebrow { font-size: 11px; letter-spacing: .14em; @apply tw:text-muted; }
 .auth-page a:focus-visible { outline: 3px solid var(--navy); outline-offset: 5px; @apply tw:rounded-[6px]; }
+/* ปรับการแสดงผลตามขนาดหน้าจอหรือการตั้งค่าอุปกรณ์ */
+
 @media (max-width: 900px) { .auth-intro-copy { @apply tw:p-[32px_28px]; }.auth-crescent { @apply tw:right-[24px]; font-size: 58px; }.auth-page .login-card { @apply tw:p-[32px_28px]; } }
+/* ปรับการแสดงผลตามขนาดหน้าจอหรือการตั้งค่าอุปกรณ์ */
+
 @media (max-width: 680px) {
   .auth-page { @apply tw:p-[20px_16px_32px]; }.auth-header { @apply tw:mb-[20px]; }.auth-page .login-brand .lub-brand { font-size: 30px; }.auth-home { font-size: 13px; }
   .auth-layout { @apply tw:grid-cols-[1fr] tw:rounded-[24px]; }.auth-intro-copy { @apply tw:p-[24px]; }.auth-intro h1 { font-size: 30px; @apply tw:m-[14px_0_10px]; }.auth-intro h1 br { @apply tw:hidden; }.auth-intro p { font-size: 14px; @apply tw:m-[0]; }.auth-intro ul, .auth-photo { @apply tw:hidden; }.auth-crescent { font-size: 46px; @apply tw:top-[30px] tw:right-[22px]; }.auth-page .login-card { @apply tw:p-[28px_24px]; }.auth-page .login-card h2 { font-size: 26px; }

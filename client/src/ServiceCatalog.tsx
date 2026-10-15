@@ -1,7 +1,9 @@
+// แสดงรายการบริการเสริมให้ลูกค้า
 import { useEffect, useState } from 'react'
 import { errorText, query, request, type AdditionalService, type Paged } from './api'
 
 const units = { per_night: 'ต่อคืน', per_set: 'ต่อชุด', per_stay: 'ต่อการเข้าพัก' }
+// โหลดและแสดงบริการเสริมสำหรับลูกค้า
 export default function ServiceCatalog({ roomTypeId, supportsExtraBed }: { roomTypeId: string; supportsExtraBed: boolean }) {
   const [open, setOpen] = useState(false)
   const [refresh, setRefresh] = useState(0)
@@ -10,6 +12,7 @@ export default function ServiceCatalog({ roomTypeId, supportsExtraBed }: { roomT
   useEffect(() => {
     if (!open) return
     const controller = new AbortController()
+    // โหลดข้อมูลหน้าปัจจุบัน
     const load = async () => {
       const items: AdditionalService[] = []
       for (let page = 1; ; page++) {

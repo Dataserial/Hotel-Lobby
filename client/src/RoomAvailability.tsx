@@ -1,12 +1,16 @@
+// แสดงห้องว่างตามวันที่และประเภทห้อง
 import { useEffect, useState } from 'react'
 import { errorText, query, request, type AvailabilityStay, type RoomAvailabilitySearch, type RoomAvailabilitySummary, type User } from './api'
 import { roomPhoto } from './roomPhotos'
 import StayRequestForm from './StayRequestForm'
 import './RoomAvailability.css'
 
+// จัดรูปแบบจำนวนเงินให้อ่านง่าย
 const money = (value: number) => new Intl.NumberFormat('th-TH').format(value)
+// แสดงวันที่เป็นข้อความภาษาไทย
 const dateLabel = (value: string) => new Intl.DateTimeFormat('th-TH-u-ca-gregory', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(value + 'T00:00:00Z'))
 
+// แสดงสรุปห้องว่างและตัวเลือกประเภทห้อง
 export default function RoomAvailability({ stay, roomTypeId, selectRoomType, choose, user, token, login, reauthenticate }: { stay: AvailabilityStay; roomTypeId: string; selectRoomType: (id: string) => void; choose: (stay: RoomAvailabilitySearch) => void; user?: User | null; token?: string | null; login: () => void; reauthenticate: () => void }) {
   const [result, setResult] = useState<{ key: string; data?: RoomAvailabilitySummary; error?: string } | null>(null)
   const [refresh, setRefresh] = useState(0)

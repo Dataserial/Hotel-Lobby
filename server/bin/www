@@ -1,35 +1,29 @@
 #!/usr/bin/env node
+// เปิด HTTP server และปิดบริการอย่างเป็นระเบียบ
 
-/**
- * Module dependencies.
- */
+/* โหลดไลบรารีและแอปที่ใช้เปิดเซิร์ฟเวอร์ */
 
 var app = require('../app');
 var debug = require('debug')('server:server');
 var http = require('http');
 
-/**
- * Get port from environment and store in Express.
- */
+/* อ่านพอร์ตจากค่าตั้งค่าแล้วกำหนดให้ Express */
 
 var port = normalizePort(process.env.PORT || '3000');
 app.set('port', port);
 
-/**
- * Create HTTP server.
- */
+/* สร้าง HTTP server จากแอป */
 
 var server = http.createServer(app);
 
-/**
- * Listen on provided port, on all network interfaces.
- */
+/* เปิดรับคำขอตามพอร์ตและ IP ที่กำหนด */
 
 server.listen(port, process.env.HOST || '0.0.0.0');
 server.on('error', onError);
 server.on('listening', onListening);
 
 let shuttingDown = false;
+// หยุดรับคำขอและปิดฐานข้อมูลให้เรียบร้อย
 async function shutdown() {
   if (shuttingDown) return;
   shuttingDown = true;
@@ -46,30 +40,28 @@ async function shutdown() {
 process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);
 
-/**
- * Normalize a port into a number, string, or false.
- */
+/* แปลงพอร์ตเป็นตัวเลข ชื่อ pipe หรือค่าที่ใช้ไม่ได้ */
 
+// แปลงค่าพอร์ตให้เป็นรูปแบบที่เซิร์ฟเวอร์รองรับ
 function normalizePort(val) {
   var port = parseInt(val, 10);
 
   if (isNaN(port)) {
-    // named pipe
+    // ใช้ชื่อ pipe แทนพอร์ตตัวเลข
     return val;
   }
 
   if (port >= 0) {
-    // port number
+    // ใช้พอร์ตที่เป็นตัวเลข
     return port;
   }
 
   return false;
 }
 
-/**
- * Event listener for HTTP server "error" event.
- */
+/* รับเหตุการณ์เมื่อเปิดเซิร์ฟเวอร์ผิดพลาด */
 
+// แสดงสาเหตุเมื่อเปิดเซิร์ฟเวอร์ไม่สำเร็จ
 function onError(error) {
   if (error.syscall !== 'listen') {
     throw error;
@@ -79,7 +71,7 @@ function onError(error) {
     ? 'Pipe ' + port
     : 'Port ' + port;
 
-  // handle specific listen errors with friendly messages
+  // แสดงสาเหตุที่อ่านง่ายเมื่อเปิดพอร์ตไม่ได้
   switch (error.code) {
     case 'EACCES':
       console.error(bind + ' requires elevated privileges');
@@ -94,10 +86,9 @@ function onError(error) {
   }
 }
 
-/**
- * Event listener for HTTP server "listening" event.
- */
+/* แจ้งเมื่อเซิร์ฟเวอร์เปิดรับคำขอแล้ว */
 
+// แจ้งพอร์ตเมื่อเซิร์ฟเวอร์พร้อมรับคำขอ
 function onListening() {
   var addr = server.address();
   var bind = typeof addr === 'string'

@@ -1,13 +1,16 @@
+// ภาพเคลื่อนไหวตอนเข้าสู่เว็บไซต์
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import './MoonIntro.css'
 
+// แสดงภาพเคลื่อนไหวเปิดเว็บไซต์
 export default function MoonIntro({ begin }: { begin: () => void }) {
   const intro = useRef<HTMLElement>(null)
   const scrollFrame = useRef(0)
   const cancelJourney = useRef<(() => void) | null>(null)
   const [progress, setProgress] = useState(0)
   useEffect(() => () => cancelJourney.current?.(), [])
+  // เริ่มเข้าสู่เนื้อหาหลักของเว็บ
   const startJourney = () => {
     if (!intro.current || scrollFrame.current) return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -20,6 +23,7 @@ export default function MoonIntro({ begin }: { begin: () => void }) {
       document.documentElement.scrollHeight - window.innerHeight,
     )
     let startedAt: number | undefined
+    // ยกเลิกงานที่ยังรอทำงาน
     const cancel = () => {
       cancelAnimationFrame(scrollFrame.current)
       scrollFrame.current = 0
@@ -28,6 +32,7 @@ export default function MoonIntro({ begin }: { begin: () => void }) {
       window.removeEventListener('keydown', cancel)
       cancelJourney.current = null
     }
+    // คำนวณภาพเคลื่อนไหวของเฟรมถัดไป
     const step = (time: number) => {
       startedAt ??= time
       const elapsed = Math.min((time - startedAt) / 1600, 1)
@@ -45,6 +50,7 @@ export default function MoonIntro({ begin }: { begin: () => void }) {
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     let frame = 0
+    // ปรับสถานะให้ตรงกับข้อมูลที่เปลี่ยน
     const update = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(() => setProgress(Math.min(1, Math.max(0, -(intro.current?.getBoundingClientRect().top || 0) / window.innerHeight)))) }
     window.addEventListener('scroll', update, { passive: true }); window.addEventListener('resize', update); update()
     return () => { cancelAnimationFrame(frame); window.removeEventListener('scroll', update); window.removeEventListener('resize', update) }

@@ -1,7 +1,9 @@
+// API จัดการประเภทห้อง ราคา และความจุ
 const express = require('express');
 const { asyncRoute, body, str, int, bool, objectId, page, list, fail } = require('../lib/http');
 const { role } = require('../lib/auth');
 
+// ตรวจรายการสิ่งอำนวยความสะดวก
 const amenities = (v) => {
   if (!Array.isArray(v) || v.length > 30) fail(400, 'VALIDATION_ERROR', 'Invalid amenities');
   const result = v.map((x) => str(x, 'amenity', 60));
@@ -10,6 +12,7 @@ const amenities = (v) => {
 };
 module.exports = (prisma) => {
   const router = express.Router();
+  // อ่านข้อมูล /
   router.get('/', asyncRoute(async (req, res) => {
     const pagination = page(req.query, ['active', 'q']);
     const where = {};
@@ -17,12 +20,15 @@ module.exports = (prisma) => {
     if (req.query.q) where.name = { contains: str(req.query.q, 'q', 80), mode: 'insensitive' };
     res.json(await list(prisma.roomType, where, pagination, { name: 'asc' }));
   }));
+  // อ่านข้อมูล /:id
   router.get('/:id', asyncRoute(async (req, res) => {
     const item = await prisma.roomType.findUnique({ where: { id: objectId(req.params.id) } });
     if (!item) fail(404, 'NOT_FOUND', 'Room type not found');
     res.json(item);
   }));
+  // กำหนดเงื่อนไขร่วมของเส้นทาง
   router.use(role('admin'));
+  // รับคำขอสร้างหรือทำรายการ /
   router.post('/', asyncRoute(async (req, res) => {
     body(req.body, ['name', 'capacity', 'basePrice', 'amenities', 'supportsExtraBed'], ['name', 'capacity', 'basePrice']);
     const name = str(req.body.name, 'name', 80);
@@ -34,6 +40,7 @@ module.exports = (prisma) => {
     } });
     res.status(201).json(item);
   }));
+  // รับคำขอแก้ไข /:id
   router.patch('/:id', asyncRoute(async (req, res) => {
     const id = objectId(req.params.id);
     body(req.body, ['name', 'capacity', 'basePrice', 'amenities', 'active', 'supportsExtraBed']);
@@ -58,6 +65,7 @@ module.exports = (prisma) => {
     });
     res.json(item);
   }));
+  // รับคำขอลบหรือปิดใช้งาน /:id
   router.delete('/:id', asyncRoute(async (req, res) => {
     const id = objectId(req.params.id);
     if (!await prisma.roomType.findUnique({ where: { id } })) fail(404, 'NOT_FOUND', 'Room type not found');

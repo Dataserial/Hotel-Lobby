@@ -1,4 +1,7 @@
+// ตรวจสอบช่องทางติดต่อที่ตั้งค่าไว้
+// กำหนดรูปแบบข้อมูล ContactChannel ที่ส่วนนี้ใช้งาน
 export type ContactChannel = { label: string; href: string }
+// เลือกเฉพาะช่องทางติดต่อที่ใช้ได้
 export function contactChannels(env: Record<string, string | undefined>): ContactChannel[] {
   const result: ContactChannel[] = []
   const phone = env.VITE_CONTACT_PHONE?.trim()
@@ -8,6 +11,6 @@ export function contactChannels(env: Record<string, string | undefined>): Contac
   try {
     const url = new URL(env.VITE_CONTACT_URL || '')
     if (url.protocol === 'https:' && !url.username && !url.password) result.push({ label: 'ติดต่อโรงแรมออนไลน์', href: url.href })
-  } catch { /* An unset or invalid channel is not displayed as a working link. */ }
+  } catch { /* ไม่แสดงลิงก์ที่ยังไม่ตั้งค่าหรือรูปแบบไม่ถูกต้อง */ }
   return result
 }

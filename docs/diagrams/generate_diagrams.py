@@ -1,3 +1,4 @@
+# สร้าง ER และ Use Case Diagram จากโครงสร้างระบบ
 """Generate editable draw.io diagrams from the current Hotel-Lobby schema."""
 from pathlib import Path
 import re

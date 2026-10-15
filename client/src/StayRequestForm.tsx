@@ -1,21 +1,27 @@
+// ส่งคำขอเข้าพักพร้อมบริการเสริม
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { errorText, query, request, type AdditionalService, type AvailabilityStay, type Paged, type StayRequest, type User } from './api'
 
+// จัดรูปแบบจำนวนเงินให้อ่านง่าย
 const money = (value: number) => new Intl.NumberFormat('th-TH').format(value)
 const unitLabel: Record<AdditionalService['unit'], string> = { per_night: 'ต่อคืน', per_set: 'ต่อชุด', per_stay: 'ต่อการเข้าพัก' }
+// กำหนดรูปแบบข้อมูล Selection ที่ส่วนนี้ใช้งาน
 type Selection = Record<string, number>
 const storageKey = 'lubd-stay-request-selection-v1'
 
+// เลือกบริการและส่งคำขอเข้าพักของสมาชิก
 export default function StayRequestForm({ stay, roomType, user, token, login, reauthenticate }: { stay: AvailabilityStay; roomType: { id: string; name: string; capacity: number; pricePerNight: number; supportsExtraBed?: boolean }; user?: User | null; token?: string | null; login: () => void; reauthenticate: () => void }) {
   const [services, setServices] = useState<AdditionalService[]>([]); const [selected, setSelected] = useState<Selection>(() => { try { return JSON.parse(window.localStorage?.getItem?.(storageKey) || '{}') } catch { return {} } })
   const [notice, setNotice] = useState(''); const [error, setError] = useState(''); const [needsLogin, setNeedsLogin] = useState(false); const [name, setName] = useState(user?.name || ''); const [phone, setPhone] = useState(''); const [notes, setNotes] = useState(''); const [confirming, setConfirming] = useState(false); const [submitting, setSubmitting] = useState(false); const clientRequestId = useRef<string | null>(null)
   useEffect(() => { const controller = new AbortController(); void request<Paged<AdditionalService>>('/public/additional-services?' + query({ roomTypeId: roomType.id, limit: 100 }), null, { signal: controller.signal }).then(data => { if (controller.signal.aborted) return; const permitted = data.items.filter(service => !service.extraBed || !!roomType.supportsExtraBed); setServices(permitted); setSelected(current => { const next = Object.fromEntries(Object.entries(current).filter(([id]) => permitted.some(service => service.id === id))); if (Object.keys(next).length !== Object.keys(current).length) setNotice('ลบบริการที่ใช้ไม่ได้กับประเภทห้องที่เลือกแล้ว'); return next }) }).catch(e => { if (!controller.signal.aborted) setError(errorText(e)) }); return () => controller.abort() }, [roomType.id, roomType.supportsExtraBed])
-  useEffect(() => { try { window.localStorage?.setItem?.(storageKey, JSON.stringify(selected)) } catch { /* private browsing or test storage */ } }, [selected])
+  useEffect(() => { try { window.localStorage?.setItem?.(storageKey, JSON.stringify(selected)) } catch { /* บางโหมดของเบราว์เซอร์หรือชุดทดสอบไม่ให้เก็บข้อมูล */ } }, [selected])
   const nights = Math.round((Date.parse(stay.checkOutDate) - Date.parse(stay.checkInDate)) / 86400000)
   const selectedRows = useMemo(() => services.filter(service => selected[service.id]).map(service => ({ service, quantity: selected[service.id] })), [services, selected])
   const serviceTotal = selectedRows.reduce((sum, { service, quantity }) => sum + (service.included || service.price === null ? 0 : service.price * quantity * (service.unit === 'per_night' ? nights : 1)), 0)
   const roomTotal = roomType.pricePerNight * nights
+  // ปรับสถานะให้ตรงกับข้อมูลที่เปลี่ยน
   const update = (id: string, quantity: number) => setSelected(current => { const next = { ...current }; if (quantity < 1) delete next[id]; else next[id] = quantity; return next })
+  // ตรวจข้อมูลและส่งคำขอของฟอร์ม
   async function submit() {
     if (!user || user.role !== 'customer') { login(); return }
     if (!token) { reauthenticate(); return }

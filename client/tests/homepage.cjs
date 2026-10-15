@@ -1,3 +1,4 @@
+// ทดสอบหน้าแรกและสิทธิ์เมนูของพนักงาน
 const {test}=require('node:test');const assert=require('node:assert/strict');
 const {domApp}=require('./helpers/dom.cjs');
 test('first visit shows real overview and every public, member and staff logo returns home without losing the session',{timeout:180000},async()=>{
@@ -28,7 +29,7 @@ test('first visit shows real overview and every public, member and staff logo re
     assert.ok(doc.querySelector('.home-header').textContent.includes('DOM Admin'));
     await h.React.act(async()=>h.button('ระบบพนักงาน').click());await h.waitFor(()=>doc.querySelector('.sidebar'));
     assert.equal(await db.prisma.session.count(),1);
-    // Customer profile has the same global home link, and retains its login.
+    // หน้าบัญชีลูกค้ากลับหน้าแรกผ่านลิงก์ร่วมโดยยังเข้าสู่ระบบอยู่
     await h.openAccount();await h.React.act(async()=>h.button('ออกจากระบบ').click());await h.waitFor(()=>doc.querySelector('.login-card'));
     await h.React.act(async()=>doc.querySelector('.login-brand').click());await h.waitFor(()=>doc.querySelector('.home-page'));
     await h.React.act(async()=>h.button('สมัครสมาชิก').click());await h.waitFor(()=>doc.querySelector('input[autocomplete="name"]'));

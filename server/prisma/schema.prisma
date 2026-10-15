@@ -1,24 +1,30 @@
+// กำหนดโมเดล ความสัมพันธ์ และดัชนีของ MongoDB
+// สร้าง Prisma Client สำหรับเรียกฐานข้อมูลจาก JavaScript
 generator client {
   provider = "prisma-client-js"
 }
 
+// อ่านข้อมูลเชื่อมต่อ MongoDB จากตัวแปรแวดล้อมฝั่งเซิร์ฟเวอร์
 datasource db {
   provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
+// บทบาทผู้ใช้
 enum UserRole {
   admin
   receptionist
   customer
 }
 
+// สถานะห้องพัก
 enum RoomStatus {
   available
   occupied
   maintenance
 }
 
+// สถานะการจอง
 enum BookingStatus {
   confirmed
   checked_in
@@ -26,29 +32,34 @@ enum BookingStatus {
   cancelled
 }
 
+// สถานะยอดชำระ
 enum PaymentStatus {
   pending
   paid
   refunded
 }
 
+// วิธีชำระเงิน
 enum PaymentMethod {
   cash
   bank_transfer
   card
 }
 
+// ชนิดรับหรือคืนเงิน
 enum PaymentTransactionKind {
   receive
   refund
 }
 
+// หน่วยคิดค่าบริการเสริม
 enum ServiceUnit {
   per_night
   per_set
   per_stay
 }
 
+// สถานะคำขอเข้าพัก
 enum StayRequestStatus {
   new
   read
@@ -56,273 +67,501 @@ enum StayRequestStatus {
   rejected
 }
 
+// บัญชีผู้ใช้และบทบาทการเข้าถึง
 model User {
+  // รหัสเอกสารไม่ซ้ำ
   id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  // ชื่อที่แสดง
   name             String
+  // อีเมลผู้ใช้
   email            String    @unique
+  // ค่าแฮชรหัสผ่าน ไม่เก็บรหัสผ่านจริง
   passwordHash     String
+  // บทบาทและสิทธิ์ของบัญชี
   role             UserRole
+  // สถานะเปิดใช้งาน
   active           Boolean   @default(true)
+  // เวลาสร้างข้อมูล
   createdAt        DateTime  @default(now())
+  // เวลาแก้ไขล่าสุด
   updatedAt        DateTime  @updatedAt
+  // รายการจองที่บัญชีนี้สร้าง
   bookingsCreated  Booking[] @relation("BookingCreatedBy")
+  // รายการจองที่บัญชีนี้แก้ไข
   bookingsUpdated  Booking[] @relation("BookingUpdatedBy")
+  // ยอดชำระที่บัญชีนี้บันทึก
   paymentsRecorded Payment[] @relation("PaymentRecordedBy")
+  // รายการรับคืนเงินที่บัญชีนี้บันทึก
   transactionsRecorded PaymentTransaction[]
+  // session ของบัญชีนี้
   sessions         Session[]
+  // ข้อมูลผู้เข้าพักที่เชื่อมกับบัญชีลูกค้า
   customerGuests   Guest[] @relation("CustomerGuests")
+  // รายการจองของบัญชีลูกค้า
   customerBookings Booking[] @relation("CustomerBookings")
+  // คำขอเข้าพักของสมาชิก
   stayRequests     StayRequest[] @relation("StayRequestMember")
+  // รหัสผู้สร้างข้อมูล
   createdById      String?   @db.ObjectId
+  // รหัสผู้แก้ไขล่าสุด
   updatedById      String?   @db.ObjectId
 
+  // ชื่อ collection จริงใน MongoDB
   @@map("users")
 }
 
+// ประเภทห้อง ราคา และความจุ
 model RoomType {
+  // รหัสเอกสารไม่ซ้ำ
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  // ชื่อที่แสดง
   name      String
+  // ชื่อมาตรฐานสำหรับตรวจค่าซ้ำ
   nameKey   String   @unique
+  // จำนวนผู้เข้าพักสูงสุด
   capacity  Int
+  // ราคาห้องต่อคืนเป็นบาท
   basePrice Int
+  // รายการสิ่งอำนวยความสะดวก
   amenities String[]
+  // สถานะเปิดใช้งาน
   active    Boolean  @default(true)
+  // อนุญาตให้เพิ่มเตียงเสริมหรือไม่
   supportsExtraBed Boolean @default(false)
+  // เวลาสร้างข้อมูล
   createdAt DateTime @default(now())
+  // เวลาแก้ไขล่าสุด
   updatedAt DateTime @updatedAt
+  // ห้องพักในประเภทนี้
   rooms     Room[]
+  // รหัสผู้สร้างข้อมูล
   createdById String? @db.ObjectId
+  // รหัสผู้แก้ไขล่าสุด
   updatedById String? @db.ObjectId
 
+  // ชื่อ collection จริงใน MongoDB
   @@map("roomTypes")
 }
 
+// บริการเสริมและเงื่อนไขการใช้
 model AdditionalService {
+  // รหัสเอกสารไม่ซ้ำ
   id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  // ชื่อที่แสดง
   name            String
+  // ชื่อมาตรฐานสำหรับตรวจค่าซ้ำ
   nameKey         String      @unique
+  // หน่วยคำนวณค่าบริการ
   unit            ServiceUnit
+  // ราคาบริการเป็นบาท หรือยังไม่กำหนด
   price           Int?
+  // บริการนี้รวมอยู่ในค่าห้องแล้ว
   included        Boolean     @default(false)
+  // ระบุว่าเป็นบริการเตียงเสริม
   extraBed        Boolean     @default(false)
+  // ประเภทห้องที่ใช้ได้ ถ้าว่างหมายถึงทุกประเภท
   roomTypeIds     String[]    @db.ObjectId
+  // จำนวนบริการสูงสุดที่เลือกได้
   maxQuantity     Int         @default(1)
+  // สถานะเปิดใช้งาน
   active          Boolean     @default(true)
+  // เวลาสร้างข้อมูล
   createdAt       DateTime    @default(now())
+  // เวลาแก้ไขล่าสุด
   updatedAt       DateTime    @updatedAt
+  // รหัสผู้สร้างข้อมูล
   createdById     String?     @db.ObjectId
+  // รหัสผู้แก้ไขล่าสุด
   updatedById     String?     @db.ObjectId
 
+  // ชื่อ collection จริงใน MongoDB
   @@map("additionalServices")
 }
 
+// คำขอเข้าพักที่ยังแยกจากรายการจอง
 model StayRequest {
+  // รหัสเอกสารไม่ซ้ำ
   id                    String            @id @default(auto()) @map("_id") @db.ObjectId
+  // รหัสสมาชิกที่ส่งคำขอ
   memberId              String            @db.ObjectId
+  // สมาชิกเจ้าของคำขอ
   member                User              @relation("StayRequestMember", fields: [memberId], references: [id])
+  // ชื่อผู้ติดต่อ
   contactName           String
+  // เบอร์ผู้ติดต่อ
   contactPhone          String
+  // รหัสประเภทห้อง
   roomTypeId            String            @db.ObjectId
+  // ชื่อประเภทห้องขณะส่งคำขอ
   roomTypeName          String
+  // รหัสห้องพัก
   roomId                String?           @db.ObjectId
+  // เลขห้องขณะส่งคำขอ
   roomNumber            String?
+  // วันที่เข้าพัก
   checkInDate           String
+  // วันที่ออก ไม่รวมคืนนี้ในการคิดราคา
   checkOutDate          String
+  // จำนวนผู้เข้าพัก
   guestCount            Int
+  // ราคาต่อคืนขณะส่งคำขอ
   roomPricePerNight     Int
+  // ค่าห้องประมาณการ
   estimatedRoomTotal    Int
+  // ค่าบริการเสริมประมาณการ
   estimatedServiceTotal Int               @default(0)
+  // หมายเหตุเพิ่มเติม
   notes                 String?
+  // สถานะปัจจุบันของข้อมูล
   status                StayRequestStatus @default(new)
+  // รหัสจากลูกค้าเพื่อป้องกันคำขอซ้ำ
   clientRequestId       String
+  // รหัสจองที่เกี่ยวข้อง ยังไม่มีขั้นตอนเชื่อมอัตโนมัติ
   relatedBookingId      String?           @db.ObjectId
+  // เวลาสร้างข้อมูล
   createdAt             DateTime          @default(now())
+  // เวลาแก้ไขล่าสุด
   updatedAt             DateTime          @updatedAt
+  // บริการที่เลือกในคำขอ
   services              StayRequestService[]
 
+  // บังคับให้ชุดฟิลด์นี้ไม่ซ้ำ
   @@unique([memberId, clientRequestId])
+  // เพิ่มดัชนีสำหรับค้นหาตามฟิลด์นี้
   @@index([status, createdAt])
+  // เพิ่มดัชนีสำหรับค้นหาตามฟิลด์นี้
   @@index([memberId, createdAt])
+  // ชื่อ collection จริงใน MongoDB
   @@map("stayRequests")
 }
 
+// บริการที่เลือกพร้อมราคาขณะส่งคำขอ
 model StayRequestService {
+  // รหัสเอกสารไม่ซ้ำ
   id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  // รหัสคำขอเข้าพักต้นทาง
   requestId     String      @db.ObjectId
+  // คำขอเข้าพักต้นทาง
   request       StayRequest @relation(fields: [requestId], references: [id])
+  // รหัสบริการที่เลือก
   serviceId     String      @db.ObjectId
+  // ชื่อที่แสดง
   name          String
+  // จำนวนบริการที่เลือก
   quantity      Int
+  // หน่วยคำนวณค่าบริการ
   unit          ServiceUnit
+  // ราคาบริการเป็นบาท หรือยังไม่กำหนด
   price         Int?
+  // บริการนี้รวมอยู่ในค่าห้องแล้ว
   included      Boolean
+  // ยอดประมาณการของบริการนี้
   estimatedTotal Int        @default(0)
 
+  // เพิ่มดัชนีสำหรับค้นหาตามฟิลด์นี้
   @@index([requestId])
+  // ชื่อ collection จริงใน MongoDB
   @@map("stayRequestServices")
 }
 
+// ห้องพักและสถานะปัจจุบัน
 model Room {
+  // รหัสเอกสารไม่ซ้ำ
   id         String      @id @default(auto()) @map("_id") @db.ObjectId
-  // Preserve the existing MongoDB "number" field and unique index.
+  // คงชื่อฟิลด์ number และดัชนีเลขห้องเดิมของ MongoDB
+  // เลขห้องที่ไม่ซ้ำ
   number     String      @unique
+  // ชั้นของห้อง
   floor      Int?
+  // รหัสประเภทห้อง
   roomTypeId String?     @db.ObjectId
+  // ข้อมูลประเภทห้องที่อ้างอิง
   roomType   RoomType?   @relation(fields: [roomTypeId], references: [id])
+  // สถานะปัจจุบันของข้อมูล
   status     RoomStatus? @default(available)
+  // สถานะเปิดใช้งาน
   active     Boolean?    @default(true)
+  // เวลาสร้างข้อมูล
   createdAt  DateTime?   @default(now())
+  // เวลาแก้ไขล่าสุด
   updatedAt  DateTime?   @updatedAt
+  // รายการจองที่เชื่อมกับข้อมูลนี้
   bookings   Booking[]
+  // สิทธิ์กันห้องรายคืน
   claims     RoomNightClaim[]
+  // รหัสผู้สร้างข้อมูล
   createdById String? @db.ObjectId
+  // รหัสผู้แก้ไขล่าสุด
   updatedById String? @db.ObjectId
 
+  // เพิ่มดัชนีสำหรับค้นหาตามฟิลด์นี้
   @@index([roomTypeId, status])
+  // ชื่อ collection จริงใน MongoDB
   @@map("Room")
 }
 
+// ผู้เข้าพักจริงซึ่งอาจไม่มีบัญชีเข้าสู่ระบบ
 model Guest {
+  // รหัสเอกสารไม่ซ้ำ
   id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  // ชื่อเต็มผู้เข้าพัก
   fullName      String
+  // เบอร์โทรผู้เข้าพัก
   phone         String
+  // อีเมลผู้ใช้
   email         String?
+  // เลขเอกสารยืนยันตัวตน
   documentNo    String
+  // เลขเอกสารมาตรฐานสำหรับตรวจค่าซ้ำ
   documentNoKey String   @unique
+  // เวลาสร้างข้อมูล
   createdAt     DateTime @default(now())
+  // เวลาแก้ไขล่าสุด
   updatedAt     DateTime @updatedAt
+  // รายการจองที่เชื่อมกับข้อมูลนี้
   bookings      Booking[]
+  // รหัสบัญชีลูกค้า ถ้ามี
   customerId    String? @db.ObjectId
+  // บัญชีลูกค้าที่เป็นเจ้าของข้อมูล
   customer      User? @relation("CustomerGuests", fields: [customerId], references: [id])
+  // สถานะเปิดใช้งาน
   active        Boolean? @default(true)
+  // รหัสผู้สร้างข้อมูล
   createdById   String? @db.ObjectId
+  // รหัสผู้แก้ไขล่าสุด
   updatedById   String? @db.ObjectId
 
+  // เพิ่มดัชนีสำหรับค้นหาตามฟิลด์นี้
   @@index([fullName])
+  // เพิ่มดัชนีสำหรับค้นหาตามฟิลด์นี้
   @@index([phone])
+  // เพิ่มดัชนีสำหรับค้นหาตามฟิลด์นี้
   @@index([customerId, createdAt])
+  // ชื่อ collection จริงใน MongoDB
   @@map("guests")
 }
 
+// การจองหนึ่งห้องในช่วงวันที่กำหนด
 model Booking {
+  // รุ่นข้อมูลสำหรับตรวจการแก้พร้อมกัน
   version          Int           @default(0)
+  // รหัสเอกสารไม่ซ้ำ
   id               String        @id @default(auto()) @map("_id") @db.ObjectId
+  // รหัสผู้เข้าพัก
   guestId          String        @db.ObjectId
+  // ข้อมูลผู้เข้าพัก
   guest            Guest         @relation(fields: [guestId], references: [id])
+  // รหัสบัญชีลูกค้า ถ้ามี
   customerId       String?       @db.ObjectId
+  // บัญชีลูกค้าที่เป็นเจ้าของข้อมูล
   customer         User?         @relation("CustomerBookings", fields: [customerId], references: [id])
+  // รหัสห้องพัก
   roomId           String        @db.ObjectId
+  // ห้องที่อ้างอิง
   room             Room          @relation(fields: [roomId], references: [id])
+  // จำนวนผู้เข้าพัก
   guestCount       Int
+  // วันที่เข้าพัก
   checkInDate      String
+  // วันที่ออก ไม่รวมคืนนี้ในการคิดราคา
   checkOutDate     String
+  // สถานะปัจจุบันของข้อมูล
   status           BookingStatus @default(confirmed)
+  // ราคาต่อคืนที่บันทึกตอนจอง
   pricePerNight    Int
+  // ยอดค่าห้องรวมของการจอง
   totalPrice       Int
+  // เวลาเช็คอินจริง
   actualCheckInAt  DateTime?
+  // เวลาเช็คเอาต์จริง
   actualCheckOutAt DateTime?
+  // เวลายกเลิกจอง
   cancelledAt      DateTime?
+  // เวลาสร้างข้อมูล
   createdAt        DateTime      @default(now())
+  // เวลาแก้ไขล่าสุด
   updatedAt        DateTime      @updatedAt
+  // รหัสผู้สร้างข้อมูล
   createdById      String        @db.ObjectId
+  // บัญชีที่สร้างรายการ
   createdBy        User          @relation("BookingCreatedBy", fields: [createdById], references: [id])
+  // รหัสผู้แก้ไขล่าสุด
   updatedById      String        @db.ObjectId
+  // บัญชีที่แก้ไขล่าสุด
   updatedBy        User          @relation("BookingUpdatedBy", fields: [updatedById], references: [id])
+  // ยอดชำระของรายการนี้
   payment          Payment?
+  // สิทธิ์กันห้องรายคืน
   claims           RoomNightClaim[]
 
+  // เพิ่มดัชนีสำหรับค้นหาตามฟิลด์นี้
   @@index([roomId, checkInDate, checkOutDate])
+  // เพิ่มดัชนีสำหรับค้นหาตามฟิลด์นี้
   @@index([guestId, createdAt])
+  // เพิ่มดัชนีสำหรับค้นหาตามฟิลด์นี้
   @@index([customerId, createdAt])
+  // เพิ่มดัชนีสำหรับค้นหาตามฟิลด์นี้
   @@index([status, checkOutDate])
+  // ชื่อ collection จริงใน MongoDB
   @@map("bookings")
 }
 
+// ยอดชำระสะสมของการจอง
 model Payment {
+  // บัญชีรายการเงินผ่านการตรวจและพร้อมใช้งาน
   ledgerReady    Boolean        @default(false)
+  // ประวัติรับคืนเงินของยอดชำระ
   transactions   PaymentTransaction[]
+  // รหัสเอกสารไม่ซ้ำ
   id             String         @id @default(auto()) @map("_id") @db.ObjectId
+  // รหัสการจอง
   bookingId      String         @unique @db.ObjectId
+  // ข้อมูลการจองที่อ้างอิง
   booking        Booking        @relation(fields: [bookingId], references: [id])
+  // จำนวนเงินเป็นบาท
   amount         Int
+  // ยอดรับสะสม
   paidAmount     Int            @default(0)
+  // ยอดคืนสะสม
   refundedAmount Int            @default(0)
+  // วิธีชำระเงิน
   method         PaymentMethod?
+  // สถานะปัจจุบันของข้อมูล
   status         PaymentStatus  @default(pending)
+  // เวลารับเงินล่าสุด
   paidAt         DateTime?
+  // เวลาคืนเงินล่าสุด
   refundedAt     DateTime?
+  // เวลาสร้างข้อมูล
   createdAt      DateTime       @default(now())
+  // เวลาแก้ไขล่าสุด
   updatedAt      DateTime       @updatedAt
+  // รหัสผู้บันทึกรายการ
   recordedById   String         @db.ObjectId
+  // บัญชีผู้บันทึกรายการ
   recordedBy     User           @relation("PaymentRecordedBy", fields: [recordedById], references: [id])
 
+  // เพิ่มดัชนีสำหรับค้นหาตามฟิลด์นี้
   @@index([status])
+  // ชื่อ collection จริงใน MongoDB
   @@map("payments")
 }
 
+// รหัสคำขอเพื่อไม่สร้างการจองลูกค้าซ้ำ
 model CustomerBookingRequest {
+  // รหัสคำขอที่ไม่ซ้ำ
   key        String @id @map("_id")
+  // แฮชเนื้อหาคำขอสำหรับเทียบการส่งซ้ำ
   hash       String
+  // รหัสบัญชีลูกค้า ถ้ามี
   customerId String @db.ObjectId
+  // รหัสการจอง
   bookingId  String @db.ObjectId
 
+  // ชื่อ collection จริงใน MongoDB
   @@map("customerBookingRequests")
 }
 
+// รายการรับหรือคืนเงินจริงแต่ละครั้ง
 model PaymentTransaction {
+  // รหัสเอกสารไม่ซ้ำ
   id             String @id @default(auto()) @map("_id") @db.ObjectId
+  // รหัสยอดชำระที่รายการนี้สังกัด
   paymentId      String @db.ObjectId
+  // ยอดชำระของรายการนี้
   payment        Payment @relation(fields: [paymentId], references: [id])
+  // ระบุรับเงินหรือคืนเงิน
   kind           PaymentTransactionKind
+  // จำนวนเงินเป็นบาท
   amount         Int
+  // วิธีชำระเงิน
   method         PaymentMethod
+  // รหัสอ้างอิงรายการเงิน
   reference      String
+  // เวลาที่รายการเงินเกิดขึ้นจริง
   occurredAt     DateTime
+  // เวลาสร้างข้อมูล
   createdAt      DateTime @default(now())
+  // รหัสผู้บันทึกรายการ
   recordedById   String @db.ObjectId
+  // บัญชีผู้บันทึกรายการ
   recordedBy     User @relation(fields: [recordedById], references: [id])
+  // รหัสป้องกันการบันทึกคำขอซ้ำ
   idempotencyKey String @unique
+  // รหัสรายการรับเงินต้นทางเมื่อคืนเงิน
   receiptId      String? @db.ObjectId
+  // รายการรับเงินต้นทาง
   receipt        PaymentTransaction? @relation("ReceiptRefunds", fields: [receiptId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  // รายการคืนเงินที่อ้างการรับเงินนี้
   refunds        PaymentTransaction[] @relation("ReceiptRefunds")
+  // เหตุผลการคืนเงิน
   reason         String?
 
+  // บังคับให้ชุดฟิลด์นี้ไม่ซ้ำ
   @@unique([kind, method, reference])
+  // เพิ่มดัชนีสำหรับค้นหาตามฟิลด์นี้
   @@index([paymentId, createdAt, id])
+  // เพิ่มดัชนีสำหรับค้นหาตามฟิลด์นี้
   @@index([receiptId])
+  // ชื่อ collection จริงใน MongoDB
   @@map("paymentTransactions")
 }
 
+// สิทธิ์กันห้องรายคืน โดยห้องและคืนต้องไม่ซ้ำ
 model RoomNightClaim {
+  // รหัสเอกสารไม่ซ้ำ
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  // รหัสห้องพัก
   roomId    String   @db.ObjectId
+  // ห้องที่อ้างอิง
   room      Room     @relation(fields: [roomId], references: [id])
+  // รหัสการจอง
   bookingId String   @db.ObjectId
+  // ข้อมูลการจองที่อ้างอิง
   booking   Booking  @relation(fields: [bookingId], references: [id])
+  // วันที่ของคืนที่กันห้อง
   night     String
+  // เวลาสร้างข้อมูล
   createdAt DateTime @default(now())
 
+  // บังคับให้ชุดฟิลด์นี้ไม่ซ้ำ
   @@unique([roomId, night])
+  // เพิ่มดัชนีสำหรับค้นหาตามฟิลด์นี้
   @@index([bookingId])
+  // ชื่อ collection จริงใน MongoDB
   @@map("roomNightClaims")
 }
 
+// session เข้าสู่ระบบที่เก็บเฉพาะแฮช token
 model Session {
+  // รหัสเอกสารไม่ซ้ำ
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  // แฮช token สำหรับค้นหา session
   tokenHash String   @unique
+  // รหัสเจ้าของ session
   userId    String   @db.ObjectId
+  // บัญชีเจ้าของ session
   user      User     @relation(fields: [userId], references: [id])
+  // เวลาที่ session หมดอายุ
   expiresAt DateTime
+  // เวลาสร้างข้อมูล
   createdAt DateTime @default(now())
 
+  // เพิ่มดัชนีสำหรับค้นหาตามฟิลด์นี้
   @@index([userId])
+  // เพิ่มดัชนีสำหรับค้นหาตามฟิลด์นี้
   @@index([expiresAt])
+  // ชื่อ collection จริงใน MongoDB
   @@map("sessions")
 }
 
+// เอกสารร่วมสำหรับกันการแก้สิทธิ์ผู้ดูแลพร้อมกัน
 model AdminGuard {
+  // รหัสเอกสารไม่ซ้ำ
   id      String @id @map("_id")
+  // รุ่นข้อมูลสำหรับตรวจการแก้พร้อมกัน
   version Int    @default(0)
 
+  // ชื่อ collection จริงใน MongoDB
   @@map("adminGuard")
 }

@@ -1,3 +1,4 @@
+/* จัดรูปแบบหน้าจอพนักงานและการจัดการโรงแรม */
 @reference "./tailwind.css";
 
 #root { @apply tw:min-h-[100vh]; }
@@ -74,7 +75,7 @@ td small { @apply tw:text-muted; font-size: 11px; @apply tw:mt-[3px]; }
 .modal header h2 { @apply tw:m-[0]; font-size: 20px; @apply tw:text-navy; }
 .modal header button { border: 0; font-size: 25px; @apply tw:p-[0_6px]; }
 .modal-body { @apply tw:p-[24px]; }
-/* Form layouts use JSX utilities; keep contextual and responsive overrides here. */
+/* ใช้ utility ใน JSX จัดฟอร์ม และปรับเฉพาะบริบทกับขนาดจอในไฟล์นี้ */
 .form-grid .full, .form-grid .notice { grid-column: 1/-1; }
 .form-grid h3 { @apply tw:m-[0]; }
 .form-actions { grid-column: 1/-1; @apply tw:flex; justify-content: end; @apply tw:gap-[9px] tw:mt-[10px] tw:pt-[18px]; border-top: 1px solid #e9eee8; }
@@ -91,7 +92,7 @@ td small { @apply tw:text-muted; font-size: 11px; @apply tw:mt-[3px]; }
 .transaction { @apply tw:flex tw:justify-between tw:gap-[10px]; border-top: 1px solid #edf1eb; @apply tw:p-[8px_0]; font-size: 12px; }
 .money-form { @apply tw:mt-[20px]; border-top: 1px solid var(--line); @apply tw:pt-[20px]; }
 
-/* Figma Lub d foundations: navy, moon yellow, soft canvas and pill actions. */
+/* ใช้สีกรมท่า เหลือง และพื้นอ่อน พร้อมปุ่มทรงมนตามแบบ */
 .shell { @apply tw:grid-cols-[232px_minmax(0,1fr)]; }
 .sidebar { @apply tw:p-[24px]; }
 .brand { @apply tw:p-[0_0_14px]; }
@@ -149,7 +150,11 @@ button.text-button { font-size: 14px; @apply tw:min-h-[36px]; }
 .staff-room-card { background: white; @apply tw:p-[24px] tw:rounded-[24px] tw:min-h-[390px] tw:flex tw:flex-col; align-items: start; @apply tw:gap-[20px]; }
 .staff-room-card h3 { font-size: 26px; @apply tw:m-[0]; }.staff-room-card p { @apply tw:text-muted tw:m-[0]; }
 .staff-room-card strong { font-size: 26px; }.staff-room-card button { @apply tw:w-full; }.section-tabs { @apply tw:flex tw:gap-[12px] tw:mb-[24px]; }.section-tabs [aria-pressed=true] { background: var(--navy); @apply tw:text-white; }
+/* ปรับการแสดงผลตามขนาดหน้าจอหรือการตั้งค่าอุปกรณ์ */
+
 @media (max-width: 1100px) { .shell { @apply tw:grid-cols-[210px_minmax(0,1fr)]; }.sidebar { @apply tw:p-[20px_16px]; }.content { @apply tw:p-[0_24px_50px]; }.metric-grid { @apply tw:grid-cols-[repeat(2,minmax(0,1fr))]; }.staff-room-grid { @apply tw:grid-cols-[repeat(2,minmax(0,1fr))]; }.staff-availability-form { @apply tw:grid-cols-[repeat(2,minmax(0,1fr))]; }.quick { @apply tw:block; }.quick-actions { @apply tw:mt-[20px]; } }
+/* ปรับการแสดงผลตามขนาดหน้าจอหรือการตั้งค่าอุปกรณ์ */
+
 @media (max-width: 680px) { .shell { @apply tw:block; }.sidebar { @apply tw:min-h-[auto] tw:p-[16px]; }.brand { @apply tw:pb-[4px]; }.brand .lub-brand { font-size: 26px; }.nav-title { @apply tw:pb-[12px]; }.sidebar nav { @apply tw:flex tw:overflow-x-auto tw:gap-[5px]; }.nav-item { flex: 0 0 auto; @apply tw:w-[auto]; font-size: 13px; }.sidebar-foot { @apply tw:mt-[12px] tw:flex tw:items-center tw:pt-[12px]; }.sidebar-foot button { @apply tw:ml-auto tw:min-h-[44px]; font-size: 13px; }.content { @apply tw:p-[0_16px_45px]; }.topbar { @apply tw:h-auto tw:pt-[24px] tw:gap-[12px] tw:flex-wrap; }.page-head { @apply tw:flex-wrap tw:p-[24px_0] tw:min-h-[auto]; }.page-head h1 { font-size: 28px; }.metric-grid { @apply tw:gap-[10px]; }.metric { @apply tw:p-[17px]; }.metric strong { font-size: 30px; }.form-grid, .staff-room-grid, .staff-availability-form { @apply tw:grid-cols-[1fr]; }.toolbar { @apply tw:flex-wrap; }.toolbar .field { @apply tw:w-full; }.login-page { @apply tw:p-[128px_20px_40px]; }.login-brand { @apply tw:top-[28px] tw:left-[20px]; }.login-brand .lub-brand { font-size: 30px; }.login-card { @apply tw:p-[32px_24px] tw:min-h-[620px] tw:rounded-[32px]; }.login-card h2 { font-size: 28px; }.modal-body { @apply tw:p-[24px]; }.detail-grid { @apply tw:grid-cols-[1fr]; }.payment-numbers { @apply tw:gap-[16px] tw:flex-wrap; } }
 
 .booking-modal { width: min(1000px,100%); }
@@ -160,6 +165,8 @@ button.text-button { font-size: 14px; @apply tw:min-h-[36px]; }
 .payment-numbers { background: var(--navy); @apply tw:text-white tw:rounded-[24px] tw:p-[24px]; }.payment-numbers span { @apply tw:text-white; }.payment-numbers strong { @apply tw:text-yellow; font-size: 32px; }
 
 .room-types-section { @apply tw:mt-[24px]; }.room-types-section h2 { font-size: 22px; @apply tw:font-semibold; }.room-type-grid { @apply tw:grid tw:grid-cols-[repeat(3,minmax(0,1fr))] tw:gap-[16px] tw:mb-[20px]; }.room-type-card { @apply tw:p-[24px]; }.room-type-card h3 { font-size: 20px; @apply tw:mb-[8px]; }.room-type-card p { @apply tw:mb-[8px]; }.room-type-card small { @apply tw:text-muted; }.room-type-card button { @apply tw:block tw:pl-[0]; }
+/* ปรับการแสดงผลตามขนาดหน้าจอหรือการตั้งค่าอุปกรณ์ */
+
 @media (max-width: 680px) { .room-type-grid { @apply tw:grid-cols-[1fr]; } }
 .picker-search input { @apply tw:min-w-0; }
 .paged-picker .pagination { @apply tw:p-[8px_0] tw:flex-wrap tw:gap-[8px]; }
@@ -181,4 +188,6 @@ input::placeholder { opacity: 1; }
 .hotel-contact { @apply tw:p-[20px] tw:mt-[24px]; background: #edf4f7; @apply tw:rounded-[16px] tw:text-navy; }
 .hotel-contact p { @apply tw:text-muted; font-size: 14px; }
 .booking-success .hotel-contact { @apply tw:text-left; }
+/* ปรับการแสดงผลตามขนาดหน้าจอหรือการตั้งค่าอุปกรณ์ */
+
 @media(max-width:680px) { .service-definition-list article { @apply tw:grid-cols-[minmax(0,1fr)_auto]; }.service-definition-list article > div { grid-column: 1/-1; }.service-definition-form { @apply tw:p-[16px]; } }

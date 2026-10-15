@@ -1,3 +1,4 @@
+// ทดสอบเตรียมฐานทดสอบการจองและตรวจความสอดคล้องของข้อมูล
 const { spawn } = require('child_process');
 const path = require('path');
 const { MongoMemoryReplSet } = require('mongodb-memory-server-core');
@@ -24,8 +25,7 @@ async function startDatabase(database = 'hotel_lobby_task3_test') {
   let prisma, raw;
   try {
     const url = assertTestUrl(mongo.getUri(database));
-    // Drain the replica set's stdout while schema tooling runs. A synchronous
-    // subprocess can fill mongod's pipe and stall Windows handshakes.
+    // อ่าน output ของ replica set ระหว่างเตรียม schema เพื่อไม่ให้ท่อเต็มจนเชื่อมต่อค้าง
     await new Promise((resolve, reject) => {
       const child = spawn(process.execPath, [require.resolve('prisma/build/index.js'), 'db', 'push', '--skip-generate'], {
         cwd: path.join(__dirname, '..'), env: { ...process.env, DATABASE_URL: url },
@@ -81,7 +81,7 @@ async function expectConsistent(prisma) {
       validateStay(booking.checkInDate, booking.checkOutDate).nights;
     expect(claims.filter((c) => c.bookingId === booking.id).map((c) => c.night).sort()).toEqual(expected);
     const rows = payments.filter((p) => p.bookingId === booking.id);
-    // The original cancelled fixture predates Payment creation.
+    // ข้อมูลตัวอย่างที่ยกเลิกเดิมสร้างก่อนมีโมเดล Payment
     if (booking.status !== 'cancelled') expect(rows).toHaveLength(1);
     expect(rows.length).toBeLessThanOrEqual(1);
     for (const payment of rows) expect(payment.amount).toBe(booking.totalPrice);

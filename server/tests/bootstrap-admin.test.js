@@ -1,3 +1,4 @@
+// ทดสอบการสร้างผู้ดูแลเริ่มต้น
 const {startDatabase}=require('./task3-db');
 let db;
 beforeAll(async()=>{db=await startDatabase('hotel_lobby_task5_test')},180000);

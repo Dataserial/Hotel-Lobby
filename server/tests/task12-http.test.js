@@ -1,3 +1,4 @@
+// ทดสอบ API ผู้ใช้ ห้อง และข้อมูลพื้นฐาน
 const { spawn, spawnSync } = require('child_process');
 const { MongoMemoryReplSet } = require('mongodb-memory-server-core');
 const { PrismaClient } = require('@prisma/client');
@@ -16,8 +17,7 @@ beforeAll(async () => {
   const url = mongo.getUri('hotel_lobby_task12_test');
   testUrl = url;
   if (!/\/hotel_lobby_task12_test\?/.test(url)) throw new Error('Unsafe test database URL');
-  // Keep draining mongod output during schema setup; avoid regenerating the
-  // already loaded client while its Windows engine DLL may be in use.
+  // อ่าน output ของ MongoDB ต่อระหว่างเตรียม schema และไม่สร้าง client ทับขณะที่ Windows ใช้ DLL อยู่
   await new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [require.resolve('prisma/build/index.js'), 'db', 'push', '--skip-generate'], {
       cwd: require('path').join(__dirname, '..'), env: { ...process.env, DATABASE_URL: url },

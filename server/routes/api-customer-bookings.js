@@ -1,3 +1,4 @@
+// API ให้ลูกค้าจองและดูรายการของตนเอง
 const express = require('express');
 const crypto = require('crypto');
 const { asyncRoute, body, str, objectId, fail, page } = require('../lib/http');
@@ -8,6 +9,7 @@ const { createClaims } = require('../services/room-night-claims');
 const { operationTransaction } = require('../services/operation-transaction');
 const { hotelToday } = require('../services/stay-service');
 
+// เลือกข้อมูลที่ส่งกลับให้หน้าจอ
 const present = booking => ({ id: booking.id, roomNumber: booking.room.number, roomType: booking.room.roomType?.name || '—',
   checkInDate: booking.checkInDate, checkOutDate: booking.checkOutDate, guestCount: booking.guestCount,
   pricePerNight: booking.pricePerNight, totalPrice: booking.totalPrice, status: booking.status,
@@ -15,7 +17,9 @@ const present = booking => ({ id: booking.id, roomNumber: booking.room.number, r
 
 module.exports = prisma => {
   const router = express.Router();
+  // กำหนดเงื่อนไขร่วมของเส้นทาง
   router.use(role('customer'));
+  // อ่านข้อมูล /
   router.get('/', asyncRoute(async (req, res) => {
     const pagination = page(req.query);
     const where = { customerId: req.actor.id };
@@ -27,6 +31,7 @@ module.exports = prisma => {
     res.setHeader('Cache-Control', 'no-store');
     res.json({ items: rows.map(present), total, page: pagination.page, limit: pagination.limit });
   }));
+  // รับคำขอสร้างหรือทำรายการ /
   router.post('/', asyncRoute(async (req, res) => {
     body(req.body, ['roomId', 'checkInDate', 'checkOutDate', 'phone', 'documentNo', 'expectedPricePerNight'],
       ['roomId', 'checkInDate', 'checkOutDate', 'phone', 'documentNo', 'expectedPricePerNight']);
@@ -80,7 +85,7 @@ module.exports = prisma => {
         return created;
       });
     } catch (error) {
-      // A concurrent identical request may have won the night claim first.
+      // คำขอเดียวกันที่เข้าพร้อมกันอาจกันห้องสำเร็จไปก่อนแล้ว
       const replay = await prisma.customerBookingRequest.findUnique({ where: { key } });
       if (replay) {
         if (replay.customerId !== req.actor.id || replay.hash !== hash) fail(409, 'IDEMPOTENCY_CONFLICT', 'Request key reused with different details');

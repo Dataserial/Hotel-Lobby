@@ -1,21 +1,26 @@
+// เช็คอินและเช็คเอาต์โดยตรวจห้องและยอดชำระ
 const { fail, objectId } = require('../lib/http');
 const { validateGuestCount } = require('./booking-validation');
 const { assertLedger } = require('./payment-ledger');
 const { assertActor, operationTransaction } = require('./operation-transaction');
 
+// หาวันปัจจุบันตามเวลาไทย
 function hotelToday(now) {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit',
   }).formatToParts(now);
+  // อ่านส่วนของวันที่ที่ต้องการ
   const value = (type) => parts.find((p) => p.type === type).value;
   return `${value('year')}-${value('month')}-${value('day')}`;
 }
 
+// กำหนดช่วงเริ่มวันถึงวันถัดไปตามเวลาไทย
 function hotelDayRange(date) {
   const start = new Date(`${date}T00:00:00+07:00`);
   return { gte: start, lt: new Date(start.getTime() + 86400000) };
 }
 
+// ตรวจสถานะแล้วเปลี่ยนการจองและห้องพร้อมกัน
 async function stayOperation(prisma, bookingId, actorId, kind, clock) {
   bookingId = objectId(bookingId).toLowerCase();
   return operationTransaction(prisma, async (tx) => {
@@ -55,6 +60,8 @@ async function stayOperation(prisma, bookingId, actorId, kind, clock) {
     return updated;
   });
 }
+// บันทึกเวลาเข้าพักและเปลี่ยนห้องเป็นมีผู้พัก
 const checkIn = (prisma, id, actorId, clock = () => new Date()) => stayOperation(prisma, id, actorId, 'check-in', clock);
+// ตรวจชำระครบแล้วบันทึกออกและปล่อยห้อง
 const checkOut = (prisma, id, actorId, clock = () => new Date()) => stayOperation(prisma, id, actorId, 'check-out', clock);
 module.exports = { checkIn, checkOut, hotelToday, hotelDayRange };

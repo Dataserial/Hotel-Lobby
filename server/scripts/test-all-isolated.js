@@ -1,12 +1,13 @@
+// รันชุดทดสอบด้วยฐานข้อมูลชั่วคราวแยกจากข้อมูลจริง
 const { spawn } = require('child_process');
 const path = require('path');
 const { MongoMemoryReplSet } = require('mongodb-memory-server-core');
 
+// เริ่มขั้นตอนหลัก: รันชุดทดสอบด้วยฐานข้อมูลชั่วคราวแยกจากข้อมูลจริง
 async function main() {
   const root = path.join(__dirname, '..');
   const jest = path.join(root, 'node_modules', 'jest', 'bin', 'jest.js');
-  // Keep the event loop free to drain the temporary mongod process's pipes.
-  // spawnSync(Jest) can fill those pipes and stall new MongoDB handshakes.
+  // รันแบบไม่บล็อกเพื่ออ่าน output ของ MongoDB ต่อเนื่อง ป้องกันท่อเต็มจนเชื่อมต่อค้าง
   const run = (script, args, env) => new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [script, ...args], { cwd: root, env, stdio: 'inherit' });
     const timer = setTimeout(() => { child.kill(); reject(new Error(`${script} timed out`)); }, 180000);

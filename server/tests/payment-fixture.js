@@ -1,3 +1,4 @@
+// ทดสอบสร้างรายการรับคืนเงินตัวอย่างให้ชุดทดสอบ
 const { receivePayment, refundPayment } = require('../services/payment-service');
 async function recordTestReceipt(prisma, bookingId, actorId, amount = 100) {
   const input = { amount, method: 'cash', reference: `TEST-RECEIPT-${bookingId}`, occurredAt: '2026-01-01T00:00:00Z' };

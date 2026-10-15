@@ -1,3 +1,4 @@
+// ตรวจหน้าจอและ API สำหรับบันทึกผลทดสอบ
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
@@ -8,6 +9,7 @@ const sr = createRequire(root + '/server/package.json');
 const ts = cr('typescript');
 const out = path.join(__dirname, 'evidence.json');
 const evidence = [];
+// ตรวจว่าค่าเป็นออบเจ็กต์ข้อมูล
 const record = (id, data) => { evidence.push({ id, ...data }); console.log(JSON.stringify(evidence.at(-1))); fs.writeFileSync(out, JSON.stringify(evidence, null, 2)); };
 const waitTick = () => new Promise(r => setImmediate(r));
 const deferred = () => { let resolve, reject; const promise = new Promise((a,b) => {resolve=a;reject=b}); return {promise,resolve,reject}; };

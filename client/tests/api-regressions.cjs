@@ -1,3 +1,4 @@
+// ทดสอบการเรียก API และรูปแบบข้อมูลตอบกลับ
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');

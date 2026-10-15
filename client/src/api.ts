@@ -1,37 +1,62 @@
+// เรียก API ตรวจข้อมูลตอบกลับ และแสดงข้อผิดพลาด
+// อ่าน URL ของ Backend จากค่าตั้งค่า ตัวนี้ไม่ใช่ API key
 export const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '')
 
+// กำหนดรูปแบบข้อมูล ApiError ที่ส่วนนี้ใช้งาน
 export type ApiError = Error & { status?: number; code?: string; requestId?: string }
+// กำหนดรูปแบบข้อมูล User ที่ส่วนนี้ใช้งาน
 export type User = { id: string; name: string; email: string; role: 'admin' | 'receptionist' | 'customer'; active: boolean }
+// กำหนดรูปแบบข้อมูล Paged ที่ส่วนนี้ใช้งาน
 export type Paged<T> = { items: T[]; page: number; limit: number; total: number }
+// กำหนดรูปแบบข้อมูล Guest ที่ส่วนนี้ใช้งาน
 export type Guest = { id: string; fullName: string; phone: string; email?: string; documentNoMasked?: string; active: boolean }
+// กำหนดรูปแบบข้อมูล RoomType ที่ส่วนนี้ใช้งาน
 export type RoomType = { id: string; name: string; capacity: number; basePrice: number; amenities: string[]; active: boolean; supportsExtraBed?: boolean }
+// กำหนดรูปแบบข้อมูล Room ที่ส่วนนี้ใช้งาน
 export type Room = { id: string; roomNumber: string; floor?: number; roomTypeId: string; status: string; active: boolean }
+// กำหนดรูปแบบข้อมูล AvailableRoom ที่ส่วนนี้ใช้งาน
 export type AvailableRoom = { roomId: string; roomNumber: string; roomType: string; capacity: number; pricePerNight: number }
+// กำหนดรูปแบบข้อมูล PublicOverview ที่ส่วนนี้ใช้งาน
 export type PublicOverview = { date: string; checkOutDate: string; timezone: string; updatedAt: string; totalRooms: number; availableRooms: number; bookedRooms: number; roomTypes: { id: string; name: string; capacity: number; pricePerNight: number; amenities: string[]; totalRooms: number; availableRooms: number }[] }
+// กำหนดรูปแบบข้อมูล AvailabilityStay ที่ส่วนนี้ใช้งาน
 export type AvailabilityStay = { checkInDate: string; checkOutDate: string; guestCount: number }
+// กำหนดรูปแบบข้อมูล RoomAvailabilitySearch ที่ส่วนนี้ใช้งาน
 export type RoomAvailabilitySearch = AvailabilityStay & { roomTypeId?: string }
+// กำหนดรูปแบบข้อมูล RoomAvailabilitySummary ที่ส่วนนี้ใช้งาน
 export type RoomAvailabilitySummary = AvailabilityStay & { nights: number; previewDays: number; timezone: string; updatedAt: string; totalAvailableRooms: number; roomTypes: (PublicOverview['roomTypes'][number] & { dates: { checkInDate: string; checkOutDate: string; availableRooms: number }[] })[] }
+// กำหนดรูปแบบข้อมูล RoomGrid ที่ส่วนนี้ใช้งาน
 export type RoomGrid = { roomType: { id: string; name: string; capacity: number; pricePerNight: number; amenities: string[]; supportsExtraBed?: boolean }; items: { roomId: string; roomNumber: string; status: 'available' | 'unavailable' | 'maintenance' }[] }
+// กำหนดรูปแบบข้อมูล BookingRoomType ที่ส่วนนี้ใช้งาน
 export type BookingRoomType = RoomGrid['roomType'] & { totalRooms: number; availableRooms: number }
+// กำหนดรูปแบบข้อมูล CustomerBooking ที่ส่วนนี้ใช้งาน
 export type CustomerBooking = { id: string; roomNumber: string; roomType: string; checkInDate: string; checkOutDate: string; guestCount: number; pricePerNight: number; totalPrice: number; status: string; paymentStatus: string }
+// กำหนดรูปแบบข้อมูล Booking ที่ส่วนนี้ใช้งาน
 export type Booking = { id: string; guestId: string; roomId: string; guestCount: number; checkInDate: string; checkOutDate: string; status: string; pricePerNight: number; totalPrice: number; actualCheckInAt?: string | null; actualCheckOutAt?: string | null; cancelledAt?: string | null }
+// กำหนดรูปแบบข้อมูล Payment ที่ส่วนนี้ใช้งาน
 export type Payment = { amount: number; paidAmount: number; refundedAmount: number; net: number; remaining: number; status: string; ledgerReady: boolean }
+// กำหนดรูปแบบข้อมูล Transaction ที่ส่วนนี้ใช้งาน
 export type Transaction = { id: string; kind: string; amount: number; method: string; reference: string; receiptId?: string; occurredAt: string }
+// กำหนดรูปแบบข้อมูล Dashboard ที่ส่วนนี้ใช้งาน
 export type Dashboard = { date: string; availableRooms: number; occupiedRooms: number; arrivalsToday: number; departuresToday: number }
+// กำหนดรูปแบบข้อมูล Report ที่ส่วนนี้ใช้งาน
 export type Report = { receivedBaht: number; refundedBaht: number; netBaht: number; unreconciledPayments: number }
+// กำหนดรูปแบบข้อมูล AdditionalService ที่ส่วนนี้ใช้งาน
 export type AdditionalService = { id: string; name: string; unit: 'per_night' | 'per_set' | 'per_stay'; price: number | null; included: boolean; extraBed: boolean; roomTypeIds: string[]; maxQuantity: number; active: boolean }
+// กำหนดรูปแบบข้อมูล StayRequest ที่ส่วนนี้ใช้งาน
 export type StayRequest = { id: string; status: 'new' | 'read' | 'processed' | 'rejected'; createdAt?: string; contactPhone?: string; member?: { name: string }; roomTypeName: string; checkInDate: string; checkOutDate: string; guestCount: number; estimatedRoomTotal: number; estimatedServiceTotal: number; services: { id: string; name: string; quantity: number; unit: string; price: number | null; included: boolean; estimatedTotal: number }[] }
 
+// แปลงตัวกรองเป็น query string โดยข้ามค่าว่าง
 export function query(values: Record<string, string | number | undefined>) {
   const params = new URLSearchParams()
   Object.entries(values).forEach(([key, value]) => { if (value !== undefined && value !== '') params.set(key, String(value)) })
   return params.toString()
 }
 
+// กำหนดรูปแบบข้อมูล RequestOptions ที่ส่วนนี้ใช้งาน
 export type RequestOptions = { method?: string; body?: unknown; idempotencyKey?: string; signal?: AbortSignal; timeoutMs?: number }
 
-// Read the API's HTTP clock through a same-origin proxy. A device clock ahead
-// of the server otherwise makes an immediate receipt look future-dated.
+// อ่านเวลา API ผ่านพร็อกซีของเว็บ เพื่อไม่ใช้เวลาเครื่องที่เร็วกว่าเซิร์ฟเวอร์
+// อ่านเวลาเซิร์ฟเวอร์เพื่อไม่ให้เวลารับเงินอยู่ในอนาคต
 export async function paymentOccurredAt(): Promise<string> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 15000)
@@ -50,21 +75,28 @@ export async function paymentOccurredAt(): Promise<string> {
   }
 }
 
+// ตรวจว่าค่าเป็นออบเจ็กต์ข้อมูล
 const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
+// ตรวจว่าฟิลด์ที่ระบุเป็นข้อความ
 const strings = (v: Record<string, unknown>, ...keys: string[]) => keys.every(key => typeof v[key] === 'string')
+// ตรวจว่าฟิลด์ที่ระบุเป็นจำนวนเต็มที่ปลอดภัย
 const numbers = (v: Record<string, unknown>, ...keys: string[]) => keys.every(key => typeof v[key] === 'number' && Number.isSafeInteger(v[key]))
+// ตรวจวันที่จริงในรูปแบบปีเดือนวัน
 function calendarDate(value: unknown): boolean {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
   const date = new Date(value + 'T00:00:00Z')
   return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value
 }
+// ตรวจความครบถ้วนของสรุปห้องว่าง
 function validRoomSummary(data: Record<string, unknown>): boolean {
   if (!calendarDate(data.checkInDate) || !calendarDate(data.checkOutDate) || !strings(data, 'updatedAt') || !Number.isFinite(Date.parse(String(data.updatedAt))) || data.timezone !== 'Asia/Bangkok' || !numbers(data, 'guestCount', 'nights', 'previewDays', 'totalAvailableRooms')) return false
   if (Number(data.guestCount) < 1 || Number(data.guestCount) > 20 || Number(data.nights) < 1 || Number(data.nights) > 365 || Number(data.previewDays) < 1 || Number(data.previewDays) > 14 || Number(data.totalAvailableRooms) < 0) return false
+  // คำนวณจำนวนคืนจากวันที่เข้าและออก
   const duration = (start: unknown, end: unknown) => (Date.parse(String(end) + 'T00:00:00Z') - Date.parse(String(start) + 'T00:00:00Z')) / 86400000
   if (duration(data.checkInDate, data.checkOutDate) !== data.nights || !Array.isArray(data.roomTypes)) return false
   return data.roomTypes.every(type => record(type) && strings(type, 'id', 'name') && numbers(type, 'capacity', 'pricePerNight', 'totalRooms', 'availableRooms') && Number(type.capacity) >= 1 && Number(type.capacity) <= 20 && Number(type.pricePerNight) >= 0 && Number(type.totalRooms) >= 1 && Number(type.availableRooms) >= 0 && Number(type.availableRooms) <= Number(type.totalRooms) && Array.isArray(type.amenities) && type.amenities.every(amenity => typeof amenity === 'string') && Array.isArray(type.dates) && type.dates.length === data.previewDays && type.dates.every(date => record(date) && calendarDate(date.checkInDate) && calendarDate(date.checkOutDate) && duration(date.checkInDate, date.checkOutDate) === data.nights && numbers(date, 'availableRooms') && Number(date.availableRooms) >= 0 && Number(date.availableRooms) <= Number(type.totalRooms)))
 }
+// ตรวจข้อมูลแต่ละรายการตามชนิด API
 function validItem(resource: string, item: unknown): boolean {
   if (!record(item)) return false
   if (resource.includes('availability')) return strings(item, 'roomId', 'roomNumber', 'roomType') && numbers(item, 'capacity', 'pricePerNight')
@@ -82,12 +114,14 @@ function validItem(resource: string, item: unknown): boolean {
   if (resource.startsWith('/bookings')) return strings(item, 'guestId', 'roomId', 'checkInDate', 'checkOutDate', 'status') && numbers(item, 'guestCount', 'pricePerNight', 'totalPrice')
   return true
 }
+// ตรวจโครงสร้างข้อมูลที่ API ตอบกลับ
 function validPayload(path: string, data: unknown, method: string): boolean {
   if (!record(data)) return false
   const resource = path.split('?')[0]
   if (resource === '/public/rooms/grid/types') return Array.isArray(data.items) && data.items.every(item => record(item) && strings(item, 'id', 'name') && numbers(item, 'capacity', 'pricePerNight', 'totalRooms', 'availableRooms') && Number(item.capacity) > 0 && Number(item.pricePerNight) >= 0 && Number(item.availableRooms) >= 0 && Number(item.availableRooms) <= Number(item.totalRooms) && Array.isArray(item.amenities) && item.amenities.every(value => typeof value === 'string'))
   if (resource === '/public/rooms/grid') return record(data.roomType) && strings(data.roomType, 'id', 'name') && numbers(data.roomType, 'capacity', 'pricePerNight') && Number(data.roomType.capacity) >= 1 && Number(data.roomType.capacity) <= 20 && Number(data.roomType.pricePerNight) >= 0 && Array.isArray(data.roomType.amenities) && data.roomType.amenities.every(value => typeof value === 'string') && Array.isArray(data.items) && data.items.every(item => record(item) && strings(item, 'roomId', 'roomNumber', 'status') && ['available', 'unavailable', 'maintenance'].includes(String(item.status)))
   if (resource === '/customer/bookings') {
+    // ตรวจฟิลด์สำคัญของรายการจอง
     const validBooking = (item: unknown) => record(item) && strings(item, 'id', 'roomNumber', 'roomType', 'checkInDate', 'checkOutDate', 'status', 'paymentStatus') && numbers(item, 'guestCount', 'pricePerNight', 'totalPrice')
     return method === 'GET' ? numbers(data, 'page', 'limit', 'total') && Number(data.page) >= 1 && Number(data.limit) >= 1 && Number(data.total) >= 0 && Array.isArray(data.items) && data.items.length <= Number(data.limit) && data.items.every(validBooking) : validBooking(data)
   }
@@ -105,13 +139,16 @@ function validPayload(path: string, data: unknown, method: string): boolean {
   return validItem(resource, data)
 }
 
+// เรียก API พร้อม token เวลารอ และการตรวจคำตอบ
 export async function request<T>(path: string, token: string | null, options: RequestOptions = {}): Promise<T> {
   const headers: Record<string, string> = {}
+  // แนบ token จากการเข้าสู่ระบบเพื่อให้ API ตรวจสิทธิ์
   if (token) headers.Authorization = `Bearer ${token}`
   if (options.body !== undefined) headers['Content-Type'] = 'application/json'
   if (options.idempotencyKey) headers['Idempotency-Key'] = options.idempotencyKey
   const controller = new AbortController()
   let timedOut = false
+  // ยกเลิกงานที่ยังรอทำงาน
   const cancel = () => controller.abort()
   options.signal?.addEventListener('abort', cancel, { once: true })
   if (options.signal?.aborted) cancel()
@@ -172,6 +209,7 @@ const messages: Record<string, string> = {
   DUPLICATE: 'ข้อมูลนี้มีอยู่ในระบบแล้ว กรุณาตรวจรายการเดิม',
   PASSWORD_POLICY: 'รหัสผ่านต้องมีอย่างน้อย 12 ตัวอักษร และไม่เกิน 72 ไบต์ UTF-8 (ภาษาไทยใช้หลายไบต์ต่อตัว)',
 }
+// แปลงข้อผิดพลาดเป็นข้อความไทยพร้อมรหัสติดตาม
 export function errorText(error: unknown) {
   const e = error as ApiError
   if (e.code === 'INVALID_CREDENTIALS') return messages.INVALID_CREDENTIALS

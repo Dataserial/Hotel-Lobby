@@ -1,3 +1,4 @@
+// ข้อมูลบัญชีลูกค้าและประวัติการจอง
 import { navigate } from './navigation'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { errorText, type CustomerBooking, type Paged, type RequestOptions, type User } from './api'
@@ -6,6 +7,7 @@ import AccountMenu from './AccountMenu'
 import HotelContact from './HotelContact'
 
 const statusLabel: Record<string, string> = { confirmed: 'ยืนยันแล้ว', checked_in: 'เข้าพักแล้ว', checked_out: 'เช็กเอาต์แล้ว', cancelled: 'ยกเลิกแล้ว', pending: 'รอชำระที่โรงแรม', paid: 'ชำระแล้ว', refunded: 'คืนเงินแล้ว' }
+// แสดงข้อมูลบัญชีและรายการจองของสมาชิก
 export default function MemberAccount({ user, call, updated, logout, back }: { user: User; call: <T>(path: string, options?: RequestOptions) => Promise<T>; updated: (user: User) => void; logout: () => void; back: () => void }) {
   const [name, setName] = useState(user.name); const [email, setEmail] = useState(user.email)
   const [busy, setBusy] = useState(false); const [error, setError] = useState(''); const [notice, setNotice] = useState('')
@@ -23,6 +25,7 @@ export default function MemberAccount({ user, call, updated, logout, back }: { u
     }).catch(e => { if (!controller.signal.aborted) setResult({ key: resultKey, error: errorText(e) }) })
     return () => controller.abort()
   }, [call, page, resultKey])
+  // ตรวจและบันทึกข้อมูลจากฟอร์ม
   async function save(e: FormEvent) {
     e.preventDefault(); setBusy(true); setError(''); setNotice('')
     pending.current?.abort()

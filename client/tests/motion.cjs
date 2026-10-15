@@ -1,3 +1,4 @@
+// ทดสอบการแสดงเนื้อหาและการลดแอนิเมชัน
 const {test}=require('node:test');const assert=require('node:assert/strict');
 const fs=require('node:fs');const path=require('node:path');const vm=require('node:vm');const ts=require('typescript');const {JSDOM}=require('jsdom');
 function setup(){const file=path.resolve(__dirname,'../src/reveal.ts');if(!fs.existsSync(file))return{};const exports={};vm.runInNewContext(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText,{exports});return exports}

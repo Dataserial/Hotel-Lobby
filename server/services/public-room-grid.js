@@ -1,7 +1,9 @@
+// แสดงเลขห้องและสถานะว่างสำหรับลูกค้า
 const { roomBookable } = require('./room-bookability');
 const { heldClaims } = require('./room-night-claims');
 
-// Both public views share the staff inventory rules and read one snapshot.
+// หน้าลูกค้าใช้กฎห้องว่างร่วมกับพนักงานและอ่านข้อมูลชุดเดียวกัน
+// สร้างรายการเลขห้องพร้อมสถานะว่างจากข้อมูลชุดเดียวกัน
 async function roomGrid(tx, type, stay) {
   const rooms = await tx.room.findMany({ where: { roomTypeId: type.id, active: true } });
   rooms.sort((a, b) => a.number.localeCompare(b.number, 'en', { numeric: true }));

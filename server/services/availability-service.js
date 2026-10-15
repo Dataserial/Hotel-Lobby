@@ -1,8 +1,10 @@
+// ค้นหาห้องว่างด้วยกฎเดียวกันทั้งลูกค้าและพนักงาน
 const { validateStay, validateGuestCount } = require('./booking-validation');
 const { objectId, fail } = require('../lib/http');
 const { roomBookable } = require('./room-bookability');
 const { heldClaims } = require('./room-night-claims');
 
+// หาห้องพร้อมใช้ที่ไม่มีสิทธิ์กันห้องทับคืนที่เลือก
 async function findAvailableRooms(prisma, { checkInDate, checkOutDate, guestCount, roomTypeId, excludeBookingId, now = new Date() }) {
   const { nights } = validateStay(checkInDate, checkOutDate);
   validateGuestCount(guestCount);

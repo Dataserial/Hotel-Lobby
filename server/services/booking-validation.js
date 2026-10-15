@@ -1,3 +1,4 @@
+// ตรวจวันเข้าพัก จำนวนผู้เข้าพัก และคำนวณราคา
 class BookingError extends Error {
   constructor(status, code, message) {
     super(message);
@@ -9,6 +10,7 @@ class BookingError extends Error {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+// ตรวจและแปลงวันเข้าพักโดยไม่เลื่อนวันตามเขตเวลา
 function parseHotelDate(value) {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     throw new BookingError(400, 'INVALID_DATE_RANGE', 'Dates must use YYYY-MM-DD.');
@@ -24,6 +26,7 @@ function parseHotelDate(value) {
   return date;
 }
 
+// ตรวจวันเข้าออกและสร้างรายการคืนที่เข้าพัก
 function validateStay(checkInDate, checkOutDate) {
   const start = parseHotelDate(checkInDate);
   const end = parseHotelDate(checkOutDate);
@@ -36,6 +39,7 @@ function validateStay(checkInDate, checkOutDate) {
   return { checkInDate, checkOutDate, nightCount, nights };
 }
 
+// ตรวจจำนวนคนให้ไม่เกินความจุห้อง
 function validateGuestCount(guestCount, capacity) {
   if (!Number.isInteger(guestCount) || guestCount < 1 || guestCount > 20) {
     throw new BookingError(400, 'INVALID_GUEST_COUNT', 'Guest count must be an integer from 1 to 20.');
@@ -46,6 +50,7 @@ function validateGuestCount(guestCount, capacity) {
   return guestCount;
 }
 
+// คำนวณค่าห้องจากราคาต่อคืนและจำนวนคืน
 function calculatePrice(basePrice, nightCount) {
   if (!Number.isSafeInteger(basePrice) || basePrice < 0 ||
       !Number.isSafeInteger(nightCount) || nightCount < 1 ||

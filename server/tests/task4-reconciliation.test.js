@@ -1,3 +1,4 @@
+// ทดสอบการตรวจและปรับบัญชีเงินเดิม
 const { startDatabase, sample } = require('./task3-db');
 const { auditPayments, reconcilePayment } = require('../services/payment-reconciliation');
 const { spawn } = require('child_process');

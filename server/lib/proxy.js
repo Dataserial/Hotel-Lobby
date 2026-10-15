@@ -1,5 +1,7 @@
+// กำหนดพร็อกซีที่เชื่อถือได้ในการอ่าน IP ผู้ใช้
 const { isIP } = require('net');
 
+// ตรวจ IP หรือช่วง IP ของพร็อกซีที่เชื่อถือ
 function trustedProxies(value = '') {
   if (!value.trim()) return false;
   const ranges = value.split(',').map(v => v.trim());

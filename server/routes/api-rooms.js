@@ -1,14 +1,18 @@
+// API จัดการห้องและสถานะการใช้งาน
 const express = require('express');
 const { asyncRoute, body, str, int, bool, objectId, page, list, fail } = require('../lib/http');
 const { role } = require('../lib/auth');
 
+// เลือกข้อมูลที่ส่งกลับให้หน้าจอ
 const present = (room) => ({ ...room, roomNumber: room.number, number: undefined });
+// ตรวจสถานะห้องที่ระบบรองรับ
 const status = (v) => {
   if (!['available', 'maintenance'].includes(v)) fail(400, 'VALIDATION_ERROR', 'Only available or maintenance may be set through room CRUD');
   return v;
 };
 module.exports = (prisma) => {
   const router = express.Router();
+  // อ่านข้อมูล /
   router.get('/', asyncRoute(async (req, res) => {
     const pagination = page(req.query, ['active', 'status', 'roomTypeId', 'q']);
     const where = {};
@@ -19,12 +23,15 @@ module.exports = (prisma) => {
     const result = await list(prisma.room, where, pagination, { number: 'asc' });
     res.json({ ...result, items: result.items.map(present) });
   }));
+  // อ่านข้อมูล /:id
   router.get('/:id', asyncRoute(async (req, res) => {
     const room = await prisma.room.findUnique({ where: { id: objectId(req.params.id) }, include: { roomType: true } });
     if (!room) fail(404, 'NOT_FOUND', 'Room not found');
     res.json(present(room));
   }));
+  // กำหนดเงื่อนไขร่วมของเส้นทาง
   router.use(role('admin'));
+  // รับคำขอสร้างหรือทำรายการ /
   router.post('/', asyncRoute(async (req, res) => {
     body(req.body, ['roomNumber', 'floor', 'roomTypeId', 'status'], ['roomNumber', 'floor', 'roomTypeId']);
     const roomTypeId = objectId(req.body.roomTypeId, 'roomTypeId');
@@ -37,6 +44,7 @@ module.exports = (prisma) => {
     } });
     res.status(201).json(present(room));
   }));
+  // รับคำขอแก้ไข /:id
   router.patch('/:id', asyncRoute(async (req, res) => {
     const id = objectId(req.params.id);
     body(req.body, ['roomNumber', 'floor', 'roomTypeId', 'status', 'active']);
@@ -62,6 +70,7 @@ module.exports = (prisma) => {
     });
     res.json(present(room));
   }));
+  // รับคำขอลบหรือปิดใช้งาน /:id
   router.delete('/:id', asyncRoute(async (req, res) => {
     const id = objectId(req.params.id);
     if (!await prisma.room.findUnique({ where: { id } })) fail(404, 'NOT_FOUND', 'Room not found');

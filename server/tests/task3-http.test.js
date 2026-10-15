@@ -1,3 +1,4 @@
+// ทดสอบ API การจองและการตรวจสิทธิ์
 const crypto = require('crypto');
 const request = require('supertest');
 const { createApp } = require('../app');
@@ -162,6 +163,7 @@ test('booking rejects a stay total above Prisma Int without writes', async () =>
 test('HTTP exposes payment guards and preserves rollback on conflicting edits', async () => {
   const b = await createBooking(db.prisma, input(), actorId);
   await createBooking(db.prisma, input({ roomId: sample.rooms[2]._id }), actorId);
+  // นำข้อมูลเดิมมาแก้ไขในฟอร์ม
   const edit = () => request(app).patch(`/api/bookings/${b.id}`).set(auth(tokens.admin));
   expect((await edit().send({ roomId: sample.rooms[2]._id }).expect(409)).body.error.code).toBe('ROOM_UNAVAILABLE');
   await recordTestReceipt(db.prisma, b.id, actorId);

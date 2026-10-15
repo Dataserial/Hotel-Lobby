@@ -1,3 +1,4 @@
+// ประกอบ API ตรวจสิทธิ์ และจัดการข้อผิดพลาดร่วม
 const express = require('express');
 const prisma = require('./lib/prisma');
 const { requestId, errors } = require('./lib/http');
@@ -5,6 +6,7 @@ const { requireAuth, role } = require('./lib/auth');
 const { rateLimit, headersAndLimits } = require('./lib/security');
 const { trustedProxies } = require('./lib/proxy');
 
+// สร้างแอปและประกอบ middleware กับเส้นทาง API
 function createApp(db = prisma, { trustedProxyCidrs = process.env.TRUSTED_PROXY_CIDRS || '' } = {}) {
   const app = express();
   app.disable('x-powered-by');
@@ -53,7 +55,7 @@ function createApp(db = prisma, { trustedProxyCidrs = process.env.TRUSTED_PROXY_
   app.use('/api/auth', require('./routes/api-auth')(db));
   app.use('/api/customer/bookings', requireAuth(db), rateLimit({ limit: 30 }), require('./routes/api-customer-bookings')(db));
   app.use('/api', requireAuth(db));
-  // Member requests are mounted before the staff-only boundary.
+  // ให้ลูกค้าเรียกคำขอเข้าพักได้ก่อนตรวจสิทธิ์เฉพาะพนักงาน
   app.use('/api/stay-requests', require('./routes/api-stay-requests')(db));
   app.use('/api/additional-services', role('admin', 'receptionist'), require('./routes/api-additional-services')(db));
   app.use('/api', role('admin', 'receptionist'));

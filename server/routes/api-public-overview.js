@@ -1,3 +1,4 @@
+// API ภาพรวมโรงแรมที่เปิดให้ดูโดยไม่ต้องเข้าสู่ระบบ
 const express = require('express');
 const { asyncRoute, fail } = require('../lib/http');
 const { hotelToday } = require('../services/stay-service');
@@ -5,6 +6,7 @@ const { findAvailableRooms } = require('../services/availability-service');
 
 module.exports = prisma => {
   const router = express.Router();
+  // อ่านข้อมูล /
   router.get('/', asyncRoute(async (req, res) => {
     if (Object.keys(req.query).length) fail(400, 'VALIDATION_ERROR', 'Overview does not accept query fields');
     const now = new Date();

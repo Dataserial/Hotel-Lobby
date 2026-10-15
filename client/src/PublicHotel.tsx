@@ -1,3 +1,4 @@
+// หน้าลูกค้าและขั้นตอนเลือกห้องเพื่อจอง
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { errorText, query, request, type ApiError, type BookingRoomType, type CustomerBooking, type RoomGrid, type User } from './api'
 import { roomPhoto } from './roomPhotos'
@@ -10,15 +11,22 @@ import './PublicHotel.css'
 import './RoomAvailability.css'
 import './DiscoverBooking.css'
 
+// หาวันปัจจุบันสำหรับเลือกเข้าพัก
 const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+// หาวันถัดไปเป็นค่าเริ่มต้น
 const tomorrow = (day: string) => day && Number.isFinite(Date.parse(day)) ? new Date(Date.parse(day + 'T00:00:00Z') + 86400000).toISOString().slice(0, 10) : ''
+// จัดรูปแบบจำนวนเงินให้อ่านง่าย
 const money = (value: number) => new Intl.NumberFormat('th-TH').format(value)
+// กำหนดรูปแบบข้อมูล Dates ที่ส่วนนี้ใช้งาน
 type Dates = { checkInDate: string; checkOutDate: string }
+// กำหนดรูปแบบข้อมูล Draft ที่ส่วนนี้ใช้งาน
 type Draft = Dates & { roomTypeId: string; roomId: string }
 const draftKey = 'hotel-lobby-booking-draft'
+// เก็บข้อมูลที่เลือกไว้ก่อนเข้าสู่ระบบ
 function storeDraft(value: Draft | null) {
-  try { if (value) sessionStorage.setItem(draftKey, JSON.stringify(value)); else sessionStorage.removeItem(draftKey) } catch { /* Booking remains usable without browser storage. */ }
+  try { if (value) sessionStorage.setItem(draftKey, JSON.stringify(value)); else sessionStorage.removeItem(draftKey) } catch { /* ยังจองได้แม้เบราว์เซอร์ไม่ให้เก็บข้อมูล */ }
 }
+// อ่านข้อมูลจองที่เลือกไว้ก่อนหน้า
 function readDraft(): Draft | null {
   try {
     const value = JSON.parse(sessionStorage.getItem(draftKey) || 'null')
@@ -29,6 +37,7 @@ function readDraft(): Draft | null {
   } catch { return null }
 }
 
+// ควบคุมขั้นตอนลูกค้าเลือกวัน ห้อง และยืนยันจอง
 export default function PublicHotel({ staff, member, user = null, token = null, logout, reauthenticate, customerLogin }: { staff: () => void; member?: () => void; user?: User | null; token?: string | null; logout?: () => void; reauthenticate?: () => void; customerLogin?: () => void }) {
   const [saved] = useState(readDraft)
   const [dates, setDates] = useState<Dates>(() => saved ? { checkInDate: saved.checkInDate, checkOutDate: saved.checkOutDate } : { checkInDate: today(), checkOutDate: tomorrow(today()) })
@@ -86,7 +95,7 @@ export default function PublicHotel({ staff, member, user = null, token = null, 
   }, [parameters, typeId, gridKey])
   useEffect(() => {
     if (!scrollRequest || handledScroll.current === scrollRequest) return
-    // Wait for the next step's results so loading layouts do not move its destination.
+    // รอผลขั้นถัดไปก่อนเลื่อนหน้า เพื่อไม่ให้จุดหมายขยับขณะโหลด
     const step = scrollRequest.step
     if (step >= 1 && searched && !types && !typesError) return
     if (step >= 2 && typeId && !grid && !gridError) return
@@ -95,11 +104,13 @@ export default function PublicHotel({ staff, member, user = null, token = null, 
       : booking ? successSection.current : selectedRoom ? confirmSection.current : roomSection.current
     if (scrollToTarget(target)) handledScroll.current = scrollRequest
   }, [scrollRequest, searched, types, typesError, typeId, grid, gridError, selectedRoom, booking])
+  // ล้างห้องที่เลือกเมื่อเงื่อนไขเปลี่ยน
   function clearSelection(next: Dates) {
     setScrollRequest(null)
     setDates(next); setSearched(null); setTypeId(''); setRoomId(''); setBooking(null); setError(''); setPriceChanged(false)
     storeDraft(null); key.current = crypto.randomUUID()
   }
+  // ค้นหาประเภทห้องที่ยังว่างตามวันพัก
   function findTypes(event?: FormEvent) {
     event?.preventDefault()
     const count = (Date.parse(dates.checkOutDate) - Date.parse(dates.checkInDate)) / 86400000
@@ -108,16 +119,19 @@ export default function PublicHotel({ staff, member, user = null, token = null, 
     storeDraft(null); key.current = crypto.randomUUID()
     setScrollRequest({ step: 1 })
   }
+  // เลือกประเภทห้องและโหลดเลขห้อง
   function selectType(id: string) {
     setError(''); setTypeId(id); setRoomId(''); setBooking(null); setPriceChanged(false); setGridRefresh(value => value + 1)
     storeDraft(null); key.current = crypto.randomUUID()
     setScrollRequest({ step: 2 })
   }
+  // เลือกเลขห้องเพื่อทบทวนการจอง
   function selectRoom(id: string) {
     setRoomId(id); setBooking(null); setError(''); setPriceChanged(false); key.current = crypto.randomUUID()
     if (searched) storeDraft({ ...searched, roomTypeId: typeId, roomId: id })
     setScrollRequest({ step: 3 })
   }
+  // ตรวจข้อมูลแล้วส่งยืนยันการจอง
   async function confirm(event: FormEvent) {
     event.preventDefault()
     if (sending.current || !searched || !selectedRoom || !grid || user?.role !== 'customer') return

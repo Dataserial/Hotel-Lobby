@@ -1,5 +1,7 @@
+// เริ่ม replica set ของ MongoDB บนเครื่อง
 const { MongoClient } = require('mongodb');
 
+// เริ่มขั้นตอนหลัก: เริ่ม replica set ของ MongoDB บนเครื่อง
 async function main() {
   const client = new MongoClient('mongodb://127.0.0.1:27018/?directConnection=true');
 

@@ -1,3 +1,4 @@
+// เพิ่มประเภทห้องและห้องพักตัวอย่าง
 const defaults = [
   { name: 'Standard', nameKey: 'standard', capacity: 2, basePrice: 1200, amenities: ['Wi-Fi', 'Air conditioning'] },
   { name: 'Deluxe', nameKey: 'deluxe', capacity: 2, basePrice: 1800, amenities: ['Wi-Fi', 'Air conditioning', 'Breakfast'] },
@@ -5,7 +6,7 @@ const defaults = [
 ];
 
 async function seedRooms(prisma, { apply = false, log = console.log } = {}) {
-  // Inspect all types, including disabled types, before choosing defaults.
+  // อ่านประเภทห้องทั้งหมดรวมที่ปิดใช้ ก่อนกำหนดค่าเริ่มต้น
   const existingTypes = await prisma.roomType.findMany({ orderBy: { nameKey: 'asc' } });
   const rooms = await prisma.room.findMany({ select: { number: true, roomTypeId: true } });
   const types = existingTypes.length ? existingTypes.filter((type) => type.active) : defaults;
@@ -44,7 +45,7 @@ async function seedRooms(prisma, { apply = false, log = console.log } = {}) {
           status: 'available', active: true, ...audit } });
         created++;
       } catch (error) {
-        // The unique room-number index also protects concurrent runs.
+        // ดัชนีเลขห้องที่ห้ามซ้ำยังช่วยป้องกันการรันพร้อมกัน
         if (error.code !== 'P2002') throw error;
       }
     }
@@ -53,6 +54,7 @@ async function seedRooms(prisma, { apply = false, log = console.log } = {}) {
   return { created, preview: false };
 }
 
+// เริ่มขั้นตอนหลัก: เพิ่มประเภทห้องและห้องพักตัวอย่าง
 async function main() {
   require('dotenv').config({ quiet: true });
   const args = process.argv.slice(2);

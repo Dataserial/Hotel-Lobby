@@ -1,3 +1,4 @@
+/* จัดรูปแบบหน้าลูกค้าและขั้นตอนเลือกห้องเพื่อจอง */
 @reference "./tailwind.css";
 
 .public-hotel { background: var(--canvas); }
@@ -65,8 +66,14 @@
 .contact-dialog dl { background: var(--canvas); @apply tw:rounded-[16px] tw:p-[20px]; }
 .contact-dialog dt { font-size: 12px; @apply tw:text-muted; }
 .contact-dialog dd { @apply tw:m-[0_0_12px]; overflow-wrap: anywhere; }
+/* ปรับการแสดงผลตามขนาดหน้าจอหรือการตั้งค่าอุปกรณ์ */
+
 @media (min-width: 1600px) { .hotel-gallery > picture, .hotel-gallery > img, .hotel-gallery > .lobby-photo { flex: 1; } }
+/* ปรับการแสดงผลตามขนาดหน้าจอหรือการตั้งค่าอุปกรณ์ */
+
 @media (max-width: 980px) { .availability-search { @apply tw:grid-cols-[repeat(2,minmax(0,1fr))]; } .public-room-grid { @apply tw:grid-cols-[repeat(2,minmax(0,1fr))]; } }
+/* ปรับการแสดงผลตามขนาดหน้าจอหรือการตั้งค่าอุปกรณ์ */
+
 @media (max-width: 680px) {
   .hotel-header { @apply tw:h-[84px] tw:p-[16px_20px]; }
   .hotel-header .lub-brand { font-size: 30px; }
@@ -89,6 +96,8 @@
   .stay-summary { font-size: 15px; } .public-room-grid { @apply tw:grid-cols-[1fr]; }
   .public-room-card { @apply tw:min-h-[auto]; } .public-room-card h3 { font-size: 26px; }
 }
+/* ปรับการแสดงผลตามขนาดหน้าจอหรือการตั้งค่าอุปกรณ์ */
+
 @media (prefers-reduced-motion: reduce) { .moon-journey { @apply tw:h-[100vh]; } .moon-night { @apply tw:relative; opacity: 1; } .intro-moon { @apply tw:w-[79px]; left: calc(50% - 39.5px); @apply tw:top-[39%]; } .moon-quote, .scroll-start { opacity: 1; } }
 
 .hotel-header { @apply tw:h-auto tw:min-h-[88px] tw:flex-wrap tw:gap-[12px]; }
@@ -103,9 +112,11 @@
 .contact-member strong, .contact-member small { @apply tw:block; overflow-wrap: anywhere; }
 .contact-member small { @apply tw:text-muted; }
 .contact-links a { @apply tw:block tw:text-navy; border: 1px solid var(--line); @apply tw:rounded-[12px] tw:p-[12px]; overflow-wrap: anywhere; }
+/* ปรับการแสดงผลตามขนาดหน้าจอหรือการตั้งค่าอุปกรณ์ */
+
 @media (max-width: 680px) { .hotel-account-actions { @apply tw:w-full tw:gap-[8px]; } .hotel-account-actions > button { flex: 1; font-size: 13px; @apply tw:min-w-0 tw:p-[12px]; } }
 
-/* The booking flow follows the existing navy, lavender and white palette. */
+/* ใช้สีกรมท่า ม่วงอ่อน และขาวร่วมกับขั้นตอนจอง */
 .booking-steps { @apply tw:flex tw:flex-wrap tw:gap-[12px]; list-style: none; @apply tw:p-[0] tw:m-[24px_0]; }
 .booking-steps li { border: 1px solid var(--line); @apply tw:rounded-[24px] tw:p-[10px_16px]; background: #fff; @apply tw:text-navy; }
 .booking-steps [aria-current="step"] { @apply tw:font-bold; border: 2px solid var(--navy); }
@@ -120,6 +131,8 @@
 .my-bookings article { border: 1px solid var(--line); @apply tw:rounded-[12px] tw:p-[16px] tw:m-[14px_0]; overflow-wrap: anywhere; }
 .public-hotel button:focus-visible, .public-hotel input:focus-visible { outline: 3px solid var(--navy); outline-offset: 4px; }
 .public-results, .public-hotel button, .public-hotel input { scroll-margin-top: 120px; scroll-margin-bottom: 24px; }
+/* ปรับการแสดงผลตามขนาดหน้าจอหรือการตั้งค่าอุปกรณ์ */
+
 @media (max-width: 680px) {
   .booking-steps { @apply tw:gap-[8px]; }
   .booking-steps li { flex: 1 1 40%; @apply tw:p-[10px]; font-size: 13px; }

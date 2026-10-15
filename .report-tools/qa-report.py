@@ -1,3 +1,4 @@
+# เครื่องมือจัดรูปแบบและตรวจเอกสารรายงาน
 from pathlib import Path
 from PIL import Image, ImageOps, ImageDraw
 from pdf2image import convert_from_path

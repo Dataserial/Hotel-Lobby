@@ -1,3 +1,4 @@
+/* จัดรูปแบบแสดงห้องว่างตามวันที่และประเภทห้อง */
 @reference "./tailwind.css";
 
 .availability-panel { @apply tw:m-[0_5%_48px] tw:p-[36px]; border: 1px solid #dbe7ed; @apply tw:rounded-[32px]; background: #edf4f7; }
@@ -43,5 +44,9 @@ button.date-chip { @apply tw:min-h-[58px] tw:p-[8px_3px] tw:rounded-[10px]; font
 .availability-feedback { @apply tw:p-[24px] tw:rounded-[20px]; background: white; @apply tw:text-muted; }
 .public-room-card .result-room-photo { width: calc(100% + 64px); @apply tw:h-[200px] tw:object-cover tw:m-[-32px_-32px_0] tw:rounded-[24px_24px_0_0]; }
 .stay-request-form { @apply tw:m-[0_24px_24px] tw:p-[20px] tw:rounded-[16px]; background: #edf4f7; }.stay-request-form h3,.stay-request-form h4 { @apply tw:m-[0_0_8px]; }.stay-request-form > p { @apply tw:text-muted; font-size: 13px; }.service-list { @apply tw:grid tw:gap-[8px] tw:m-[16px_0]; }.service-option { @apply tw:flex tw:items-center tw:gap-[10px] tw:p-[12px]; background: white; @apply tw:rounded-[12px]; }.service-option > span:nth-child(2) { @apply tw:grid tw:gap-[3px]; flex: 1; }.service-option small { @apply tw:text-muted; }.quantity { display: flex !important; @apply tw:items-center tw:gap-[6px]; }.quantity button { @apply tw:min-h-[34px] tw:min-w-[34px] tw:p-[2px_9px]; }.stay-request-summary { border-top: 1px solid var(--line); @apply tw:pt-[16px]; }.stay-request-summary p { @apply tw:m-[7px_0]; font-size: 14px; }.confirm-request { @apply tw:grid tw:gap-[10px] tw:mt-[16px]; }.confirm-request label { @apply tw:grid tw:gap-[4px]; font-size: 13px; }.confirm-request input,.confirm-request textarea { @apply tw:min-h-[40px]; }.confirm-request textarea { @apply tw:min-h-[72px]; }
+/* ปรับการแสดงผลตามขนาดหน้าจอหรือการตั้งค่าอุปกรณ์ */
+
 @media (max-width: 960px) { .room-type-summary-grid .room-type-card { @apply tw:grid-cols-[1fr]; }.room-type-photo { aspect-ratio: 3/2; } }
+/* ปรับการแสดงผลตามขนาดหน้าจอหรือการตั้งค่าอุปกรณ์ */
+
 @media (max-width: 680px) { .availability-panel { @apply tw:m-[0_20px_32px] tw:p-[20px_16px] tw:rounded-[24px]; }.room-type-selector { @apply tw:p-[16px] tw:gap-[6px]; }.room-type-selector button { @apply tw:min-w-0 tw:p-[12px_8px]; font-size: 13px; }.availability-banner { align-items: start; @apply tw:p-[18px] tw:gap-[12px]; }.availability-banner strong { font-size: 17px; }.availability-panel-head { @apply tw:gap-[16px]; }.availability-panel-head > button { @apply tw:w-full; }.room-type-content { @apply tw:p-[20px]; }.room-type-content h3 { font-size: 24px; } }

@@ -1,5 +1,5 @@
-// Interpose at Prisma's transaction boundary; every read/write still reaches MongoDB.
-// Hooks exist only in tests, never in the HTTP or service implementation.
+// ทดสอบควบคุมจังหวะธุรกรรมเพื่อทดสอบการทำงานพร้อมกัน
+// แทรกจังหวะเฉพาะชุดทดสอบที่ขอบธุรกรรม โดยการอ่านเขียนยังถึง MongoDB จริง
 function instrument(prisma, hook) {
   return new Proxy(prisma, {
     get(target, property) {

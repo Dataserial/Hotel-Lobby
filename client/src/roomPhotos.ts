@@ -1,4 +1,6 @@
-/** User-supplied illustrative photos, not verified photographs of assigned rooms. */
+// เลือกภาพประกอบตามประเภทห้อง
+/* ภาพประกอบจากผู้ใช้ ไม่ได้ยืนยันว่าเป็นภาพห้องที่จัดให้จริง */
+// เลือกภาพประกอบตามชื่อประเภทห้อง
 export function roomPhoto(name: string): string {
   if (/family|ครอบครัว|แฟมิล/i.test(name)) return '/rooms/family.png'
   if (/deluxe|ดีลัก/i.test(name)) return '/rooms/deluxe.png'

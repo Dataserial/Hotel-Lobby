@@ -1,8 +1,10 @@
+// API สรุปห้องว่างรายประเภทสำหรับลูกค้า
 const express = require('express');
 const { asyncRoute, fail } = require('../lib/http');
 const { publicRoomSummary } = require('../services/public-room-summary');
 module.exports = prisma => {
   const router = express.Router();
+  // อ่านข้อมูล /
   router.get('/', asyncRoute(async (req, res) => {
     if (Object.keys(req.query).some(key => !['checkInDate', 'checkOutDate', 'guestCount'].includes(key))) fail(400, 'VALIDATION_ERROR', 'Unexpected query fields');
     if (typeof req.query.guestCount !== 'string' || !/^\d+$/.test(req.query.guestCount)) fail(400, 'INVALID_GUEST_COUNT', 'Guest count must be an integer');

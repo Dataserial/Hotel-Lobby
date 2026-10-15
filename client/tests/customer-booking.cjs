@@ -1,3 +1,4 @@
+// ทดสอบขั้นตอนจองห้องของลูกค้า
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { domApp } = require('./helpers/dom.cjs');
@@ -13,7 +14,9 @@ async function setup(handler) {
   const Component = h.loadSource('PublicHotel.tsx').default;
   await h.React.act(async () => h.root.render(h.React.createElement(Component, { staff() {}, member() {}, user: customer, token: 'customer-token' })));
   const doc = h.dom.window.document;
+  // ตรวจข้อมูลและส่งคำขอของฟอร์ม
   const submit = selector => h.React.act(async () => doc.querySelector(selector).dispatchEvent(new h.dom.window.Event('submit', { bubbles: true, cancelable: true })));
+  // ปิดเมนูหรือหน้าต่างที่เปิดอยู่
   const close = async () => { await h.close(); globalThis.fetch = original; };
   return { h, doc, submit, close, scrollCalls };
 }
@@ -42,6 +45,7 @@ test('discover scrolls after each loaded step, supports step navigation, and res
       totalPrice: 1200, status: 'confirmed', paymentStatus: 'pending' }));
   });
   const { h, doc, scrollCalls } = fixture;
+  // คำนวณภาพเคลื่อนไหวของเฟรมถัดไป
   const step = index => doc.querySelectorAll('.booking-step-link')[index];
   const lastTarget = () => scrollCalls.at(-1)?.id;
   try {
@@ -169,6 +173,7 @@ test('full anonymous selection, signup, booking, account and staff visibility on
     h = domApp('http://localhost:5173/discover', { VITE_API_BASE_URL: base });
     const App = h.loadSource('App.tsx').default; await h.React.act(async () => h.root.render(h.React.createElement(App)));
     const doc = h.dom.window.document;
+    // ตรวจข้อมูลและส่งคำขอของฟอร์ม
     const submit = selector => h.React.act(async () => doc.querySelector(selector).dispatchEvent(new h.dom.window.Event('submit', { bubbles: true, cancelable: true })));
     await submit('.availability-search'); await h.waitFor(() => h.button('เลือก Family'));
     await h.React.act(async () => h.button('เลือก Family').click()); await h.waitFor(() => doc.querySelector('.room-number'));

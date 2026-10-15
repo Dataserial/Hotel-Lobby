@@ -1,3 +1,4 @@
+// ทดสอบIP และพร็อกซีที่เชื่อถือได้
 const request=require('supertest');
 const {createApp}=require('../app');
 test('explicit trusted proxy separates IP quotas and recognizes forwarded HTTPS',async()=>{

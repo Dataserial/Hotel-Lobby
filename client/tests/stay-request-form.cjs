@@ -1,3 +1,4 @@
+// ทดสอบฟอร์มคำขอเข้าพักและการส่งซ้ำเมื่อ session มีปัญหา
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { domApp } = require('./helpers/dom.cjs');

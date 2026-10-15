@@ -1,3 +1,4 @@
+// ทดสอบเมนูบัญชีและการเข้าสู่ระบบ
 const {test}=require('node:test');const assert=require('node:assert/strict');
 const {domApp}=require('./helpers/dom.cjs');
 test('logged-in hotel account is an initials menu with profile and logout actions',async()=>{

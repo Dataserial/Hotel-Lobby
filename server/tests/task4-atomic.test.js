@@ -1,3 +1,4 @@
+// ทดสอบการย้อนกลับและความปลอดภัยของธุรกรรมเงิน
 const { startDatabase, sample, expectConsistent } = require('./task3-db');
 const { instrument, barrier } = require('./task3-hooks');
 const { createBooking, updateBooking, cancelBooking } = require('../services/booking-service');
@@ -9,6 +10,7 @@ let db;
 const actorId = sample.users[1]._id;
 const input = { guestId: sample.guests[0]._id, roomId: sample.rooms[0]._id, guestCount: 2, checkInDate: '2026-11-01', checkOutDate: '2026-11-03' };
 const clock = () => new Date('2026-11-01T00:00:00Z');
+// จัดรูปแบบจำนวนเงินให้อ่านง่าย
 const money = (amount = 100, reference = 'atomic-receipt') => ({ amount, method: 'cash', reference, occurredAt: '2026-01-01T00:00:00Z' });
 const receive = (p, id, amount = 100, ref = 'atomic-receipt', key = ref) => receivePayment(p, id, money(amount, ref), key, actorId);
 const refund = (p, id, receiptId, amount = 100, ref = 'atomic-refund', key = ref) => refundPayment(p, id, { ...money(amount, ref), receiptId, reason: 'Synthetic refund' }, key, actorId);

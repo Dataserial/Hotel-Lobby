@@ -1,3 +1,4 @@
+# เปิด MongoDB บนเครื่องและตรวจ replica set
 $ErrorActionPreference = 'Stop'
 
 $serverPath = Split-Path $PSScriptRoot -Parent

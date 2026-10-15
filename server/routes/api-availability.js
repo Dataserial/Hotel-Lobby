@@ -1,3 +1,4 @@
+// API ค้นหาห้องว่างตามช่วงวันที่
 const express = require('express');
 const { role } = require('../lib/auth');
 const { asyncRoute, page, fail } = require('../lib/http');
@@ -6,6 +7,7 @@ const { findAvailableRooms } = require('../services/availability-service');
 module.exports = (prisma, { publicAccess = false } = {}) => {
   const router = express.Router();
   if (!publicAccess) router.use(role('admin', 'receptionist'));
+  // อ่านข้อมูล /
   router.get('/', asyncRoute(async (req, res) => {
     const pagination = page(req.query, ['checkInDate', 'checkOutDate', 'guestCount', 'roomTypeId', ...(!publicAccess ? ['excludeBookingId'] : [])]);
     const count = req.query.guestCount;

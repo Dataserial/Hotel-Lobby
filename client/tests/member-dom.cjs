@@ -1,3 +1,4 @@
+// ทดสอบหน้าสมาชิก สมัครบัญชี และแก้ข้อมูลผ่าน DOM
 const {test}=require('node:test');const assert=require('node:assert/strict');
 const {domApp}=require('./helpers/dom.cjs');
 

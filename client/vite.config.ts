@@ -1,3 +1,4 @@
+// ตั้งค่า build และพร็อกซี API สำหรับการพัฒนา
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'vite'

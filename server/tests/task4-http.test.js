@@ -1,3 +1,4 @@
+// ทดสอบ API รับคืนเงินและเช็คอินเช็คเอาต์
 const crypto = require('crypto');
 const request = require('supertest');
 const { createApp } = require('../app');

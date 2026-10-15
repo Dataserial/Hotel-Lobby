@@ -1,3 +1,4 @@
+// ทดสอบผลค้นหาห้องว่าง
 const { findAvailableRooms } = require('../services/availability-service');
 const { testPrisma, seedStep2Sample } = require('./test-db');
 

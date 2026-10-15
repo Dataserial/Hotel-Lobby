@@ -1,3 +1,4 @@
+// ตรวจไวยากรณ์ JavaScript ฝั่ง Backend
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');

@@ -1,3 +1,4 @@
+// ทดสอบจำลองสถานะ React เพื่อเรียกตัวจัดการเหตุการณ์จริงในการทดสอบ
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
@@ -30,5 +31,6 @@ function nodes(tree,predicate) { if(!tree||typeof tree!=='object')return [];retu
 const button=(tree,label)=>nodes(tree,n=>n.type==='button'&&n.props.children.includes(label))[0];
 const tick=()=>new Promise(r=>setImmediate(r));
 const deferred=()=>{let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b});return{promise,resolve,reject}};
+// ตรวจเลขหน้าและจำนวนรายการต่อหน้า
 const page=(items,total=items.length,n=1,limit=20)=>({items,total,page:n,limit});
 module.exports={harness,nodes,button,tick,deferred,page};

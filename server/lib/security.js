@@ -1,6 +1,8 @@
+// จำกัดคำขอและกำหนดส่วนหัวด้านความปลอดภัย
 const { fail } = require('./http');
 
-// Per-process, bounded limiter. Do not trust forwarded IPs without a trusted proxy.
+// จำกัดคำขอในแต่ละโปรเซส และเชื่อ IP ที่ส่งต่อเฉพาะพร็อกซีที่อนุญาต
+// จำกัดจำนวนคำขอต่อ IP ภายในช่วงเวลา
 function rateLimit({ limit, windowMs = 60000, maxKeys = 10000, clock = Date.now }) {
   const clients = new Map();
   return (req, res, next) => {
@@ -24,6 +26,7 @@ function rateLimit({ limit, windowMs = 60000, maxKeys = 10000, clock = Date.now 
   };
 }
 
+// กำหนดส่วนหัวความปลอดภัยและจำกัดขนาดคำขอ
 function headersAndLimits(req, res, next) {
   res.set({
     'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer',

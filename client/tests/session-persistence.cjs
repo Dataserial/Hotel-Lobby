@@ -1,3 +1,4 @@
+// ทดสอบการคืน session หลังรีโหลดและการตรวจวันหมดอายุ
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { domApp } = require('./helpers/dom.cjs');
@@ -8,6 +9,7 @@ async function mount(h) {
   const App = h.loadSource('App.tsx').default;
   await h.React.act(async () => h.root.render(h.React.createElement(App)));
 }
+// โหลดข้อมูลล่าสุดมาแสดง
 async function reload(h) {
   await h.React.act(async () => h.root.render(null));
   await mount(h);

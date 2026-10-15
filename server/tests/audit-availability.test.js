@@ -1,3 +1,4 @@
+// ทดสอบกฎห้องว่างและการจองทับซ้อน
 const request = require('supertest');
 const crypto = require('crypto');
 const { createApp } = require('../app');

@@ -1,3 +1,4 @@
+// ทดสอบหน้าจัดการโรงแรมด้วย DOM และ Backend จริง
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { domApp } = require('./helpers/dom.cjs');
@@ -30,6 +31,7 @@ async function setup(role) {
     await h.waitFor(() => doc.querySelector('.shell'));
     const click = element => h.React.act(async () => element.click());
     const select = (element, value) => h.React.act(async () => { element.value = value; element.dispatchEvent(new h.dom.window.Event('change', { bubbles: true })); });
+    // ตรวจข้อมูลและส่งคำขอของฟอร์ม
     const submit = element => h.React.act(async () => element.dispatchEvent(new h.dom.window.Event('submit', { bubbles: true, cancelable: true })));
     return { db, h, doc, room, type, guest, booking, click, select, submit,
       async close() { await h.React.act(async () => { h.root.render(null); await new Promise(resolve => setTimeout(resolve, 50)); }); await h.close(); await new Promise(resolve => server.close(resolve)); await db.stop(); } };

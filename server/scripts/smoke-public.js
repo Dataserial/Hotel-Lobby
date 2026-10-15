@@ -1,4 +1,5 @@
-// Real TCP HTTP client in a separate process, without Supertest.
+// เรียก Public API ผ่าน HTTP จริงเพื่อตรวจความพร้อม
+// เรียก HTTP จริงจากอีกโปรเซส โดยไม่ผ่าน Supertest
 const { spawn } = require('child_process');
 const app = require('../app');
 const prisma = require('../lib/prisma');

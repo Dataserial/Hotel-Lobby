@@ -1,3 +1,4 @@
+# ตั้งค่าบริการ Backend และตัวแปรแวดล้อมบน Render
 services:
   - type: web
     name: hotel-lobby-api

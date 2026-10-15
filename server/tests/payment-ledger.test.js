@@ -1,3 +1,4 @@
+// ทดสอบการตรวจและสรุปบัญชีรายการเงิน
 const { moneyInput, summarize, paymentStatus } = require('../services/payment-ledger');
 
 test('cumulative receipts may exceed current price after refunds', () => {

@@ -1,6 +1,7 @@
+/* จัดรูปแบบรูปแบบขั้นตอนค้นหาและจองห้อง */
 @reference "./tailwind.css";
 
-/* Discover uses the same navy, yellow, type scale and rounded cards as Home. */
+/* ใช้สี ขนาดอักษร และการ์ดมนให้ตรงกับหน้าแรก */
 .public-hotel .discover-section { @apply tw:min-h-[auto]; }
 .discover-hero { @apply tw:grid tw:grid-cols-[1.1fr_1fr] tw:items-center tw:gap-[6%]; background: var(--navy); @apply tw:text-white tw:p-[68px_5%_60px]; }
 .public-hotel .discover-heading { @apply tw:m-[0]; }
@@ -97,6 +98,9 @@
 .booking-success-moon { @apply tw:block tw:text-yellow; font-size: 56px; }
 .booking-success p { color: #d0dfe7; line-height: 1.8; }
 
+/* ปรับการแสดงผลตามขนาดหน้าจอหรือการตั้งค่าอุปกรณ์ */
+
+
 @media (max-width: 960px) {
   .discover-hero { @apply tw:gap-[4%]; }
   .public-hotel .room-type-content { @apply tw:p-[20px]; }
@@ -105,6 +109,8 @@
   .booking-details, .booking-stay-copy { @apply tw:p-[24px]; }
   .booking-details .form-grid { @apply tw:grid-cols-[1fr]; }
 }
+/* ปรับการแสดงผลตามขนาดหน้าจอหรือการตั้งค่าอุปกรณ์ */
+
 @media (max-width: 680px) {
   .discover-hero { @apply tw:grid-cols-[1fr] tw:p-[36px_20px] tw:gap-[28px]; }
   .public-hotel .discover-heading h1 { font-size: 36px; }

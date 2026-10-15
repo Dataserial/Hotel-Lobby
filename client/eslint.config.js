@@ -1,3 +1,4 @@
+// ตั้งค่าตรวจรูปแบบและข้อผิดพลาดของโค้ดหน้าเว็บ
 import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'

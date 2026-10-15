@@ -1,3 +1,4 @@
+// ทดสอบรายการเข้าออกตามวันที่จริง
 const express = require('express');
 const request = require('supertest');
 const bookings = require('../routes/api-bookings');

@@ -1,3 +1,4 @@
+// ทดสอบหน้าห้องว่างและตัวกรองประเภทห้อง
 const {test}=require('node:test');const assert=require('node:assert/strict');
 const {domApp}=require('./helpers/dom.cjs');
 

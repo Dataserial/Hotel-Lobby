@@ -1,10 +1,14 @@
+// จัดการบริการเสริมสำหรับผู้ดูแลระบบ
 import { useEffect, useState, type FormEvent } from 'react'
 import { errorText, query, type AdditionalService, type ApiError, type Paged, type RoomType } from './api'
 
+// กำหนดรูปแบบข้อมูล Call ที่ส่วนนี้ใช้งาน
 type Call = <T,>(path: string, options?: { method?: string; body?: unknown; signal?: AbortSignal }) => Promise<T>
 const units = { per_night: 'ต่อคืน', per_set: 'ต่อชุด', per_stay: 'ต่อการเข้าพัก' }
+// กำหนดค่าเริ่มต้นของฟอร์ม
 const newForm = () => ({ name: '', unit: 'per_stay', price: '', included: false, extraBed: false, roomTypeIds: [] as string[], maxQuantity: 1, active: true })
 
+// จัดการบริการเสริมและประเภทห้องที่ใช้ได้
 export default function AdditionalServices({ call, setError }: { call: Call; setError: (message: string) => void }) {
   const [data, setData] = useState<Paged<AdditionalService> | null>(null)
   const [types, setTypes] = useState<RoomType[]>([])
@@ -29,6 +33,7 @@ export default function AdditionalServices({ call, setError }: { call: Call; set
   }, [call, page, search, active, refresh, setError])
   useEffect(() => {
     const controller = new AbortController()
+    // โหลดประเภทห้องที่เลือกใช้งานได้
     const loadTypes = async () => {
       const items: RoomType[] = []
       for (let page = 1; ; page++) {
@@ -42,12 +47,15 @@ export default function AdditionalServices({ call, setError }: { call: Call; set
     return () => controller.abort()
   }, [call, setError])
 
+  // นำข้อมูลเดิมมาแก้ไขในฟอร์ม
   function edit(service?: AdditionalService) {
     setEditing(service?.id || null); setNotice(''); setOpen(true)
     setForm(service ? { name: service.name, unit: service.unit, price: service.price === null ? '' : String(service.price), included: service.included,
       extraBed: service.extraBed, roomTypeIds: [...service.roomTypeIds], maxQuantity: service.maxQuantity, active: service.active } : newForm())
   }
+  // เปลี่ยนหน้าและโหลดรายการใหม่
   function changePage(next: number) { setPage(next); setLoading(true) }
+  // ตรวจและบันทึกข้อมูลจากฟอร์ม
   async function save(event: FormEvent) {
     event.preventDefault()
     if (busy) return

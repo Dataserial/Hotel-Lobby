@@ -1,3 +1,4 @@
+/* จัดรูปแบบหน้าแรกและภาพรวมห้องพัก */
 @reference "./tailwind.css";
 
 .home-page { background: var(--canvas); }
@@ -68,7 +69,11 @@
 .home-cta button { @apply tw:shrink-0; }
 .home-footer { background: var(--navy); @apply tw:text-white tw:p-[28px_5%] tw:flex tw:flex-wrap tw:items-center tw:gap-[24px]; }
 .home-footer > span { color: #bcd0da; font-size: 12px; @apply tw:mr-auto; }
+/* ปรับการแสดงผลตามขนาดหน้าจอหรือการตั้งค่าอุปกรณ์ */
+
 @media (max-width: 1100px) { .home-header nav { @apply tw:ml-[0]; }.home-hero { @apply tw:gap-[4%]; }.home-guide ol { @apply tw:grid-cols-[repeat(2,minmax(0,1fr))]; }.home-room-grid { @apply tw:grid-cols-[repeat(2,minmax(0,1fr))]; } }
+/* ปรับการแสดงผลตามขนาดหน้าจอหรือการตั้งค่าอุปกรณ์ */
+
 @media (max-width: 680px) {
   .home-header { @apply tw:gap-[20px] tw:p-[20px]; }.home-header .lub-brand { font-size: 30px; }
   .home-header nav { order: 2; @apply tw:gap-[18px] tw:w-full; }.home-account { @apply tw:ml-auto; }.home-account span { @apply tw:max-w-[140px]; }

@@ -1,3 +1,4 @@
+// ทดสอบการจองห้องเดิมในวันที่ไม่ทับซ้อนกัน
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const request = require('supertest');
@@ -96,7 +97,7 @@ test.each(['staff', 'customer'])('%s can book two days ahead while a non-overlap
     await assertAvailability(stay(2, 3), true);
     await book(channel, stay(2, 3)).expect(201);
     await assertAvailability(stay(0, 1), false);
-    // Advance reservation does not change the room's current occupancy.
+    // การจองล่วงหน้าไม่เปลี่ยนสถานะการพักจริงของห้องปัจจุบัน
     expect((await db.prisma.room.findUnique({ where: { id: room.id } })).status).toBe('occupied');
   } finally {
     if (originalFlag === undefined) delete process.env.ALLOW_FUTURE_OCCUPIED_BOOKINGS;

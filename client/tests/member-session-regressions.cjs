@@ -1,3 +1,4 @@
+// ทดสอบการเปลี่ยนบัญชีและ session ที่หมดอายุ
 const {test}=require('node:test');const assert=require('node:assert/strict');
 const {domApp}=require('./helpers/dom.cjs');
 const member=(name,id='first')=>({id,name,email:id+'@example.test',role:'customer',active:true});
@@ -30,6 +31,7 @@ test('late authentication failure from an old staff session cannot log out a new
   } finally { await h.close(); globalThis.fetch = originalFetch; }
 });
 
+// เข้าสู่ระบบแล้วเก็บ session ที่ได้รับ
 async function login(h) {
   const doc=h.dom.window.document;
   await h.input(doc.querySelector('input[type="email"]'),'member@example.test');
@@ -88,8 +90,7 @@ test('customer hotel staff callback logs out, opens staff login and its logo ret
     throw new Error('Unexpected URL '+url);
   };
   try {
-    // The logged-in hotel hides its staff control; expose only the existing callback
-    // at the test seam while keeping the real PublicHotel and React DOM mounted.
+    // เปิดเฉพาะ callback ที่ต้องทดสอบ โดยยังใช้ PublicHotel และ React DOM จริง
     const module=h.loadSource('PublicHotel.tsx');const PublicHotel=module.default;
     module.default=props=>h.React.createElement(h.React.Fragment,null,h.React.createElement(PublicHotel,props),h.React.createElement('button',{'data-test-staff':true,onClick:props.staff},'Test staff route'));
     const App=h.loadSource('App.tsx').default;await h.React.act(async()=>h.root.render(h.React.createElement(App)));await login(h);

@@ -1,3 +1,4 @@
+// ทดสอบการเข้าสู่ระบบและสิทธิ์ผู้ใช้
 const request = require('supertest');
 const bcrypt = require('bcryptjs');
 const { createApp } = require('../app');

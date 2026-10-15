@@ -1,5 +1,7 @@
+// ข้อมูลและช่องทางติดต่อโรงแรม
 import { contactChannels } from './contact'
 
+// แสดงช่องทางติดต่อที่ตั้งค่าใช้งานจริง
 export default function HotelContact() {
   const channels = contactChannels(import.meta.env)
   return <div className="hotel-contact" aria-label="ติดต่อโรงแรม">

@@ -1,3 +1,4 @@
+// ทดสอบการเพิ่มข้อมูลสาธิตซ้ำ
 const request = require('supertest');
 const bcrypt = require('bcryptjs');
 const { createApp } = require('../app');

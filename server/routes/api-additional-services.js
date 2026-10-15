@@ -1,16 +1,22 @@
+// API ดูและจัดการบริการเสริม
 const express = require('express');
 const { asyncRoute, body, str, int, bool, objectId, page, list, fail } = require('../lib/http');
 const { role } = require('../lib/auth');
 
 const units = ['per_night', 'per_set', 'per_stay'];
+// ตรวจหน่วยคิดค่าบริการเสริม
 const unit = value => units.includes(value) ? value : fail(400, 'VALIDATION_ERROR', 'Invalid pricing unit');
+// ตรวจและตัดรหัสประเภทห้องที่ซ้ำ
 const ids = value => {
   if (!Array.isArray(value) || value.length > 50) fail(400, 'VALIDATION_ERROR', 'Invalid room type list');
   return [...new Set(value.map(id => objectId(id, 'roomTypeId').toLowerCase()))];
 };
+// ตรวจราคาจำนวนเต็มหรือราคาที่ยังไม่กำหนด
 const price = value => value === null ? null : int(value, 'price', 0, 2147483647);
+// เลือกข้อมูลที่ส่งกลับให้หน้าจอ
 const present = service => ({ id: service.id, name: service.name, unit: service.unit, price: service.price, included: service.included, extraBed: service.extraBed, roomTypeIds: service.roomTypeIds, maxQuantity: service.maxQuantity, active: service.active, createdAt: service.createdAt, updatedAt: service.updatedAt });
 
+// ตรวจว่าประเภทห้องที่อ้างอิงมีอยู่จริง
 async function assertRoomTypes(tx, roomTypeIds) {
   if (roomTypeIds.length && await tx.roomType.count({ where: { id: { in: roomTypeIds } } }) !== roomTypeIds.length) {
     fail(400, 'INVALID_REFERENCE', 'One or more room types do not exist');
@@ -19,6 +25,7 @@ async function assertRoomTypes(tx, roomTypeIds) {
 
 module.exports = (prisma, { publicAccess = false } = {}) => {
   const router = express.Router();
+  // อ่านข้อมูล /
   router.get('/', asyncRoute(async (req, res) => {
     const pagination = page(req.query, publicAccess ? ['roomTypeId'] : ['roomTypeId', 'active', 'q']);
     const where = publicAccess ? { active: true } : {};
@@ -32,7 +39,9 @@ module.exports = (prisma, { publicAccess = false } = {}) => {
     res.json({ ...result, items: result.items.map(present) });
   }));
   if (publicAccess) return router;
+  // กำหนดเงื่อนไขร่วมของเส้นทาง
   router.use(role('admin'));
+  // รับคำขอสร้างหรือทำรายการ /
   router.post('/', asyncRoute(async (req, res) => {
     body(req.body, ['name', 'unit', 'price', 'included', 'extraBed', 'roomTypeIds', 'maxQuantity'], ['name', 'unit']);
     const name = str(req.body.name, 'name', 80);
@@ -44,6 +53,7 @@ module.exports = (prisma, { publicAccess = false } = {}) => {
     });
     res.status(201).json(present(item));
   }));
+  // รับคำขอแก้ไข /:id
   router.patch('/:id', asyncRoute(async (req, res) => {
     body(req.body, ['name', 'unit', 'price', 'included', 'extraBed', 'roomTypeIds', 'maxQuantity', 'active']);
     const data = { updatedById: req.actor.id };

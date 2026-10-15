@@ -1,3 +1,4 @@
+// ทดสอบผลสรุปห้องว่างหลายวัน
 const request = require('supertest');
 const { createApp } = require('../app');
 const { startDatabase } = require('./task3-db');

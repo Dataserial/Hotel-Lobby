@@ -1,4 +1,5 @@
-// Local Postman demo. Always uses its own database; never reads DATABASE_URL.
+// เปิด API และฐานข้อมูลแยกสำหรับทดลองใน Postman
+// ระบบทดลอง Postman ใช้ฐานแยกของตัวเอง ไม่เลือกฐานจาก DATABASE_URL
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
@@ -24,7 +25,7 @@ async function connect() {
 
 async function mongoReady() {
   let client;
-  try { client = await connect(); } catch { /* start our isolated instance */ }
+  try { client = await connect(); } catch { /* เริ่ม MongoDB แยกสำหรับการทดลองนี้ */ }
   if (!client) {
     const binaries = [process.env.POSTMAN_MONGOD_PATH,
       path.join(process.env.USERPROFILE || '', '.cache', 'mongodb-binaries', 'mongod-x64-win32-8.2.6.exe'),
@@ -60,6 +61,7 @@ async function mongoReady() {
   } finally { await client.close(); }
 }
 
+// เริ่มขั้นตอนหลัก: เปิด API และฐานข้อมูลแยกสำหรับทดลองใน Postman
 async function main() {
   await mongoReady();
   await new Promise((resolve, reject) => {
@@ -93,6 +95,7 @@ async function main() {
   console.log('POSTMAN DEMO READY: http://127.0.0.1:3000 | room 1200 THB/night | isolated hotel_lobby_postman_demo');
 }
 
+// ปิดเมนูหรือหน้าต่างที่เปิดอยู่
 async function close() {
   if (server?.listening) await new Promise(resolve => server.close(resolve));
   if (prisma) await prisma.$disconnect();

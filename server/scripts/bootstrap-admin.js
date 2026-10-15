@@ -1,3 +1,4 @@
+// ตั้งค่าผู้ดูแลเริ่มต้นตามข้อมูลที่กำหนด
 require('dotenv').config();
 const bcrypt = require('bcryptjs');
 const { PrismaClient } = require('@prisma/client');
@@ -29,6 +30,7 @@ async function bootstrapAdmin(prisma, input) {
   });
 }
 
+// เริ่มขั้นตอนหลัก: ตั้งค่าผู้ดูแลเริ่มต้นตามข้อมูลที่กำหนด
 async function main() {
   const input = config(process.env, process.argv.slice(2));
   const prisma = new PrismaClient();

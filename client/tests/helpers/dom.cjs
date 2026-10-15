@@ -1,3 +1,4 @@
+// ตัวช่วยจำลอง DOM และเบราว์เซอร์สำหรับชุดทดสอบ
 const fs=require('node:fs');const path=require('node:path');const vm=require('node:vm');
 const ts=require('typescript');const {JSDOM}=require('jsdom');
 
@@ -11,6 +12,7 @@ function domApp(url='http://localhost:5173/',env={}) {
   dom.window.HTMLDialogElement.prototype.showModal=function(){this.setAttribute('open','')};
   dom.window.HTMLDialogElement.prototype.close=function(){this.removeAttribute('open')};
   const cache=new Map();
+  // โหลดข้อมูลหน้าปัจจุบัน
   function load(filename) {
     if(cache.has(filename))return cache.get(filename).exports;
     const module={exports:{}};cache.set(filename,module);

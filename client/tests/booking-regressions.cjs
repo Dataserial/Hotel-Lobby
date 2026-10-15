@@ -1,3 +1,4 @@
+// ทดสอบตัวกรองห้อง การแก้จอง และการตอบกลับสลับลำดับ
 const { test } = require('node:test')
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
@@ -5,7 +6,7 @@ const vm = require('node:vm')
 const path = require('node:path')
 const ts = require('typescript')
 
-// Execute the actual component handlers with deterministic hook state and deferred APIs.
+// ทดสอบตัวจัดการจริงด้วยสถานะ React และผล API ที่ควบคุมเวลาได้
 function harness(component, props) {
   let slots = [], cursor = 0
   const react = {
@@ -27,6 +28,7 @@ function nodes(tree, predicate) {
 }
 const button = (tree, label) => nodes(tree, n => n.type === 'button' && n.props.children.includes(label))[0]
 const deferred = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b }); return { promise, resolve, reject } }
+// ตรวจเลขหน้าและจำนวนรายการต่อหน้า
 const page = items => ({ items, total: items.length, page: 1, limit: 100 })
 
 test('departure loading includes all pages and does not restrict booking status', async () => {

@@ -1,3 +1,4 @@
+// เพิ่มข้อมูลสาธิตโดยไม่สร้างข้อมูลเดิมซ้ำ
 require('dotenv').config();
 const bcrypt = require('bcryptjs');
 const { PrismaClient } = require('@prisma/client');
@@ -55,6 +56,7 @@ async function seedDemo(prisma, { email, password }) {
   return { admin, typeCount: roomTypes.length, roomCount: roomTypes.reduce((count, type) => count + type.rooms.length, 0) };
 }
 
+// เริ่มขั้นตอนหลัก: เพิ่มข้อมูลสาธิตโดยไม่สร้างข้อมูลเดิมซ้ำ
 async function main() {
   const config = demoConfig(process.env);
   const prisma = new PrismaClient();

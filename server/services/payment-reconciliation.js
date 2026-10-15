@@ -1,7 +1,9 @@
+// ตรวจความตรงกันของยอดเงินและปรับข้อมูลเดิมจากหลักฐาน
 const { fail, objectId } = require('../lib/http');
 const { moneyInput, summarize, assertSummary, ledgerRows } = require('./payment-ledger');
 const { assertActor, operationTransaction, touchBooking } = require('./operation-transaction');
 
+// ตรวจยอดชำระ รายการเงิน และข้อมูลอ้างอิงที่ขาด
 async function auditPayments(prisma) {
   const issues = [];
   const bookings = await prisma.booking.findMany({ include: { payment: true } });
@@ -28,6 +30,7 @@ async function auditPayments(prisma) {
   return { bookings: bookings.length, payments: payments.length, transactions: transactions.length, issues };
 }
 
+// เทียบรายการเดิมกับข้อมูลหลักฐานที่ตรวจแล้ว
 function sameRecord(row, expected) {
   return Object.keys(expected).every((key) => {
     const a = row[key] instanceof Date ? row[key].toISOString() : row[key];
@@ -36,8 +39,8 @@ function sameRecord(row, expected) {
   });
 }
 
-// Evidence is supplied by an operator after verifying real vouchers. Totals alone
-// are intentionally insufficient. Each file represents one complete booking ledger.
+// รับหลักฐานที่ผู้ดูแลตรวจแล้วให้ครบทั้งการจอง ไม่ใช้เพียงยอดรวมยืนยันบัญชี
+// ปรับบัญชีเดิมจากหลักฐานที่ผู้ดูแลตรวจสอบแล้ว
 async function reconcilePayment(prisma, evidence, actorId) {
   if (!evidence || evidence.verified !== true || !Array.isArray(evidence.transactions)) {
     fail(400, 'VALIDATION_ERROR', 'Verified evidence and complete transactions required');
@@ -63,15 +66,13 @@ async function reconcilePayment(prisma, evidence, actorId) {
         if (!sameRecord(current, data)) fail(409, 'PAYMENT_INCONSISTENT', 'Evidence differs from immutable ledger');
       } else {
         if (booking.payment.ledgerReady) fail(409, 'PAYMENT_INCONSISTENT', 'A ready ledger cannot be extended by reconciliation');
-        // Preserve verified file ordering for latest-recorded metadata. createdAt
-        // is import time; occurredAt alone represents the historical event.
+        // คงลำดับหลักฐานที่ตรวจแล้ว โดย createdAt คือเวลานำเข้า และ occurredAt คือเวลารายการจริง
         await tx.paymentTransaction.create({ data: { ...data, createdAt: new Date(importedAt++) } });
       }
     }
     const rows = await ledgerRows(tx, booking.payment.id);
     const summary = summarize(booking, rows);
-    // Legacy latest-channel/timestamp/status metadata may be stale, but totals
-    // must match exactly; only derived metadata is repaired from real evidence.
+    // ข้อมูลวิธีชำระและเวลาเก่าอาจคลาดเคลื่อนได้ แต่ยอดรวมต้องตรงหลักฐานก่อนปรับข้อมูลสรุป
     for (const key of ['amount', 'paidAmount', 'refundedAmount']) {
       if (booking.payment[key] !== summary[key]) fail(409, 'PAYMENT_INCONSISTENT', 'Evidence totals do not match existing summary');
     }

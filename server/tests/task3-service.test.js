@@ -1,3 +1,4 @@
+// ทดสอบกฎการจองในชั้นบริการ
 const { createBooking, updateBooking, cancelBooking } = require('../services/booking-service');
 const { startDatabase, expectConsistent, sample } = require('./task3-db');
 const { instrument } = require('./task3-hooks');

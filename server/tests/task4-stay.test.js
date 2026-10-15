@@ -1,3 +1,4 @@
+// ทดสอบกฎเช็คอินเช็คเอาต์
 const { startDatabase, sample, expectConsistent } = require('./task3-db');
 const { createBooking } = require('../services/booking-service');
 const { checkIn, checkOut, hotelToday } = require('../services/stay-service');
@@ -84,8 +85,7 @@ test('inactive type and wrong checkout room state block transitions', async () =
 test('a conflicting checked-in booking blocks both entry and exit even when room status looks valid', async () => {
   const b = await createBooking(db.prisma, input, actorId);
   const other = await createBooking(db.prisma, { ...input, checkInDate: '2026-11-04', checkOutDate: '2026-11-05' }, actorId);
-  // Deliberately corrupt fixture: an overdue stay still occupies a room whose flag
-  // was incorrectly reset. The operation must inspect bookings, not just Room.
+  // จำลองผู้พักเกินกำหนดแต่สถานะห้องถูกรีเซ็ตผิด เพื่อบังคับให้ตรวจการจองร่วมด้วย
   await db.prisma.booking.update({ where: { id: other.id }, data: { status: 'checked_in' } });
   await expect(checkIn(db.prisma, b.id, actorId, start)).rejects.toMatchObject({ code: 'ROOM_NOT_READY' });
   await db.prisma.booking.update({ where: { id: b.id }, data: { status: 'checked_in' } });

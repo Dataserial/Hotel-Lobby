@@ -1,3 +1,4 @@
+// ตรวจและเพิ่มดัชนีที่ใช้กับการจองของลูกค้า
 const { MongoClient } = require('mongodb');
 const plans = [
   { collection: 'guests', name: 'guests_customerId_createdAt_idx', key: { customerId: 1, createdAt: 1 } },
@@ -32,9 +33,10 @@ async function prepareCustomerBooking(db, { apply = false } = {}) {
     report.additions.push('customerBookingRequests (unique _id)');
     if (apply) await db.createCollection('customerBookingRequests');
   }
-  // No document rewrites, owner backfills, deletes, dropped indexes or TTL indexes.
+  // เพิ่มเฉพาะดัชนี โดยไม่เขียนทับเอกสาร ลบข้อมูล หรือลบดัชนีเดิม
   return report;
 }
+// เริ่มขั้นตอนหลัก: ตรวจและเพิ่มดัชนีที่ใช้กับการจองของลูกค้า
 async function main() {
   require('dotenv').config({ quiet: true });
   const args = process.argv.slice(2);

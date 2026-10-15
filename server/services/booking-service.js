@@ -1,3 +1,4 @@
+// สร้าง แก้ไข และยกเลิกการจองในธุรกรรมเดียวกัน
 const {
   BookingError,
   validateStay,
@@ -9,6 +10,7 @@ const { assertActor, operationTransaction: bookingTransaction } = require('./ope
 const { roomBookable } = require('./room-bookability');
 const { createClaims } = require('./room-night-claims');
 
+// ตรวจรูปแบบรหัสก่อนค้นหาข้อมูล
 function assertId(value, field) {
   if (typeof value !== 'string' || !/^[0-9a-fA-F]{24}$/.test(value)) {
     throw new BookingError(400, 'INVALID_REFERENCE', `${field} must be an ObjectId.`);
@@ -16,6 +18,7 @@ function assertId(value, field) {
   return value;
 }
 
+// ตรวจว่าผู้เข้าพักมีอยู่และยังใช้งานได้
 async function assertGuest(tx, guestId) {
   assertId(guestId, 'guestId');
   const guest = await tx.guest.findUnique({ where: { id: guestId }, select: { id: true, active: true } });
@@ -24,6 +27,7 @@ async function assertGuest(tx, guestId) {
   }
 }
 
+// ตรวจห้อง ประเภทห้อง และจำนวนคนก่อนจอง
 async function bookableRoom(tx, roomId, guestCount, checkInDate) {
   assertId(roomId, 'roomId');
   const room = await tx.room.findUnique({
@@ -38,6 +42,7 @@ async function bookableRoom(tx, roomId, guestCount, checkInDate) {
   return room;
 }
 
+// ปฏิเสธฟิลด์ที่บริการไม่อนุญาตให้แก้
 function assertAllowedFields(input, fields) {
   if (!input || typeof input !== 'object' || Array.isArray(input) ||
       Object.entries(input).some(([key, value]) => !fields.includes(key) || value == null)) {
@@ -45,6 +50,7 @@ function assertAllowedFields(input, fields) {
   }
 }
 
+// สร้างการจอง สิทธิ์กันห้อง และยอดชำระพร้อมกัน
 async function createBooking(prisma, input, actorId) {
   assertAllowedFields(input, ['guestId', 'roomId', 'guestCount', 'checkInDate', 'checkOutDate']);
   const stay = validateStay(input.checkInDate, input.checkOutDate);
@@ -83,6 +89,7 @@ async function createBooking(prisma, input, actorId) {
   });
 }
 
+// แก้การจองพร้อมปรับสิทธิ์กันห้องและราคา
 async function updateBooking(prisma, bookingId, changes, actorId) {
   assertId(bookingId, 'bookingId');
   assertAllowedFields(changes, ['guestId', 'roomId', 'guestCount', 'checkInDate', 'checkOutDate']);
@@ -110,7 +117,7 @@ async function updateBooking(prisma, bookingId, changes, actorId) {
     validateGuestCount(next.guestCount);
     await assertGuest(tx, next.guestId);
     const room = await bookableRoom(tx, next.roomId, next.guestCount, stay.checkInDate);
-    // ObjectId hex casing does not change the selected room.
+    // ตัวพิมพ์ใหญ่เล็กของ ObjectId ยังอ้างห้องเดียวกัน
     next.roomId = room.id;
     const claimsChanged = next.roomId !== current.roomId ||
       next.checkInDate !== current.checkInDate || next.checkOutDate !== current.checkOutDate;
@@ -142,6 +149,7 @@ async function updateBooking(prisma, bookingId, changes, actorId) {
   });
 }
 
+// ยกเลิกจองเมื่อคืนเงินครบและปล่อยสิทธิ์กันห้อง
 async function cancelBooking(prisma, bookingId, actorId) {
   assertId(bookingId, 'bookingId');
   return bookingTransaction(prisma, async (tx) => {

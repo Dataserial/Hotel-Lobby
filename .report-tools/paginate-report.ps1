@@ -1,3 +1,4 @@
+# เครื่องมือจัดรูปแบบและตรวจเอกสารรายงาน
 $ErrorActionPreference = 'Stop'
 $reportRoot = Split-Path -Parent $PSScriptRoot
 $reportDir = Join-Path $reportRoot 'docs\เอกสารรายงาน\รายงานจากระบบจริง'

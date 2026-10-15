@@ -1,2 +1,3 @@
+// ทดสอบตรวจสอบช่องทางติดต่อที่ตั้งค่าไว้
 const {test}=require('node:test');const assert=require('node:assert/strict');const {domApp}=require('./helpers/dom.cjs');
 test('discover asks for dates before showing room options',async()=>{const h=domApp('http://localhost:5173/discover');try{const PublicHotel=h.loadSource('PublicHotel.tsx').default;await h.React.act(async()=>h.root.render(h.React.createElement(PublicHotel,{staff(){},member(){}})));const doc=h.dom.window.document;assert.equal(doc.querySelectorAll('.availability-search input[type="date"]').length,2);assert.equal(doc.querySelector('.availability-search select'),null);assert.equal(doc.querySelectorAll('.room-number').length,0)}finally{await h.close()}});

@@ -1,8 +1,10 @@
+// สรุปห้องว่างหลายวันแยกตามประเภทห้อง
 const { validateStay, validateGuestCount, parseHotelDate } = require('./booking-validation');
 const { roomBookable } = require('./room-bookability');
 const { heldClaims } = require('./room-night-claims');
 const DAY = 86400000;
 
+// สรุปห้องว่างแยกประเภทและวันที่
 async function publicRoomSummary(prisma, input, now = new Date()) {
   const stay = validateStay(input.checkInDate, input.checkOutDate);
   const guestCount = validateGuestCount(input.guestCount);

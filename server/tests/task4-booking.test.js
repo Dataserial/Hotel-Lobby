@@ -1,3 +1,4 @@
+// ทดสอบผลของยอดรับคืนเงินต่อการแก้การจอง
 const { startDatabase, sample } = require('./task3-db');
 const { createBooking, updateBooking, cancelBooking } = require('../services/booking-service');
 const { receivePayment, refundPayment } = require('../services/payment-service');

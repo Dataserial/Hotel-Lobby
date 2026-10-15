@@ -1,3 +1,4 @@
+// ทดสอบการแบ่งหน้าและเงื่อนไขบริการเสริม
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { domApp } = require('./helpers/dom.cjs');

@@ -1,3 +1,4 @@
+// API รับคืนเงินและเช็คอินเช็คเอาต์
 const express = require('express');
 const { role } = require('../lib/auth');
 const { asyncRoute, objectId, page, list, fail, str } = require('../lib/http');
@@ -10,10 +11,13 @@ const transactionSelect = Object.fromEntries([
   'id', 'paymentId', 'kind', 'amount', 'method', 'reference', 'occurredAt', 'createdAt',
   'recordedById', 'idempotencyKey', 'receiptId', 'reason',
 ].map((field) => [field, true]));
+// เลือกฟิลด์ประวัติเงินที่ส่งกลับได้
 const presentTransaction = (row) => Object.fromEntries(Object.keys(transactionSelect).map((key) => [key, row[key]]));
+// ปฏิเสธพารามิเตอร์ที่เส้นทางนี้ไม่รองรับ
 function noQuery(req) {
   if (Object.keys(req.query).length) fail(400, 'VALIDATION_ERROR', 'Unexpected query fields');
 }
+// ค้นหาการจองและยอดชำระที่เกี่ยวข้อง
 async function bookingPayment(tx, id) {
   const booking = await tx.booking.findUnique({ where: { id: objectId(id) }, include: { payment: true } });
   if (!booking) fail(404, 'BOOKING_NOT_FOUND', 'Booking does not exist');
@@ -23,7 +27,9 @@ async function bookingPayment(tx, id) {
 
 module.exports = (prisma) => {
   const router = express.Router();
+  // กำหนดเงื่อนไขร่วมของเส้นทาง
   router.use(role('admin', 'receptionist'));
+  // อ่านข้อมูล /:id/payment
   router.get('/:id/payment', asyncRoute(async (req, res) => {
     noQuery(req);
     res.json(await prisma.$transaction(async (tx) => {
@@ -39,6 +45,7 @@ module.exports = (prisma) => {
       };
     }));
   }));
+  // อ่านข้อมูล /:id/payment/transactions
   router.get('/:id/payment/transactions', asyncRoute(async (req, res) => {
     const pagination = page(req.query, ['kind', 'q']);
     const filter = {};
@@ -54,6 +61,7 @@ module.exports = (prisma) => {
     }));
   }));
   for (const [path, service] of [['receipts', receivePayment], ['refunds', refundPayment]]) {
+    // รับคำขอสร้างหรือทำรายการ
     router.post(`/:id/payment/${path}`, asyncRoute(async (req, res) => {
       noQuery(req);
       const result = await service(prisma, req.params.id, req.body, req.get('Idempotency-Key'), req.actor.id);
@@ -61,6 +69,7 @@ module.exports = (prisma) => {
     }));
   }
   for (const [path, service] of [['check-in', checkIn], ['check-out', checkOut]]) {
+    // รับคำขอสร้างหรือทำรายการ
     router.post(`/:id/${path}`, asyncRoute(async (req, res) => {
       noQuery(req);
       if (req.body != null && (typeof req.body !== 'object' || Array.isArray(req.body) || Object.keys(req.body).length)) {

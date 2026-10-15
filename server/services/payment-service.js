@@ -1,7 +1,9 @@
+// บันทึกรับคืนเงินและป้องกันยอดซ้ำเมื่อส่งคำขอซ้ำ
 const { fail, objectId } = require('../lib/http');
 const { MAX_AMOUNT, moneyInput, assertLedger, summarize } = require('./payment-ledger');
 const { assertActor, operationTransaction, touchBooking } = require('./operation-transaction');
 
+// คืนผลเดิมเมื่อส่งคำขอซ้ำด้วยข้อมูลเดิม
 async function replay(tx, paymentId, data) {
   const existing = await tx.paymentTransaction.findUnique({ where: { idempotencyKey: data.idempotencyKey } });
   if (!existing) return null;
@@ -14,9 +16,11 @@ async function replay(tx, paymentId, data) {
   return { transaction: existing, replayed: true };
 }
 
+// ตรวจยอดและบันทึกรับคืนเงินในธุรกรรมเดียว
 async function recordMoney(prisma, bookingId, kind, input, key, actorId, clock = () => new Date()) {
   bookingId = objectId(bookingId).toLowerCase();
   const data = moneyInput(kind, input, key, clock());
+  // ทำขั้นตอนย่อยภายในธุรกรรม
   const operation = async (tx) => {
     await assertActor(tx, actorId);
     const booking = await tx.booking.findUnique({ where: { id: bookingId }, include: { payment: true } });
@@ -41,7 +45,7 @@ async function recordMoney(prisma, bookingId, kind, input, key, actorId, clock =
     } });
     if (duplicate) fail(409, 'DUPLICATE_REFERENCE', 'Payment evidence already recorded');
     await touchBooking(tx, booking, actorId);
-    // Preserve a total recording order, including multiple writes in one millisecond.
+    // เรียงเวลาบันทึกให้แน่นอน แม้มีหลายรายการในมิลลิวินาทีเดียว
     const createdAt = new Date(Math.max(clock().getTime(), ...rows.map((row) => row.createdAt.getTime() + 1)));
     const transaction = await tx.paymentTransaction.create({ data: {
       ...data, paymentId: booking.payment.id, recordedById: actorId, createdAt,
@@ -53,8 +57,7 @@ async function recordMoney(prisma, bookingId, kind, input, key, actorId, clock =
   try { return await operationTransaction(prisma, operation); }
   catch (error) {
     if (error.code !== 'P2002') throw error;
-    // A unique race aborts its transaction. Inspect committed winners in a new
-    // transaction; never interpret unrelated unique failures as a replay.
+    // เมื่อข้อมูลซ้ำทำให้ธุรกรรมล้ม ให้ตรวจรายการที่สำเร็จในธุรกรรมใหม่ก่อนถือว่าเป็นการส่งซ้ำ
     return operationTransaction(prisma, async (tx) => {
       await assertActor(tx, actorId);
       const payment = await tx.payment.findUnique({ where: { bookingId } });
@@ -69,6 +72,8 @@ async function recordMoney(prisma, bookingId, kind, input, key, actorId, clock =
   }
 }
 
+// บันทึกรับเงินและปรับยอดชำระ
 const receivePayment = (prisma, bookingId, input, key, actorId, clock) => recordMoney(prisma, bookingId, 'receive', input, key, actorId, clock);
+// บันทึกคืนเงินโดยอ้างรายการรับต้นทาง
 const refundPayment = (prisma, bookingId, input, key, actorId, clock) => recordMoney(prisma, bookingId, 'refund', input, key, actorId, clock);
 module.exports = { receivePayment, refundPayment };

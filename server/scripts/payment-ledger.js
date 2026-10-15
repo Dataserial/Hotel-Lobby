@@ -1,9 +1,11 @@
+// ตรวจรายการเงินและคำนวณยอดชำระสะสม
 require('dotenv').config();
 const fs = require('fs');
 const { PrismaClient } = require('@prisma/client');
 const { MongoClient } = require('mongodb');
 const { auditPayments, reconcilePayment } = require('../services/payment-reconciliation');
 
+// เริ่มขั้นตอนหลัก: ตรวจรายการเงินและคำนวณยอดชำระสะสม
 async function main() {
   const args = process.argv.slice(2);
   const apply = args[0] === 'reconcile';

@@ -1,3 +1,4 @@
+// ทดสอบสิทธิ์กันห้องรายคืน
 const { spawnSync } = require('child_process');
 const path = require('path');
 const { auditClaims, backfillMissingClaims } = require('../services/booking-claims-maintenance');

@@ -1,3 +1,4 @@
+// ทดสอบดัชนีและเจ้าของข้อมูลจอง
 const { startDatabase } = require('./task3-db');
 const { prepareCustomerBooking } = require('../scripts/customer-booking-indexes');
 let fixture;

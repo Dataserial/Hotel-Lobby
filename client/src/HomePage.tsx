@@ -1,3 +1,4 @@
+// หน้าแรกและภาพรวมห้องพัก
 import { useEffect, useRef, useState } from 'react'
 import { Brand } from './Brand'
 import { errorText, request, type PublicOverview, type User } from './api'
@@ -7,9 +8,12 @@ import MoonIntro from './MoonIntro'
 import { scrollToTarget } from './navigation'
 import './HomePage.css'
 
+// จัดรูปแบบจำนวนเงินให้อ่านง่าย
 const money = (value: number) => new Intl.NumberFormat('th-TH').format(value)
+// แสดงวันที่เป็นข้อความภาษาไทย
 const dateLabel = (value: string) => new Intl.DateTimeFormat('th-TH-u-ca-gregory', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(value + 'T00:00:00Z'))
 
+// แสดงหน้าแรกและสถานะห้องพัก
 export default function HomePage({ user, hotel, member, register, staff, logout }: { user: User | null; hotel: () => void; member: () => void; register: () => void; staff: () => void; logout: () => void }) {
   const root = useRef<HTMLElement>(null)
   const content = useRef<HTMLDivElement>(null)
@@ -27,6 +31,7 @@ export default function HomePage({ user, hotel, member, register, staff, logout 
     }).catch(error => { if (!controller.signal.aborted) setError(errorText(error)) }).finally(() => { if (!controller.signal.aborted) setBusy(false) })
     return () => controller.abort()
   }, [refresh])
+  // โหลดข้อมูลล่าสุดมาแสดง
   const reload = () => { setBusy(true); setRefresh(value => value + 1) }
   const minimum = overview?.roomTypes.length ? Math.min(...overview.roomTypes.map(type => type.pricePerNight)) : null
   return <main id="home" ref={root} className="home-page"><MoonIntro begin={() => scrollToTarget(content.current)} /><div ref={content}>

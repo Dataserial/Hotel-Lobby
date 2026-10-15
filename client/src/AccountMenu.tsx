@@ -1,6 +1,8 @@
+// เมนูบัญชีผู้ใช้และการออกจากระบบ
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 import type { User } from './api'
 
+// แสดงเมนูบัญชีและปิดเมนูเมื่อคลิกภายนอก
 export default function AccountMenu({ user, account, logout }: { user: User; account?: () => void; logout?: () => void }) {
   const [open, setOpen] = useState(false)
   const root = useRef<HTMLDivElement>(null)
@@ -14,11 +16,14 @@ export default function AccountMenu({ user, account, logout }: { user: User; acc
     if (!open) return
     const items = panel.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')
     if (items?.length) items[focusLast.current ? items.length - 1 : 0].focus()
+    // ปิดเมนูเมื่อคลิกนอกพื้นที่
     const outside = (event: PointerEvent) => { if (!root.current?.contains(event.target as Node)) setOpen(false) }
     document.addEventListener('pointerdown', outside)
     return () => document.removeEventListener('pointerdown', outside)
   }, [open])
+  // ปิดเมนูหรือหน้าต่างที่เปิดอยู่
   function close() { setOpen(false); trigger.current?.focus() }
+  // รับคำสั่งแป้นพิมพ์ของเมนู
   function keys(event: KeyboardEvent) {
     if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); return }
     if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return
