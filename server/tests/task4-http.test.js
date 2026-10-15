@@ -43,6 +43,23 @@ test.each(['admin', 'receptionist'])('%s can record money; replay and audit outp
   expect((await send('get', `${path}/payment`).expect(200)).body).toMatchObject({ status: 'refunded', net: 0 });
   await send('post', `${path}/payment/receipts`).set('Idempotency-Key', 'key').send(receipt).expect(200);
 });
+test.each(['cash', 'bank_transfer', 'card'])('receipts without reference support %s, replay and source-linked refunds', async (method) => {
+  const payload = { amount: receipt.amount, method, occurredAt: receipt.occurredAt };
+  const url = `${path}/payment/receipts`;
+  const first = await send('post', url).set('Idempotency-Key', 'automatic-reference').send(payload).expect(201);
+  expect(first.body.reference).toMatch(/^AUTO-RC-[a-f0-9]{64}$/);
+  const repeated = await send('post', url).set('Idempotency-Key', 'automatic-reference').send(payload).expect(200);
+  expect(repeated.body).toEqual(first.body);
+  const changed = await send('post', url).set('Idempotency-Key', 'automatic-reference').send({ ...payload, amount: 999 }).expect(409);
+  expect(changed.body.error.code).toBe('IDEMPOTENCY_CONFLICT');
+  const second = await send('post', url).set('Idempotency-Key', 'next-installment').send(payload).expect(201);
+  expect(second.body.reference).not.toBe(first.body.reference);
+  expect((await send('get', `${path}/payment`).expect(200)).body).toMatchObject({ paidAmount: 2000, net: 2000, remaining: 1600 });
+  await send('post', `${path}/payment/refunds`).set('Idempotency-Key', 'refund-auto-receipt')
+    .send({ ...receipt, reference: 'REFUND-AUTO-RECEIPT', receiptId: first.body.id, reason: 'Guest requested refund' }).expect(201);
+  expect((await send('get', `${path}/payment`).expect(200)).body).toMatchObject({ paidAmount: 2000, refundedAmount: 1000, net: 1000 });
+});
+
 test('malformed, unknown, forged and direct cumulative fields are rejected', async () => {
   const url = `${path}/payment/receipts`;
   await send('post', url).send(receipt).expect(400);

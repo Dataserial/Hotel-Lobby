@@ -34,12 +34,16 @@ test('partial receipt offers the exact 276-baht balance and submits it as a numb
   const { h, render, amount, calls } = await openPayment(2600, 1, 276);
   assert.deepEqual(nodes(amount(), n => n.type === 'option' && Number.isInteger(n.props.value)).map(n => n.props.value), [276]);
   amount().props.onChange({ target: { value: '276' } });
-  const reference = () => nodes(nodes(render(), n => n.props.title === 'เลขอ้างอิงหลักฐาน')[0], n => n.type === 'input')[0];
-  reference().props.onChange({ target: { value: 'RC-20261014-0001' } });
+  assert.equal(nodes(render(), n => n.props.title === 'เลขอ้างอิงหลักฐาน').length, 0);
   await nodes(render(), n => n.type === 'form' && n.props.className?.split(/\s+/).includes('money-form'))[0].props.onSubmit({ preventDefault() {} });
   assert.equal(calls[0][0], '/bookings/booking1/payment/receipts');
   assert.equal(calls[0][2].amount, 276);
-  assert.equal(calls[0][2].reference, 'RC-20261014-0001');
+  assert.equal(Object.hasOwn(calls[0][2], 'reference'), false);
+  const firstKey = calls[0][3];
+  assert.ok(firstKey);
+  await nodes(render(), n => n.type === 'form' && n.props.className?.split(/\s+/).includes('money-form'))[0].props.onSubmit({ preventDefault() {} });
+  assert.equal(calls[1][3], firstKey);
+  assert.deepEqual(calls[1][2], calls[0][2]);
   h.unmount();
 });
 

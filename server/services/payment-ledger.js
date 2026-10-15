@@ -1,3 +1,4 @@
+const { createHash } = require('crypto');
 const { fail, int, str, objectId } = require('../lib/http');
 const MAX_AMOUNT = 2147483647;
 
@@ -8,8 +9,9 @@ function paymentStatus(bookingStatus, amount, paid, refunded) {
 
 function moneyInput(kind, input, key, now = new Date()) {
   const fields = ['amount', 'method', 'reference', 'occurredAt', ...(kind === 'refund' ? ['receiptId', 'reason'] : [])];
+  const required = kind === 'receive' ? fields.filter((field) => field !== 'reference') : fields;
   if (!['receive', 'refund'].includes(kind) || !input || typeof input !== 'object' || Array.isArray(input) ||
-      Object.keys(input).some((k) => !fields.includes(k)) || fields.some((k) => input[k] == null)) {
+      Object.keys(input).some((k) => !fields.includes(k)) || required.some((k) => input[k] == null)) {
     fail(400, 'VALIDATION_ERROR', 'Unexpected or missing payment fields');
   }
   if (typeof key !== 'string' || !/^[\x21-\x7e]{1,128}$/.test(key)) fail(400, 'VALIDATION_ERROR', 'Idempotency-Key required');
@@ -21,7 +23,10 @@ function moneyInput(kind, input, key, now = new Date()) {
   }
   return {
     kind, amount: int(input.amount, 'amount', 1, MAX_AMOUNT), method: input.method,
-    reference: str(input.reference, 'reference', 128), occurredAt, idempotencyKey: key,
+    // Stable internal identifier across retries; not external payment evidence.
+    reference: kind === 'receive' && input.reference === undefined
+      ? `AUTO-RC-${createHash('sha256').update(key).digest('hex')}`
+      : str(input.reference, 'reference', 128), occurredAt, idempotencyKey: key,
     receiptId: kind === 'refund' ? objectId(input.receiptId, 'receiptId').toLowerCase() : null,
     reason: kind === 'refund' ? str(input.reason, 'reason', 500) : null,
   };
