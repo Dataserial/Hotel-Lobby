@@ -38,13 +38,34 @@ test('partial receipt offers the exact 276-baht balance and submits it as a numb
   await nodes(render(), n => n.type === 'form' && n.props.className?.split(/\s+/).includes('money-form'))[0].props.onSubmit({ preventDefault() {} });
   assert.equal(calls[0][0], '/bookings/booking1/payment/receipts');
   assert.equal(calls[0][2].amount, 276);
-  assert.equal(Object.hasOwn(calls[0][2], 'reference'), false);
   const firstKey = calls[0][3];
   assert.ok(firstKey);
+  assert.equal(calls[0][2].reference, `AUTO-RC-${firstKey}`);
   await nodes(render(), n => n.type === 'form' && n.props.className?.split(/\s+/).includes('money-form'))[0].props.onSubmit({ preventDefault() {} });
   assert.equal(calls[1][3], firstKey);
   assert.deepEqual(calls[1][2], calls[0][2]);
   h.unmount();
+});
+
+test('automatic receipt references meet the legacy API contract for every payment method', async () => {
+  for (const method of ['cash', 'bank_transfer', 'card']) {
+    const { h, render, amount, calls } = await openPayment(1200, 1, 1200);
+    amount().props.onChange({ target: { value: '1200' } });
+    const methodField = nodes(render(), n => n.props.title === 'วิธีชำระ')[0];
+    nodes(methodField, n => n.type === 'select')[0].props.onChange({ target: { value: method } });
+    assert.equal(nodes(render(), n => n.props.title === 'เลขอ้างอิงหลักฐาน').length, 0);
+    const submit = () => nodes(render(), n => n.type === 'form' && n.props.className?.split(/\s+/).includes('money-form'))[0].props.onSubmit({ preventDefault() {} });
+    await submit();
+    const payload = calls[0][2];
+    assert.deepEqual(Object.keys(payload).sort(), ['amount', 'method', 'reference', 'occurredAt'].sort());
+    assert.equal(payload.method, method);
+    assert.equal(payload.reference, `AUTO-RC-${calls[0][3]}`);
+    assert.ok(payload.reference.trim().length > 0 && payload.reference.length <= 128);
+    assert.ok(Number.isFinite(Date.parse(payload.occurredAt)));
+    await submit();
+    assert.deepEqual(calls[1], calls[0]);
+    h.unmount();
+  }
 });
 
 test('settled balances and unverified ledgers cannot submit a receipt', async () => {
