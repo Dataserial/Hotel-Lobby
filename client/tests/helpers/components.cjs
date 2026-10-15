@@ -20,7 +20,7 @@ function harness(props = {}, api = {}, filename = 'App.tsx') {
   vm.runInNewContext(code,{exports,React:react,Intl,Date,Map,Set,AbortController,DOMException,crypto:require('node:crypto').webcrypto,setTimeout,clearTimeout,
     window:{setTimeout,clearTimeout,addEventListener(){},removeEventListener(){},matchMedia:()=>({matches:true})},document:{},
     requestAnimationFrame:()=>1,cancelAnimationFrame(){},
-    require:name=>name==='react'?react:name==='./contact'?{contactChannels:()=>[]}:name==='./api'?{query:values=>new URLSearchParams(Object.entries(values).filter(([,v])=>v!==undefined&&v!=='')).toString(),errorText:e=>e.message,...api}:{}
+    require:name=>name==='react'?react:name==='./contact'?{contactChannels:()=>[]}:name==='./api'?{query:values=>new URLSearchParams(Object.entries(values).filter(([,v])=>v!==undefined&&v!=='')).toString(),paymentOccurredAt:async()=>new Date().toISOString(),errorText:e=>e.message,...api}:{}
   });
   return {exports,render(name){cursor=0;return (name==='default'?exports.default:exports[name])(props)},hook(name,...args){cursor=0;return exports[name](...args)},
     async flush(){const jobs=pending;pending=[];jobs.forEach(fn=>fn());await new Promise(r=>setTimeout(r,0));await tick()},

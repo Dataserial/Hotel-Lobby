@@ -1,8 +1,9 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { harness, page, tick, nodes, button } = require('./helpers/components.cjs');
+const { harness, page, tick, nodes, button, deferred } = require('./helpers/components.cjs');
+const { moneyInput } = require('../../server/services/payment-ledger');
 
-async function openPayment(pricePerNight, nights, remaining, ledgerReady = true) {
+async function openPayment(pricePerNight, nights, remaining, ledgerReady = true, api = {}) {
   const booking = { id: 'booking1', guestId: 'guest1', roomId: 'room1', guestCount: 2,
     checkInDate: '2026-10-14', checkOutDate: `2026-10-${14 + nights}`,
     pricePerNight, totalPrice: pricePerNight * nights, status: 'confirmed' };
@@ -11,7 +12,7 @@ async function openPayment(pricePerNight, nights, remaining, ledgerReady = true)
     : url.endsWith('/payment') ? { remaining, net: booking.totalPrice - remaining, ledgerReady }
     : url.startsWith('/guests') ? { id: 'guest1', fullName: 'Guest' } : booking,
     action: async (...args) => { calls.push(args); return false; },
-    setError: error => errors.push(error), clearChoice() {}, busy: false, choice: null });
+    setError: error => errors.push(error), clearChoice() {}, busy: false, choice: null }, api);
   h.render('BookingsView'); await h.flush();
   button(h.render('BookingsView'), 'รายละเอียด').props.onClick(); await tick();
   button(h.render('BookingsView'), 'รับเงิน').props.onClick();
@@ -100,5 +101,60 @@ test('a custom partial receipt preserves presets and rejects an amount above the
   await form().props.onSubmit({ preventDefault() {} });
   assert.equal(calls.length, 1);
   assert.ok(errors.at(-1).includes('ยอดคงเหลือ'));
+  h.unmount();
+});
+
+test('preset and custom amounts pass real API validation even when the device clock is ahead', async () => {
+  const serverNow = new Date('2026-10-15T07:35:19.000Z');
+  const deviceAhead = new Date(serverNow.getTime() + 9000).toISOString();
+  assert.throws(() => moneyInput('receive', { amount: 2600, method: 'cash', reference: 'clock-repro', occurredAt: deviceAhead }, 'clock-repro', serverNow), /not in the future/);
+  for (const price of [1200, 1800, 2600]) for (const mode of ['preset', 'custom']) for (const method of ['cash', 'bank_transfer', 'card']) {
+    let clockReads = 0;
+    const { h, render, amount, calls } = await openPayment(price, 1, price, true, {
+      paymentOccurredAt: async () => { clockReads++; return serverNow.toISOString(); },
+    });
+    amount().props.onChange({ target: { value: mode === 'preset' ? String(price) : 'custom' } });
+    if (mode === 'custom') nodes(render(), n => n.props['aria-label'] === 'ระบุยอดรับจริง')[0].props.onChange({ target: { value: String(price) } });
+    nodes(nodes(render(), n => n.props.title === 'วิธีชำระ')[0], n => n.type === 'select')[0].props.onChange({ target: { value: method } });
+    const submit = () => nodes(render(), n => n.type === 'form' && n.props.className?.split(/\s+/).includes('money-form'))[0].props.onSubmit({ preventDefault() {} });
+    await submit();
+    assert.equal(calls.length, 1);
+    const parsed = moneyInput('receive', calls[0][2], calls[0][3], serverNow);
+    assert.equal(parsed.amount, price);
+    assert.equal(parsed.occurredAt.toISOString(), serverNow.toISOString());
+    await submit();
+    assert.deepEqual(calls[1], calls[0]);
+    assert.equal(clockReads, 1, 'retries preserve timestamp and request identity');
+    h.unmount();
+  }
+});
+
+test('clock lookup failure sends no receipt and permits a retry', async () => {
+  let failClock = true;
+  const { h, render, amount, calls, errors } = await openPayment(2600, 1, 2600, true, {
+    paymentOccurredAt: async () => { if (failClock) throw new Error('Server clock unavailable'); return '2026-10-15T07:35:19.000Z'; },
+  });
+  amount().props.onChange({ target: { value: '2600' } });
+  const submit = () => nodes(render(), n => n.type === 'form' && n.props.className?.split(/\s+/).includes('money-form'))[0].props.onSubmit({ preventDefault() {} });
+  await submit();
+  assert.equal(calls.length, 0);
+  assert.equal(errors[0], 'Server clock unavailable');
+  failClock = false;
+  await submit();
+  assert.equal(calls.length, 1);
+  h.unmount();
+});
+
+test('double submission while obtaining server time records only one receipt', async () => {
+  const clock = deferred();
+  const { h, render, amount, calls } = await openPayment(2600, 1, 2600, true, { paymentOccurredAt: () => clock.promise });
+  amount().props.onChange({ target: { value: '2600' } });
+  const submit = () => nodes(render(), n => n.type === 'form' && n.props.className?.split(/\s+/).includes('money-form'))[0].props.onSubmit({ preventDefault() {} });
+  const first = submit();
+  await submit();
+  assert.equal(calls.length, 0);
+  clock.resolve('2026-10-15T07:35:19.000Z');
+  await first;
+  assert.equal(calls.length, 1);
   h.unmount();
 });

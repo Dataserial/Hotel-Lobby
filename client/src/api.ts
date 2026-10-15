@@ -29,6 +29,27 @@ export function query(values: Record<string, string | number | undefined>) {
 }
 
 export type RequestOptions = { method?: string; body?: unknown; idempotencyKey?: string; signal?: AbortSignal; timeoutMs?: number }
+
+// Read the API's HTTP clock through a same-origin proxy. A device clock ahead
+// of the server otherwise makes an immediate receipt look future-dated.
+export async function paymentOccurredAt(): Promise<string> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 15000)
+  try {
+    const response = await fetch(`/api/payment-clock?request=${Date.now()}`, {
+      method: 'HEAD', cache: 'no-store', credentials: 'omit', signal: controller.signal,
+    })
+    const date = response.headers.get('Date')
+    if (!response.ok || !/^application\/json(?:;|$)/i.test(response.headers.get('Content-Type') || '')
+      || !date || !Number.isFinite(Date.parse(date))) throw new Error('Invalid server clock response')
+    return new Date(date).toISOString()
+  } catch {
+    throw Object.assign(new Error('ตรวจสอบเวลาเซิร์ฟเวอร์ไม่ได้ กรุณาลองบันทึกอีกครั้ง'), { code: 'PAYMENT_CLOCK_UNAVAILABLE' }) as ApiError
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 const strings = (v: Record<string, unknown>, ...keys: string[]) => keys.every(key => typeof v[key] === 'string')
 const numbers = (v: Record<string, unknown>, ...keys: string[]) => keys.every(key => typeof v[key] === 'number' && Number.isSafeInteger(v[key]))

@@ -20,6 +20,27 @@ test('additional service payloads reject missing fields and invalid pricing or p
 test('incorrect credentials show only the friendly Thai message without a request ID',()=>{
   assert.equal(api(()=>{}).errorText({code:'INVALID_CREDENTIALS',message:'Invalid credentials',requestId:'trace-fixture'}),'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
 });
+
+test('payment timestamp uses upstream HTTP Date rather than the device clock', async () => {
+  const client = api(async (url, options) => {
+    assert.ok(url.startsWith('/api/payment-clock?'));
+    assert.equal(options.method, 'HEAD');
+    assert.equal(options.credentials, 'omit');
+    assert.equal(options.cache, 'no-store');
+    return new Response(null, { headers: { Date: 'Thu, 15 Oct 2026 07:35:19 GMT', 'Content-Type': 'application/json; charset=utf-8' } });
+  });
+  assert.equal(await client.paymentOccurredAt(), '2026-10-15T07:35:19.000Z');
+});
+
+test('payment timestamp rejects network errors, invalid clocks and HTML rewrite fallbacks', async () => {
+  for (const response of [
+    new Response(null, { status: 503 }),
+    new Response(null, { headers: { 'Content-Type': 'application/json' } }),
+    new Response(null, { headers: { Date: 'invalid', 'Content-Type': 'application/json' } }),
+    new Response(null, { headers: { Date: 'Thu, 15 Oct 2026 07:35:19 GMT', 'Content-Type': 'text/html' } }),
+  ]) await assert.rejects(api(async () => response).paymentOccurredAt(), error => error.code === 'PAYMENT_CLOCK_UNAVAILABLE');
+  await assert.rejects(api(async () => { throw new Error('Network error'); }).paymentOccurredAt(), error => error.code === 'PAYMENT_CLOCK_UNAVAILABLE');
+});
 test('API rejects successful HTML, null JSON and malformed page items',async()=>{
   for(const response of [new Response('<html>oops</html>',{headers:{'Content-Type':'text/html'}}),Response.json(null),Response.json({items:[{id:5}],total:1,page:1,limit:20})]) {
     await assert.rejects(api(async()=>response).request('/guests',null),e=>e.code==='PROTOCOL_ERROR');

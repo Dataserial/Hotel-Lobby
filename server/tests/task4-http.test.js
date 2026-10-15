@@ -60,6 +60,22 @@ test.each(['cash', 'bank_transfer', 'card'])('receipts without reference support
   expect((await send('get', `${path}/payment`).expect(200)).body).toMatchObject({ paidAmount: 2000, refundedAmount: 1000, net: 1000 });
 });
 
+test('2600-baht full receipt payload shared by preset and custom modes records once', async () => {
+  const type = await db.prisma.roomType.create({ data: { name: 'Receipt regression', nameKey: 'receipt-regression', capacity: 2, basePrice: 2600, amenities: [] } });
+  for (const mode of ['preset', 'custom']) {
+    const room = await db.prisma.room.create({ data: { number: `receipt-${mode}`, roomTypeId: type.id } });
+    const booking = await createBooking(db.prisma, { guestId: sample.guests[0]._id, roomId: room.id, guestCount: 2, checkInDate: '2026-11-10', checkOutDate: '2026-11-11' }, actorId);
+    const key = crypto.randomUUID();
+    const payload = { amount: 2600, method: 'cash', reference: `AUTO-RC-${key}`, occurredAt: new Date(new Date().toUTCString()).toISOString() };
+    const url = `/api/bookings/${booking.id}/payment/receipts`;
+    const first = await send('post', url).set('Idempotency-Key', key).send(payload).expect(201);
+    const replay = await send('post', url).set('Idempotency-Key', key).send(payload).expect(200);
+    expect(replay.body).toEqual(first.body);
+    expect((await send('get', `/api/bookings/${booking.id}/payment`).expect(200)).body).toMatchObject({ status: 'paid', net: 2600, remaining: 0 });
+    expect(await db.prisma.paymentTransaction.count({ where: { paymentId: first.body.paymentId } })).toBe(1);
+  }
+});
+
 test('malformed, unknown, forged and direct cumulative fields are rejected', async () => {
   const url = `${path}/payment/receipts`;
   await send('post', url).send(receipt).expect(400);
